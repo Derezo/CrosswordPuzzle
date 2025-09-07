@@ -1,0 +1,332 @@
+import { Router } from 'express';
+import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
+import { prisma } from '../lib/prisma';
+import puzzleCronService from '../services/puzzle/cronService';
+import achievementService from '../services/achievement/achievementService';
+import { User } from '@prisma/client';
+
+const router = Router();
+
+// Get today's puzzle
+router.get('/today', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const user = req.user as User;
+
+    // Get today's puzzle
+    let puzzle = await prisma.dailyPuzzle.findUnique({ where: { date: today } });
+
+    if (!puzzle) {
+      // Generate puzzle if it doesn't exist
+      await puzzleCronService.generatePuzzleForDate(today);
+      puzzle = await prisma.dailyPuzzle.findUnique({ where: { date: today } });
+    }
+
+    if (!puzzle) {
+      return res.status(404).json({ error: 'No puzzle available for today' });
+    }
+
+    // Get user's progress for today's puzzle
+    let progress = await prisma.userProgress.findUnique({ 
+      where: { 
+        userId_puzzleDate: {
+          userId: user.id, 
+          puzzleDate: today 
+        }
+      }
+    });
+
+    if (!progress) {
+      // Create new progress entry
+      progress = await prisma.userProgress.create({
+        data: {
+          userId: user.id,
+          puzzleDate: today,
+          answersData: '{}',
+          completedClues: '[]',
+          isCompleted: false
+        }
+      });
+    }
+
+    // Parse puzzle data
+    const gridData = JSON.parse(puzzle.gridData);
+    const cluesData = JSON.parse(puzzle.cluesData);
+
+    // Don't send the actual answers in the puzzle data
+    const puzzleData = {
+      id: puzzle.id,
+      date: puzzle.date,
+      grid: gridData.map((row: any) => 
+        row.map((cell: any) => ({
+          letter: null, // Don't send the actual letters
+          number: cell.number,
+          isBlocked: cell.isBlocked
+        }))
+      ),
+      clues: cluesData.map((clue: any) => ({
+        number: clue.number,
+        clue: clue.clue,
+        direction: clue.direction,
+        startRow: clue.startRow,
+        startCol: clue.startCol,
+        length: clue.length
+        // Don't send the answer
+      })),
+      rows: puzzle.rows,
+      cols: puzzle.cols
+    };
+
+    const progressData = {
+      answers: JSON.parse(progress.answersData),
+      completedClues: JSON.parse(progress.completedClues),
+      isCompleted: progress.isCompleted,
+      completedAt: progress.completedAt,
+      solveTime: progress.solveTime
+    };
+
+    res.json({
+      puzzle: puzzleData,
+      progress: progressData
+    });
+
+  } catch (error) {
+    console.error('Error fetching today\'s puzzle:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Validate answers
+router.post('/validate', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { answers, puzzleDate } = req.body;
+    const user = req.user as User;
+
+    if (!answers || !puzzleDate) {
+      return res.status(400).json({ error: 'Answers and puzzle date are required' });
+    }
+
+    // Get the puzzle
+    const puzzle = await prisma.dailyPuzzle.findUnique({ where: { date: puzzleDate } });
+    if (!puzzle) {
+      return res.status(404).json({ error: 'Puzzle not found' });
+    }
+
+    // Get or create user progress
+    let progress = await prisma.userProgress.findUnique({
+      where: {
+        userId_puzzleDate: {
+          userId: user.id,
+          puzzleDate
+        }
+      }
+    });
+
+    if (!progress) {
+      progress = await prisma.userProgress.create({
+        data: {
+          userId: user.id,
+          puzzleDate,
+          answersData: '{}',
+          completedClues: '[]',
+          isCompleted: false
+        }
+      });
+    }
+
+    // Parse puzzle clues and current progress
+    const cluesData = JSON.parse(puzzle.cluesData);
+    const currentAnswers = JSON.parse(progress.answersData);
+    const currentCompletedClues = JSON.parse(progress.completedClues);
+
+    // Validate answers and update progress
+    const results: { [key: number]: boolean } = {};
+    const newCompletedClues: number[] = [];
+
+    for (const [clueNumberStr, userAnswer] of Object.entries(answers)) {
+      const clueNumber = parseInt(clueNumberStr);
+      const clue = cluesData.find((c: any) => c.number === clueNumber);
+      
+      if (clue) {
+        const isCorrect = clue.answer.toUpperCase() === (userAnswer as string).toUpperCase();
+        results[clueNumber] = isCorrect;
+        
+        if (isCorrect && !currentCompletedClues.includes(clueNumber)) {
+          newCompletedClues.push(clueNumber);
+          currentCompletedClues.push(clueNumber);
+        }
+      }
+    }
+
+    // Update progress answers
+    for (const [clueNumber, answer] of Object.entries(answers)) {
+      currentAnswers[clueNumber] = answer as string;
+    }
+
+    // Check if puzzle is completed
+    const allCluesCompleted = cluesData.every((clue: any) => 
+      currentCompletedClues.includes(clue.number)
+    );
+
+    const updateData: any = {
+      answersData: JSON.stringify(currentAnswers),
+      completedClues: JSON.stringify(currentCompletedClues),
+      updatedAt: new Date()
+    };
+
+    if (allCluesCompleted && !progress.isCompleted) {
+      updateData.isCompleted = true;
+      updateData.completedAt = new Date();
+      updateData.solveTime = Math.floor((new Date().getTime() - progress.startedAt.getTime()) / 1000);
+    }
+
+    progress = await prisma.userProgress.update({
+      where: { id: progress.id },
+      data: updateData
+    });
+
+    // Check for new achievements
+    const newAchievements = await achievementService.checkAchievements({
+      user,
+      puzzleDate,
+      progress,
+      newCompletedClues,
+      solveTime: progress.solveTime
+    });
+
+    res.json({
+      results,
+      newCompletedClues,
+      isCompleted: progress.isCompleted,
+      solveTime: progress.solveTime,
+      newAchievements: newAchievements.map(ua => ({
+        id: ua.id,
+        achievement: ua.achievementId,
+        earnedAt: ua.earnedAt,
+        metadata: ua.metadataData ? JSON.parse(ua.metadataData) : null
+      }))
+    });
+
+  } catch (error) {
+    console.error('Error validating answers:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get puzzle progress for a specific date
+router.get('/progress/:date', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { date } = req.params;
+    const user = req.user as User;
+
+    const progress = await prisma.userProgress.findUnique({
+      where: {
+        userId_puzzleDate: {
+          userId: user.id,
+          puzzleDate: date
+        }
+      }
+    });
+
+    if (!progress) {
+      return res.json({
+        answers: {},
+        completedClues: [],
+        isCompleted: false
+      });
+    }
+
+    res.json({
+      answers: JSON.parse(progress.answersData),
+      completedClues: JSON.parse(progress.completedClues),
+      isCompleted: progress.isCompleted,
+      completedAt: progress.completedAt,
+      solveTime: progress.solveTime
+    });
+
+  } catch (error) {
+    console.error('Error fetching puzzle progress:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Auto-solve puzzle (reveals all answers, no achievements/points)
+router.post('/auto-solve', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { puzzleDate } = req.body;
+    const user = req.user as User;
+
+    if (!puzzleDate) {
+      return res.status(400).json({ error: 'Puzzle date is required' });
+    }
+
+    // Get the puzzle
+    const puzzle = await prisma.dailyPuzzle.findUnique({ where: { date: puzzleDate } });
+    if (!puzzle) {
+      return res.status(404).json({ error: 'Puzzle not found' });
+    }
+
+    // Get or create user progress
+    let progress = await prisma.userProgress.findUnique({
+      where: {
+        userId_puzzleDate: {
+          userId: user.id,
+          puzzleDate
+        }
+      }
+    });
+
+    if (!progress) {
+      progress = await prisma.userProgress.create({
+        data: {
+          userId: user.id,
+          puzzleDate,
+          answersData: '{}',
+          completedClues: '[]',
+          isCompleted: false
+        }
+      });
+    }
+
+    // Parse puzzle clues
+    const cluesData = JSON.parse(puzzle.cluesData);
+    
+    // Create answers object with all correct answers
+    const allAnswers: { [key: string]: string } = {};
+    const allCompletedClues: number[] = [];
+
+    cluesData.forEach((clue: any) => {
+      allAnswers[clue.number.toString()] = clue.answer;
+      allCompletedClues.push(clue.number);
+    });
+
+    // Update progress with auto-solved state (no achievements/points)
+    const updateData = {
+      answersData: JSON.stringify(allAnswers),
+      completedClues: JSON.stringify(allCompletedClues),
+      isCompleted: true,
+      completedAt: new Date(),
+      solveTime: null, // No solve time for auto-solved puzzles
+      updatedAt: new Date()
+    };
+
+    progress = await prisma.userProgress.update({
+      where: { id: progress.id },
+      data: updateData
+    });
+
+    // Return all answers (no achievements are checked or awarded)
+    res.json({
+      answers: allAnswers,
+      completedClues: allCompletedClues,
+      isCompleted: true,
+      autoSolved: true // Flag to indicate this was auto-solved
+    });
+
+  } catch (error) {
+    console.error('Error auto-solving puzzle:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+export default router;

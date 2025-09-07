@@ -1,0 +1,327 @@
+'use client';
+
+import React, { useState, useEffect, useRef } from 'react';
+import { PuzzleCell, CrosswordClue, UserProgress } from '@/types';
+import clsx from 'clsx';
+
+interface CrosswordGridProps {
+  grid: PuzzleCell[][];
+  clues: CrosswordClue[];
+  progress: UserProgress;
+  onAnswerChange: (clueNumber: number, answer: string) => void;
+  onCellFocus: (clue: CrosswordClue) => void;
+  validationResults?: { [clueNumber: number]: boolean };
+  isCompleted?: boolean;
+  readOnly?: boolean;
+}
+
+interface FocusedCell {
+  row: number;
+  col: number;
+  clue: CrosswordClue;
+  direction: 'across' | 'down';
+}
+
+export const CrosswordGrid: React.FC<CrosswordGridProps> = ({
+  grid,
+  clues,
+  progress,
+  onAnswerChange,
+  onCellFocus,
+  validationResults,
+  isCompleted,
+  readOnly = false,
+}) => {
+  const [focusedCell, setFocusedCell] = useState<FocusedCell | null>(null);
+  const [currentAnswers, setCurrentAnswers] = useState<{ [key: string]: string }>({});
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setCurrentAnswers(progress.answers || {});
+  }, [progress.answers]);
+
+  const getClueAtPosition = (row: number, col: number): CrosswordClue[] => {
+    return clues.filter(clue => {
+      if (clue.direction === 'across') {
+        return row === clue.startRow && 
+               col >= clue.startCol && 
+               col < clue.startCol + clue.length;
+      } else {
+        return col === clue.startCol && 
+               row >= clue.startRow && 
+               row < clue.startRow + clue.length;
+      }
+    });
+  };
+
+  const getLetterAtPosition = (row: number, col: number): string => {
+    const cluesAtPosition = getClueAtPosition(row, col);
+    if (cluesAtPosition.length === 0) return '';
+
+    // Check for answer from current input
+    for (const clue of cluesAtPosition) {
+      const answer = currentAnswers[clue.number.toString()];
+      if (answer) {
+        if (clue.direction === 'across') {
+          const letterIndex = col - clue.startCol;
+          return answer[letterIndex] || '';
+        } else {
+          const letterIndex = row - clue.startRow;
+          return answer[letterIndex] || '';
+        }
+      }
+    }
+
+    return '';
+  };
+
+  const handleCellClick = (row: number, col: number) => {
+    if (readOnly || grid[row][col].isBlocked) return;
+
+    const cluesAtPosition = getClueAtPosition(row, col);
+    if (cluesAtPosition.length === 0) return;
+
+    // If there's already a focused cell and multiple clues, cycle through them
+    let selectedClue = cluesAtPosition[0];
+    if (focusedCell && cluesAtPosition.length > 1) {
+      const currentIndex = cluesAtPosition.findIndex(c => 
+        c.number === focusedCell.clue.number && c.direction === focusedCell.direction
+      );
+      selectedClue = cluesAtPosition[(currentIndex + 1) % cluesAtPosition.length];
+    }
+
+    setFocusedCell({
+      row,
+      col,
+      clue: selectedClue,
+      direction: selectedClue.direction,
+    });
+
+    onCellFocus(selectedClue);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!focusedCell || readOnly) return;
+
+    const { row, col, clue, direction } = focusedCell;
+
+    if (e.key.match(/^[A-Za-z]$/)) {
+      e.preventDefault();
+      const letter = e.key.toUpperCase();
+      
+      // Update the answer
+      const currentAnswer = currentAnswers[clue.number.toString()] || '';
+      let newAnswer = currentAnswer;
+      
+      if (direction === 'across') {
+        const letterIndex = col - clue.startCol;
+        newAnswer = currentAnswer.padEnd(clue.length);
+        newAnswer = newAnswer.substring(0, letterIndex) + letter + newAnswer.substring(letterIndex + 1);
+      } else {
+        const letterIndex = row - clue.startRow;
+        newAnswer = currentAnswer.padEnd(clue.length);
+        newAnswer = newAnswer.substring(0, letterIndex) + letter + newAnswer.substring(letterIndex + 1);
+      }
+      
+      setCurrentAnswers(prev => ({
+        ...prev,
+        [clue.number.toString()]: newAnswer.trimEnd()
+      }));
+
+      onAnswerChange(clue.number, newAnswer.trimEnd());
+
+      // Move to next cell
+      moveToNextCell();
+    } else if (e.key === 'Backspace') {
+      e.preventDefault();
+      
+      const currentAnswer = currentAnswers[clue.number.toString()] || '';
+      let newAnswer = currentAnswer;
+      
+      if (direction === 'across') {
+        const letterIndex = col - clue.startCol;
+        if (letterIndex >= 0 && letterIndex < newAnswer.length) {
+          newAnswer = newAnswer.substring(0, letterIndex) + newAnswer.substring(letterIndex + 1);
+        }
+      } else {
+        const letterIndex = row - clue.startRow;
+        if (letterIndex >= 0 && letterIndex < newAnswer.length) {
+          newAnswer = newAnswer.substring(0, letterIndex) + newAnswer.substring(letterIndex + 1);
+        }
+      }
+      
+      setCurrentAnswers(prev => ({
+        ...prev,
+        [clue.number.toString()]: newAnswer
+      }));
+
+      onAnswerChange(clue.number, newAnswer);
+
+      // Move to previous cell
+      moveToPreviousCell();
+    } else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft' || 
+               e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      handleArrowKey(e.key);
+    }
+  };
+
+  const moveToNextCell = () => {
+    if (!focusedCell) return;
+
+    const { row, col, clue, direction } = focusedCell;
+    let newRow = row;
+    let newCol = col;
+
+    if (direction === 'across') {
+      newCol = Math.min(col + 1, clue.startCol + clue.length - 1);
+    } else {
+      newRow = Math.min(row + 1, clue.startRow + clue.length - 1);
+    }
+
+    if (newRow !== row || newCol !== col) {
+      setFocusedCell({ row: newRow, col: newCol, clue, direction });
+    }
+  };
+
+  const moveToPreviousCell = () => {
+    if (!focusedCell) return;
+
+    const { row, col, clue, direction } = focusedCell;
+    let newRow = row;
+    let newCol = col;
+
+    if (direction === 'across') {
+      newCol = Math.max(col - 1, clue.startCol);
+    } else {
+      newRow = Math.max(row - 1, clue.startRow);
+    }
+
+    if (newRow !== row || newCol !== col) {
+      setFocusedCell({ row: newRow, col: newCol, clue, direction });
+    }
+  };
+
+  const handleArrowKey = (key: string) => {
+    if (!focusedCell) return;
+
+    const { row, col } = focusedCell;
+    let newRow = row;
+    let newCol = col;
+
+    switch (key) {
+      case 'ArrowRight':
+        newCol = Math.min(col + 1, grid[0].length - 1);
+        break;
+      case 'ArrowLeft':
+        newCol = Math.max(col - 1, 0);
+        break;
+      case 'ArrowDown':
+        newRow = Math.min(row + 1, grid.length - 1);
+        break;
+      case 'ArrowUp':
+        newRow = Math.max(row - 1, 0);
+        break;
+    }
+
+    // Find a valid clue at the new position
+    const cluesAtNewPosition = getClueAtPosition(newRow, newCol);
+    if (cluesAtNewPosition.length > 0 && !grid[newRow][newCol].isBlocked) {
+      const newClue = cluesAtNewPosition[0];
+      setFocusedCell({
+        row: newRow,
+        col: newCol,
+        clue: newClue,
+        direction: newClue.direction,
+      });
+      onCellFocus(newClue);
+    }
+  };
+
+  const getCellClasses = (row: number, col: number) => {
+    const cell = grid[row][col];
+    const isInFocusedClue = focusedCell && (
+      (focusedCell.direction === 'across' && 
+       row === focusedCell.clue.startRow && 
+       col >= focusedCell.clue.startCol && 
+       col < focusedCell.clue.startCol + focusedCell.clue.length) ||
+      (focusedCell.direction === 'down' && 
+       col === focusedCell.clue.startCol && 
+       row >= focusedCell.clue.startRow && 
+       row < focusedCell.clue.startRow + focusedCell.clue.length)
+    );
+    
+    const isFocused = focusedCell?.row === row && focusedCell?.col === col;
+    const letter = getLetterAtPosition(row, col);
+    
+    let validationClass = '';
+    if (validationResults) {
+      const cluesAtPosition = getClueAtPosition(row, col);
+      for (const clue of cluesAtPosition) {
+        if (progress.completedClues.includes(clue.number)) {
+          if (validationResults[clue.number] === true) {
+            validationClass = 'bg-green-200 border-green-400';
+          } else if (validationResults[clue.number] === false) {
+            validationClass = 'bg-red-200 border-red-400';
+          }
+          break;
+        }
+      }
+    }
+
+    return clsx(
+      'w-8 h-8 md:w-10 md:h-10 border border-gray-300 flex items-center justify-center text-xs md:text-sm font-bold relative',
+      {
+        'bg-black': cell.isBlocked,
+        'bg-white cursor-pointer hover:bg-blue-50': !cell.isBlocked && !readOnly,
+        'bg-blue-100': isInFocusedClue && !cell.isBlocked,
+        'bg-blue-300 ring-2 ring-blue-500': isFocused,
+        'bg-gray-100': readOnly && !cell.isBlocked,
+        [validationClass]: validationClass,
+      }
+    );
+  };
+
+  return (
+    <div 
+      className="inline-block bg-white rounded-lg shadow-lg p-4"
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+      ref={gridRef}
+    >
+      <div className="grid gap-0" style={{ gridTemplateColumns: `repeat(${grid[0]?.length || 0}, minmax(0, 1fr))` }}>
+        {grid.map((row, rowIndex) =>
+          row.map((cell, colIndex) => (
+            <div
+              key={`${rowIndex}-${colIndex}`}
+              className={getCellClasses(rowIndex, colIndex)}
+              onClick={() => handleCellClick(rowIndex, colIndex)}
+            >
+              {cell.number && (
+                <span className="absolute top-0 left-0 text-xs text-gray-600 leading-none p-0.5">
+                  {cell.number}
+                </span>
+              )}
+              {!cell.isBlocked && (
+                <span className="mt-1">
+                  {getLetterAtPosition(rowIndex, colIndex)}
+                </span>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+      
+      {isCompleted && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 text-white p-8 rounded-lg text-center animate-pulse">
+            <h2 className="text-4xl font-bold mb-4">🌟 SOLVED! 🌟</h2>
+            <p className="text-xl">
+              {progress.solveTime ? `Completed in ${Math.floor(progress.solveTime / 60)}:${(progress.solveTime % 60).toString().padStart(2, '0')}!` : 'Puzzle Complete!'}
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
