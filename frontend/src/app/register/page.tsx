@@ -37,122 +37,161 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <div className="flex justify-center">
-            <span className="text-6xl">🌌</span>
-          </div>
-          <h2 className="mt-6 text-center text-3xl font-bold text-white">
-            Join the Cosmic Community
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-300">
-            Create your account to start your crossword journey
-          </p>
-        </div>
-        
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="firstName" className="block text-sm font-medium text-gray-300 mb-2">
-                  First Name
-                </label>
-                <input
-                  id="firstName"
-                  name="firstName"
-                  type="text"
-                  required
-                  className="block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
-                  placeholder="First name"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                />
-              </div>
-              <div>
-                <label htmlFor="lastName" className="block text-sm font-medium text-gray-300 mb-2">
-                  Last Name
-                </label>
-                <input
-                  id="lastName"
-                  name="lastName"
-                  type="text"
-                  required
-                  className="block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
-                  placeholder="Last name"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                />
-              </div>
-            </div>
-            
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
-                Email Address
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                className="block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
-                placeholder="Email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                required
-                className="block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
-                placeholder="Password (min 8 characters)"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-          </div>
+    <div className="min-h-screen">
+      {/* Cosmic background with floating elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-green-900/20 via-purple-900/20 to-blue-900/20"></div>
+        <div className="absolute top-32 right-20 w-40 h-40 bg-green-500/10 rounded-full blur-xl animate-pulse"></div>
+        <div className="absolute bottom-20 left-16 w-56 h-56 bg-purple-500/10 rounded-full blur-xl animate-pulse" style={{ animationDelay: '3s' }}></div>
+        <div className="absolute top-1/3 right-1/4 w-28 h-28 bg-blue-500/10 rounded-full blur-xl animate-pulse" style={{ animationDelay: '1.5s' }}></div>
+      </div>
 
-          {error && (
-            <div className="rounded-md bg-red-100 p-4">
-              <div className="text-sm text-red-700">{error}</div>
+      <div className="relative min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-lg w-full">
+          {/* Header Section */}
+          <div className="cosmic-card p-8 mb-8 text-center">
+            <div className="flex justify-center mb-6">
+              <div className="text-8xl cosmic-float">🚀</div>
             </div>
-          )}
-
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-            >
-              {loading ? (
-                <div className="flex items-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Creating account...
-                </div>
-              ) : (
-                'Create Account'
-              )}
-            </button>
-          </div>
-
-          <div className="text-center">
-            <p className="text-sm text-gray-300">
-              Already have an account?{' '}
-              <Link href="/login" className="font-medium text-purple-400 hover:text-purple-300 transition-colors duration-200">
-                Sign in
-              </Link>
+            <h1 className="text-4xl font-bold aurora-text mb-4">
+              Join the Galaxy
+            </h1>
+            <h2 className="text-2xl font-semibold text-white mb-2">
+              Begin Your Cosmic Journey!
+            </h2>
+            <p className="text-purple-200">
+              Create your account and become a stellar puzzle explorer ⭐
             </p>
           </div>
-        </form>
+
+          {/* Registration Form */}
+          <div className="cosmic-card p-8">
+            <form className="space-y-6" onSubmit={handleSubmit}>
+              <div className="space-y-4">
+                {/* Name Fields */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="firstName" className="block text-sm font-medium text-purple-200 mb-2">
+                      <span className="flex items-center gap-2">
+                        <span>👤</span>
+                        <span>First Name</span>
+                      </span>
+                    </label>
+                    <input
+                      id="firstName"
+                      name="firstName"
+                      type="text"
+                      required
+                      className="cosmic-input"
+                      placeholder="Your first name..."
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="lastName" className="block text-sm font-medium text-purple-200 mb-2">
+                      <span className="flex items-center gap-2">
+                        <span>👤</span>
+                        <span>Last Name</span>
+                      </span>
+                    </label>
+                    <input
+                      id="lastName"
+                      name="lastName"
+                      type="text"
+                      required
+                      className="cosmic-input"
+                      placeholder="Your last name..."
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                    />
+                  </div>
+                </div>
+                
+                {/* Email Field */}
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-purple-200 mb-2">
+                    <span className="flex items-center gap-2">
+                      <span>📧</span>
+                      <span>Email Address</span>
+                    </span>
+                  </label>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    className="cosmic-input"
+                    placeholder="Enter your galactic email..."
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+                
+                {/* Password Field */}
+                <div>
+                  <label htmlFor="password" className="block text-sm font-medium text-purple-200 mb-2">
+                    <span className="flex items-center gap-2">
+                      <span>🔐</span>
+                      <span>Password</span>
+                    </span>
+                  </label>
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    autoComplete="new-password"
+                    required
+                    className="cosmic-input"
+                    placeholder="Create a strong password (min 8 chars)..."
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {error && (
+                <div className="cosmic-card border-red-500/50 bg-gradient-to-br from-red-500/20 to-pink-500/20 p-4">
+                  <div className="flex items-center gap-2 text-red-300">
+                    <span className="text-xl">⚠️</span>
+                    <span className="text-sm font-medium">{error}</span>
+                  </div>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full aurora-button text-lg py-4 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              >
+                {loading ? (
+                  <div className="flex items-center justify-center gap-3">
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                    <span>Initiating cosmic registration...</span>
+                  </div>
+                ) : (
+                  <span className="flex items-center justify-center gap-2">
+                    <span>✨</span>
+                    <span>Create Galactic Account</span>
+                  </span>
+                )}
+              </button>
+
+              <div className="text-center pt-4">
+                <p className="text-purple-200 text-sm">
+                  Already exploring the cosmos?{' '}
+                  <Link 
+                    href="/login" 
+                    className="font-semibold nebula-text inline-block transition-all duration-200"
+                  >
+                    ← Return to Mission Control
+                  </Link>
+                </p>
+              </div>
+            </form>
+          </div>
+        </div>
       </div>
     </div>
   );

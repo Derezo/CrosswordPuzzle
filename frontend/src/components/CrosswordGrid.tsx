@@ -260,9 +260,9 @@ export const CrosswordGrid: React.FC<CrosswordGridProps> = ({
       for (const clue of cluesAtPosition) {
         if (progress.completedClues.includes(clue.number)) {
           if (validationResults[clue.number] === true) {
-            validationClass = 'bg-green-200 border-green-400';
+            validationClass = 'bg-gradient-to-br from-green-400/80 to-emerald-500/80 border-green-400/60 text-white shadow-md';
           } else if (validationResults[clue.number] === false) {
-            validationClass = 'bg-red-200 border-red-400';
+            validationClass = 'bg-gradient-to-br from-red-400/80 to-pink-500/80 border-red-400/60 text-white shadow-md';
           }
           break;
         }
@@ -270,13 +270,13 @@ export const CrosswordGrid: React.FC<CrosswordGridProps> = ({
     }
 
     return clsx(
-      'w-8 h-8 md:w-10 md:h-10 border border-gray-300 flex items-center justify-center text-xs md:text-sm font-bold relative',
+      'w-8 h-8 md:w-10 md:h-10 border flex items-center justify-center text-xs md:text-sm font-bold relative transition-all duration-200 text-white',
       {
-        'bg-black': cell.isBlocked,
-        'bg-white cursor-pointer hover:bg-blue-50': !cell.isBlocked && !readOnly,
-        'bg-blue-100': isInFocusedClue && !cell.isBlocked,
-        'bg-blue-300 ring-2 ring-blue-500': isFocused,
-        'bg-gray-100': readOnly && !cell.isBlocked,
+        'bg-gradient-to-br from-gray-900 to-black border-gray-700': cell.isBlocked,
+        'bg-gradient-to-br from-purple-900/40 via-blue-900/30 to-indigo-900/40 border-purple-500/30 cursor-pointer hover:border-purple-400/50 hover:shadow-md backdrop-blur-sm': !cell.isBlocked && !readOnly,
+        'bg-gradient-to-br from-blue-500/40 to-purple-500/40 border-blue-400/50 shadow-lg': isInFocusedClue && !cell.isBlocked,
+        'bg-gradient-to-br from-purple-500/80 to-blue-500/80 border-purple-400 ring-2 ring-purple-400/50 shadow-xl': isFocused,
+        'bg-gradient-to-br from-gray-700/40 to-gray-800/40 border-gray-600/30': readOnly && !cell.isBlocked,
         [validationClass]: validationClass,
       }
     );
@@ -284,12 +284,12 @@ export const CrosswordGrid: React.FC<CrosswordGridProps> = ({
 
   return (
     <div 
-      className="inline-block bg-white rounded-lg shadow-lg p-4"
+      className="inline-block cosmic-card p-6 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
       tabIndex={0}
       onKeyDown={handleKeyDown}
       ref={gridRef}
     >
-      <div className="grid gap-0" style={{ gridTemplateColumns: `repeat(${grid[0]?.length || 0}, minmax(0, 1fr))` }}>
+      <div className="grid gap-px rounded-lg overflow-hidden shadow-2xl" style={{ gridTemplateColumns: `repeat(${grid[0]?.length || 0}, minmax(0, 1fr))` }}>
         {grid.map((row, rowIndex) =>
           row.map((cell, colIndex) => (
             <div
@@ -298,12 +298,12 @@ export const CrosswordGrid: React.FC<CrosswordGridProps> = ({
               onClick={() => handleCellClick(rowIndex, colIndex)}
             >
               {cell.number && (
-                <span className="absolute top-0 left-0 text-xs text-gray-600 leading-none p-0.5">
+                <span className="absolute top-0 left-0 text-xs text-purple-300 leading-none p-0.5 font-semibold">
                   {cell.number}
                 </span>
               )}
               {!cell.isBlocked && (
-                <span className="mt-1">
+                <span className="mt-1 font-bold text-center">
                   {getLetterAtPosition(rowIndex, colIndex)}
                 </span>
               )}
@@ -313,12 +313,23 @@ export const CrosswordGrid: React.FC<CrosswordGridProps> = ({
       </div>
       
       {isCompleted && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 text-white p-8 rounded-lg text-center animate-pulse">
-            <h2 className="text-4xl font-bold mb-4">🌟 SOLVED! 🌟</h2>
-            <p className="text-xl">
-              {progress.solveTime ? `Completed in ${Math.floor(progress.solveTime / 60)}:${(progress.solveTime % 60).toString().padStart(2, '0')}!` : 'Puzzle Complete!'}
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="cosmic-card p-8 text-center border-2 border-yellow-500/50 bg-gradient-to-br from-yellow-500/20 via-orange-500/20 to-red-500/20 max-w-md w-full">
+            <div className="text-8xl mb-6 cosmic-float">🌟</div>
+            <h2 className="text-4xl md:text-5xl font-bold stellar-text mb-4">
+              COSMIC VICTORY!
+            </h2>
+            <div className="text-6xl mb-4">🎉</div>
+            <p className="text-xl text-white mb-4">
+              {progress.solveTime 
+                ? `Stellar completion time: ${Math.floor(progress.solveTime / 60)}:${(progress.solveTime % 60).toString().padStart(2, '0')}!` 
+                : 'Another puzzle conquered across the galaxy!'}
             </p>
+            <div className="flex justify-center gap-2 text-4xl animate-bounce">
+              <span>🚀</span>
+              <span>⭐</span>
+              <span>🌌</span>
+            </div>
           </div>
         </div>
       )}
