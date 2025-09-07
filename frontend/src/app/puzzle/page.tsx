@@ -191,51 +191,55 @@ export default function PuzzlePage() {
     <div className="min-h-screen">
       <Navigation />
       
-      {/* Hero Section */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-blue-500/10 to-green-500/10 animate-pulse"></div>
-        <div className="relative max-w-7xl mx-auto px-4 py-12">
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-4 mb-6">
-              <div className="text-6xl cosmic-float">🌌</div>
-              <div className="flex flex-col">
-                <h1 className="text-4xl md:text-6xl font-bold nebula-text mb-2">
+      {/* Compact Header */}
+      <div className="max-w-7xl mx-auto px-4 py-4">
+        <div className="cosmic-card p-4 mb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="text-4xl cosmic-float">🌌</div>
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold nebula-text">
                   Today's Cosmic Crossword
                 </h1>
-                <div className="flex items-center justify-center gap-2 text-purple-200">
-                  <span className="text-2xl">📅</span>
-                  <p className="text-lg md:text-xl">
+                <div className="flex items-center gap-2 text-purple-200 text-sm">
+                  <span>📅</span>
+                  <p>
                     {new Date(puzzle.date).toLocaleDateString('en-US', { 
-                      weekday: 'long', 
-                      year: 'numeric', 
-                      month: 'long', 
+                      weekday: 'short', 
+                      month: 'short', 
                       day: 'numeric' 
                     })}
                   </p>
                 </div>
               </div>
-              <div className="text-6xl cosmic-float" style={{ animationDelay: '2s' }}>✨</div>
             </div>
-            <p className="text-purple-200 text-lg max-w-2xl mx-auto">
-              Journey through the cosmos as you solve today's stellar puzzle. Each answer brings you closer to the stars! 🚀
-            </p>
+            {/* Progress Overview - Moved to header */}
+            <div className="hidden md:flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-purple-200 text-sm">Progress:</span>
+                <span className="text-green-400 font-bold">
+                  {progress.completedClues?.length || 0}/{puzzle.clues.length}
+                </span>
+              </div>
+              <div className="w-24 bg-purple-900/50 rounded-full h-2">
+                <div 
+                  className="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full transition-all duration-500"
+                  style={{
+                    width: `${((progress.completedClues?.length || 0) / puzzle.clues.length) * 100}%`
+                  }}
+                ></div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 pb-12">
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+      <div className="max-w-7xl mx-auto px-4 pb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
           {/* Crossword Grid - Takes up more space */}
-          <div className="xl:col-span-3">
-            <div className="cosmic-card p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <span className="text-3xl">🧩</span>
-                <div>
-                  <h2 className="text-2xl font-bold text-white">Crossword Grid</h2>
-                  <p className="text-purple-200 text-sm">Click cells to input your cosmic answers</p>
-                </div>
-              </div>
+          <div className="lg:col-span-3">
+            <div className="cosmic-card p-4">
               <div className="flex justify-center">
                 <CrosswordGrid
                   grid={puzzle.grid}
@@ -251,38 +255,77 @@ export default function PuzzlePage() {
             </div>
           </div>
 
-          {/* Clues Panel - Condensed but more organized */}
-          <div className="xl:col-span-1">
-            <div className="space-y-6">
-              {/* Progress Overview */}
-              <div className="cosmic-card p-4 border-green-500/30">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-2xl">📊</span>
-                  <h3 className="font-bold text-white">Progress</h3>
+          {/* Compact Clues Panel */}
+          <div className="lg:col-span-2">
+            <div className="space-y-3">
+              {/* Mobile Progress Overview */}
+              <div className="md:hidden cosmic-card p-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-purple-200 text-sm">Progress:</span>
+                  <span className="text-green-400 font-bold">
+                    {progress.completedClues?.length || 0}/{puzzle.clues.length}
+                  </span>
                 </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-purple-200">Completed:</span>
-                    <span className="text-green-400 font-medium">
-                      {progress.completedClues?.length || 0}/{puzzle.clues.length}
-                    </span>
-                  </div>
-                  <div className="w-full bg-purple-900/50 rounded-full h-2">
-                    <div 
-                      className="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full transition-all duration-500"
-                      style={{
-                        width: `${((progress.completedClues?.length || 0) / puzzle.clues.length) * 100}%`
-                      }}
-                    ></div>
-                  </div>
+                <div className="w-full bg-purple-900/50 rounded-full h-2 mt-2">
+                  <div 
+                    className="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full transition-all duration-500"
+                    style={{
+                      width: `${((progress.completedClues?.length || 0) / puzzle.clues.length) * 100}%`
+                    }}
+                  ></div>
                 </div>
               </div>
+
+              {/* Action Buttons - Moved to top */}
+              {!progress.isCompleted && (
+                <div className="cosmic-card p-3 border-blue-500/30">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xl">🎯</span>
+                    <h3 className="font-bold text-white text-sm">Actions</h3>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <button
+                      onClick={handleCheckAnswers}
+                      disabled={!canCheckAnswers()}
+                      className={`w-full aurora-button text-sm py-2 ${!canCheckAnswers() ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      {canCheckAnswers() ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <span>✨</span>
+                          <span>Check Answers</span>
+                        </span>
+                      ) : (
+                        'Complete a word to check'
+                      )}
+                    </button>
+
+                    <button
+                      onClick={handleAutoSolve}
+                      disabled={autoSolving}
+                      className="w-full stellar-button text-sm py-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {autoSolving ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent"></div>
+                          <span>Revealing...</span>
+                        </div>
+                      ) : (
+                        <span className="flex items-center justify-center gap-1">
+                          <span>🔍</span>
+                          <span>Auto-Solve</span>
+                        </span>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
               
-              {/* Clues */}
-              <div className="cosmic-card p-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="text-2xl">📝</span>
-                  <h3 className="font-bold text-white">Clues</h3>
+              {/* Clues - More compact */}
+              <div className="cosmic-card p-3">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-xl">📝</span>
+                  <h3 className="font-bold text-white text-sm">Clues</h3>
                 </div>
                 <CrosswordClues
                   clues={puzzle.clues}
@@ -293,69 +336,25 @@ export default function PuzzlePage() {
                 />
               </div>
 
-              {/* Action Buttons */}
-              {!progress.isCompleted && (
-                <div className="cosmic-card p-4 space-y-3 border-blue-500/30">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-2xl">🎯</span>
-                    <h3 className="font-bold text-white">Actions</h3>
-                  </div>
-                  
-                  <button
-                    onClick={handleCheckAnswers}
-                    disabled={!canCheckAnswers()}
-                    className={`w-full aurora-button ${!canCheckAnswers() ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    {canCheckAnswers() ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <span>✨</span>
-                        <span>Check Answers</span>
-                      </span>
-                    ) : (
-                      'Complete a word to check'
-                    )}
-                  </button>
-
-                  <button
-                    onClick={handleAutoSolve}
-                    disabled={autoSolving}
-                    className="w-full stellar-button disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {autoSolving ? (
-                      <div className="flex items-center justify-center gap-2">
-                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                        <span>Revealing answers...</span>
-                      </div>
-                    ) : (
-                      <span className="flex items-center justify-center gap-2">
-                        <span>🔍</span>
-                        <span>Auto-Solve</span>
-                        <span className="text-xs opacity-75">(No points)</span>
-                      </span>
-                    )}
-                  </button>
-                </div>
-              )}
-
               {progress.isCompleted && (
-                <div className={`cosmic-card p-6 text-center border-2 ${
+                <div className={`cosmic-card p-4 text-center border-2 ${
                   autoSolved 
                     ? 'border-orange-500/50 bg-gradient-to-br from-orange-500/20 to-yellow-500/20' 
                     : 'border-green-500/50 bg-gradient-to-br from-green-500/20 to-blue-500/20'
                 }`}>
-                  <div className="text-6xl mb-4">
+                  <div className="text-4xl mb-3">
                     {autoSolved ? '🔍' : '🎉'}
                   </div>
-                  <div className="text-2xl font-bold text-white mb-2">
-                    {autoSolved ? 'Puzzle Auto-Solved!' : 'Cosmic Victory! 🌟'}
+                  <div className="text-xl font-bold text-white mb-2">
+                    {autoSolved ? 'Auto-Solved!' : 'Victory! 🌟'}
                   </div>
-                  <div className="text-purple-200">
+                  <div className="text-purple-200 text-sm">
                     {autoSolved ? (
-                      <p>All answers revealed • No points awarded</p>
+                      <p>All answers revealed</p>
                     ) : progress.solveTime ? (
-                      <p>Completed in {Math.floor(progress.solveTime / 60)}:{(progress.solveTime % 60).toString().padStart(2, '0')} ⏱️</p>
+                      <p>Time: {Math.floor(progress.solveTime / 60)}:{(progress.solveTime % 60).toString().padStart(2, '0')} ⏱️</p>
                     ) : (
-                      <p>Stellar performance! 🚀</p>
+                      <p>Stellar! 🚀</p>
                     )}
                   </div>
                 </div>

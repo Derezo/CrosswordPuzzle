@@ -258,11 +258,12 @@ export const CrosswordGrid: React.FC<CrosswordGridProps> = ({
     if (validationResults) {
       const cluesAtPosition = getClueAtPosition(row, col);
       for (const clue of cluesAtPosition) {
-        if (progress.completedClues.includes(clue.number)) {
+        // Check if this clue has been validated (regardless of completion status)
+        if (validationResults[clue.number] !== undefined) {
           if (validationResults[clue.number] === true) {
-            validationClass = 'bg-gradient-to-br from-green-400/80 to-emerald-500/80 border-green-400/60 text-white shadow-md';
+            validationClass = '!bg-gradient-to-br !from-green-400 !to-emerald-500 !border-green-400 !text-white !shadow-lg validation-shimmer';
           } else if (validationResults[clue.number] === false) {
-            validationClass = 'bg-gradient-to-br from-red-400/80 to-pink-500/80 border-red-400/60 text-white shadow-md';
+            validationClass = '!bg-gradient-to-br !from-red-400 !to-pink-500 !border-red-400 !text-white !shadow-lg validation-shimmer';
           }
           break;
         }
@@ -270,15 +271,16 @@ export const CrosswordGrid: React.FC<CrosswordGridProps> = ({
     }
 
     return clsx(
-      'w-8 h-8 md:w-10 md:h-10 border flex items-center justify-center text-xs md:text-sm font-bold relative transition-all duration-200 text-white',
+      'w-8 h-8 md:w-10 md:h-10 border flex items-center justify-center text-xs md:text-sm font-bold relative transition-all duration-500 text-white',
       {
         'bg-gradient-to-br from-gray-900 to-black border-gray-700': cell.isBlocked,
-        'bg-gradient-to-br from-purple-900/40 via-blue-900/30 to-indigo-900/40 border-purple-500/30 cursor-pointer hover:border-purple-400/50 hover:shadow-md backdrop-blur-sm': !cell.isBlocked && !readOnly,
-        'bg-gradient-to-br from-blue-500/40 to-purple-500/40 border-blue-400/50 shadow-lg': isInFocusedClue && !cell.isBlocked,
-        'bg-gradient-to-br from-purple-500/80 to-blue-500/80 border-purple-400 ring-2 ring-purple-400/50 shadow-xl': isFocused,
-        'bg-gradient-to-br from-gray-700/40 to-gray-800/40 border-gray-600/30': readOnly && !cell.isBlocked,
-        [validationClass]: validationClass,
-      }
+        'bg-gradient-to-br from-purple-900/40 via-blue-900/30 to-indigo-900/40 border-purple-500/30 cursor-pointer hover:border-purple-400/50 hover:shadow-md backdrop-blur-sm': !cell.isBlocked && !readOnly && !validationClass,
+        'bg-gradient-to-br from-blue-500/40 to-purple-500/40 border-blue-400/50 shadow-lg': isInFocusedClue && !cell.isBlocked && !validationClass,
+        'bg-gradient-to-br from-purple-500/80 to-blue-500/80 border-purple-400 ring-2 ring-purple-400/50 shadow-xl': isFocused && !validationClass,
+        'bg-gradient-to-br from-gray-700/40 to-gray-800/40 border-gray-600/30': readOnly && !cell.isBlocked && !validationClass,
+      },
+      // Apply validation classes with higher priority
+      validationClass
     );
   };
 

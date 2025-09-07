@@ -76,6 +76,25 @@ body {
   100% { background-position: 1000px 0; }
 }
 
+@keyframes validation-shimmer {
+  0%, 70% { 
+    opacity: 1;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+  }
+  85% { 
+    opacity: 0.9;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.4), 0 0 30px rgba(255, 255, 255, 0.2);
+  }
+  100% { 
+    opacity: 1;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+  }
+}
+
+.validation-shimmer {
+  animation: validation-shimmer 3s ease-in-out infinite;
+}
+
 @keyframes twinkle {
   0%, 100% { opacity: 0.3; }
   50% { opacity: 1; }
