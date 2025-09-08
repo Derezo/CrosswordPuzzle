@@ -36,7 +36,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PuzzleCronService = void 0;
 const cron = __importStar(require("node-cron"));
 const prisma_1 = require("../../lib/prisma");
-const properGenerator_1 = require("./properGenerator");
+const strictCrosswordGenerator_1 = require("./strictCrosswordGenerator");
 class PuzzleCronService {
     constructor() {
         this.job = null;
@@ -75,8 +75,8 @@ class PuzzleCronService {
                 return;
             }
             console.log(`🧩 Generating puzzle for ${today}...`);
-            // Generate the puzzle using proper algorithm
-            const puzzleData = (0, properGenerator_1.generateProperDailyPuzzle)(today);
+            // Generate the puzzle using strict constraint algorithm
+            const puzzleData = (0, strictCrosswordGenerator_1.generateStrictPuzzle)(today);
             // Save to database
             await prisma_1.prisma.dailyPuzzle.create({
                 data: {
@@ -102,8 +102,8 @@ class PuzzleCronService {
                 throw new Error(`Puzzle for ${date} already exists`);
             }
             console.log(`🧩 Manually generating puzzle for ${date}...`);
-            // Generate the puzzle using proper algorithm
-            const puzzleData = (0, properGenerator_1.generateProperDailyPuzzle)(date);
+            // Generate the puzzle using strict constraint algorithm
+            const puzzleData = (0, strictCrosswordGenerator_1.generateStrictPuzzle)(date);
             // Save to database
             await prisma_1.prisma.dailyPuzzle.create({
                 data: {

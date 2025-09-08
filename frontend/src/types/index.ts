@@ -73,8 +73,11 @@ export interface AuthResponse {
 
 export interface ValidationResult {
   results: { [clueNumber: number]: boolean };
+  cellValidation: { [cellKey: string]: boolean }; // "row,col": boolean
   newCompletedClues: number[];
   isCompleted: boolean;
   solveTime?: number;
   newAchievements?: UserAchievement[];
+  solvedClues: { [clueNumber: string]: string }; // For UI display only
+  validatedGrid: any[][];  // The validated grid data
 }

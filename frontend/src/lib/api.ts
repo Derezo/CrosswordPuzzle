@@ -82,6 +82,14 @@ export const puzzleAPI = {
     return response.data;
   },
 
+  validateGridAnswers: async (data: {
+    gridData: Array<Array<{letter: string, activeDirection?: 'across' | 'down'}>>;
+    puzzleDate: string;
+  }): Promise<ValidationResult> => {
+    const response = await api.post('/puzzle/validate-grid', data);
+    return response.data;
+  },
+
   getProgress: async (date: string): Promise<UserProgress> => {
     const response = await api.get(`/puzzle/progress/${date}`);
     return response.data;

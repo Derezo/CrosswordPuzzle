@@ -1,6 +1,6 @@
 import * as cron from 'node-cron';
 import { prisma } from '../../lib/prisma';
-import { generateProperDailyPuzzle } from './properGenerator';
+import { generateStrictPuzzle } from './strictCrosswordGenerator';
 
 export class PuzzleCronService {
   private static instance: PuzzleCronService;
@@ -51,8 +51,8 @@ export class PuzzleCronService {
 
       console.log(`🧩 Generating puzzle for ${today}...`);
 
-      // Generate the puzzle using proper algorithm
-      const puzzleData = generateProperDailyPuzzle(today);
+      // Generate the puzzle using strict constraint algorithm
+      const puzzleData = generateStrictPuzzle(today);
 
       // Save to database
       await prisma.dailyPuzzle.create({
@@ -83,8 +83,8 @@ export class PuzzleCronService {
 
       console.log(`🧩 Manually generating puzzle for ${date}...`);
 
-      // Generate the puzzle using proper algorithm
-      const puzzleData = generateProperDailyPuzzle(date);
+      // Generate the puzzle using strict constraint algorithm
+      const puzzleData = generateStrictPuzzle(date);
 
       // Save to database
       await prisma.dailyPuzzle.create({

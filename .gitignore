@@ -1,0 +1,8 @@
+.env
+node_modules/*
+/node_modules/
+package-lock.json
+.prettierrc
+backend/package-lock.json
+backend/pnpm-lock.yaml
+backend/prisma/dev.db

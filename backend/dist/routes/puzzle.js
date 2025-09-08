@@ -184,6 +184,150 @@ router.post('/validate', auth_1.authenticateToken, async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+// Pure grid-based validation endpoint
+router.post('/validate-grid', auth_1.authenticateToken, async (req, res) => {
+    try {
+        const { gridData, puzzleDate } = req.body;
+        const user = req.user;
+        console.log('validate-grid called');
+        console.log('gridData type:', typeof gridData);
+        console.log('gridData length:', Array.isArray(gridData) ? gridData.length : 'not array');
+        console.log('gridData sample:', gridData?.[0]?.[0]);
+        if (!gridData || !puzzleDate) {
+            console.log('Missing data - gridData:', !!gridData, 'puzzleDate:', !!puzzleDate);
+            return res.status(400).json({ error: 'Grid data and puzzle date are required' });
+        }
+        // Get the puzzle
+        const puzzle = await prisma_1.prisma.dailyPuzzle.findUnique({ where: { date: puzzleDate } });
+        if (!puzzle) {
+            return res.status(404).json({ error: 'Puzzle not found' });
+        }
+        // Get or create user progress
+        let progress = await prisma_1.prisma.userProgress.findUnique({
+            where: {
+                userId_puzzleDate: {
+                    userId: user.id,
+                    puzzleDate
+                }
+            }
+        });
+        if (!progress) {
+            progress = await prisma_1.prisma.userProgress.create({
+                data: {
+                    userId: user.id,
+                    puzzleDate,
+                    answersData: '{}',
+                    completedClues: '[]',
+                    isCompleted: false
+                }
+            });
+        }
+        // Parse puzzle data
+        const cluesData = JSON.parse(puzzle.cluesData);
+        const solutionGrid = JSON.parse(puzzle.gridData);
+        const currentCompletedClues = JSON.parse(progress.completedClues);
+        // PURE GRID-BASED VALIDATION
+        // Compare user grid with solution grid cell by cell
+        const cellValidation = {}; // "row,col": boolean
+        const results = {}; // clue validation results
+        const solvedClues = {}; // extracted answers for UI
+        const newCompletedClues = [];
+        // Step 1: Validate each cell against solution
+        for (let row = 0; row < gridData.length; row++) {
+            for (let col = 0; col < gridData[0].length; col++) {
+                const userCell = gridData[row][col];
+                const solutionCell = solutionGrid[row][col];
+                if (!solutionCell.isBlocked && userCell && userCell.letter) {
+                    const cellKey = `${row},${col}`;
+                    cellValidation[cellKey] = userCell.letter.toUpperCase() === solutionCell.letter.toUpperCase();
+                }
+            }
+        }
+        // Step 2: Check clue completion based on cell validation
+        for (const clue of cluesData) {
+            let allCellsCorrect = true;
+            let extractedAnswer = '';
+            // Check each cell position for this clue
+            for (let i = 0; i < clue.length; i++) {
+                const row = clue.direction === 'across' ? clue.startRow : clue.startRow + i;
+                const col = clue.direction === 'across' ? clue.startCol + i : clue.startCol;
+                const cellKey = `${row},${col}`;
+                // Extract letter for UI display
+                if (row < gridData.length && col < gridData[0].length && gridData[row][col]) {
+                    const userCell = gridData[row][col];
+                    let letter = '';
+                    // Get direction-specific letter or fallback
+                    if (clue.direction === 'across' && userCell.acrossLetter) {
+                        letter = userCell.acrossLetter;
+                    }
+                    else if (clue.direction === 'down' && userCell.downLetter) {
+                        letter = userCell.downLetter;
+                    }
+                    else if (userCell.letter) {
+                        letter = userCell.letter;
+                    }
+                    extractedAnswer += letter.toUpperCase();
+                }
+                // Check if this cell is incorrect
+                if (!cellValidation[cellKey]) {
+                    allCellsCorrect = false;
+                }
+            }
+            results[clue.number] = allCellsCorrect && extractedAnswer.length === clue.length;
+            solvedClues[clue.number.toString()] = extractedAnswer;
+            // Track newly completed clues
+            if (results[clue.number] && !currentCompletedClues.includes(clue.number)) {
+                newCompletedClues.push(clue.number);
+                currentCompletedClues.push(clue.number);
+            }
+        }
+        // Check if puzzle is completed
+        const allCluesCompleted = cluesData.every((clue) => currentCompletedClues.includes(clue.number));
+        // Update progress (store solved clues for UI compatibility)
+        const updateData = {
+            answersData: JSON.stringify(solvedClues),
+            completedClues: JSON.stringify(currentCompletedClues),
+            updatedAt: new Date()
+        };
+        if (allCluesCompleted && !progress.isCompleted) {
+            updateData.isCompleted = true;
+            updateData.completedAt = new Date();
+            updateData.solveTime = Math.floor((new Date().getTime() - progress.startedAt.getTime()) / 1000);
+        }
+        progress = await prisma_1.prisma.userProgress.update({
+            where: { id: progress.id },
+            data: updateData
+        });
+        // Check for new achievements
+        const newAchievements = await achievementService_1.default.checkAchievements({
+            user,
+            puzzleDate,
+            progress,
+            newCompletedClues,
+            solveTime: progress.solveTime
+        });
+        // Return both grid validation and solved clues (for UI only)
+        res.json({
+            results, // Per-clue validation results
+            cellValidation, // Per-cell validation results (new)
+            newCompletedClues,
+            isCompleted: progress.isCompleted,
+            solveTime: progress.solveTime,
+            solvedClues, // Extracted clue answers for UI display only
+            validatedGrid: gridData, // Return the validated grid
+            newAchievements: newAchievements.map(ua => ({
+                id: ua.id,
+                achievement: ua.achievementId,
+                earnedAt: ua.earnedAt,
+                metadata: ua.metadataData ? JSON.parse(ua.metadataData) : null
+            }))
+        });
+    }
+    catch (error) {
+        console.error('Error validating grid answers:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
 // Get puzzle progress for a specific date
 router.get('/progress/:date', auth_1.authenticateToken, async (req, res) => {
     try {

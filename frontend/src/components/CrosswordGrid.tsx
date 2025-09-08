@@ -8,11 +8,13 @@ interface CrosswordGridProps {
   grid: PuzzleCell[][];
   clues: CrosswordClue[];
   progress: UserProgress;
-  onAnswerChange: (clueNumber: number, answer: string) => void;
   onCellFocus: (clue: CrosswordClue) => void;
+  onGridDataChange?: (gridData: GridCellData[][]) => void;
   validationResults?: { [clueNumber: number]: boolean };
+  cellValidation?: { [cellKey: string]: boolean }; // "row,col": boolean
   isCompleted?: boolean;
   readOnly?: boolean;
+  initialGridData?: GridCellData[][]; // Pre-populated grid data for solved puzzles
 }
 
 interface FocusedCell {
@@ -22,23 +24,94 @@ interface FocusedCell {
   direction: 'across' | 'down';
 }
 
+export interface GridCellData {
+  letter: string;
+  // Store letters for both directions in intersecting cells
+  acrossLetter?: string;
+  downLetter?: string;
+  // Track which direction was last active for display purposes
+  lastActiveDirection?: 'across' | 'down';
+}
+
 export const CrosswordGrid: React.FC<CrosswordGridProps> = ({
   grid,
   clues,
   progress,
-  onAnswerChange,
   onCellFocus,
+  onGridDataChange,
   validationResults,
+  cellValidation,
   isCompleted,
   readOnly = false,
+  initialGridData,
 }) => {
   const [focusedCell, setFocusedCell] = useState<FocusedCell | null>(null);
-  const [currentAnswers, setCurrentAnswers] = useState<{ [key: string]: string }>({});
+  const [gridData, setGridData] = useState<GridCellData[][]>([]);
+  const [showVictoryMessage, setShowVictoryMessage] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
+  const victoryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Initialize grid data - use initialGridData if provided, otherwise create empty grid
   useEffect(() => {
-    setCurrentAnswers(progress.answers || {});
-  }, [progress.answers]);
+    if (grid.length > 0 && grid[0].length > 0) {
+      if (initialGridData && initialGridData.length > 0) {
+        // Use pre-populated grid data for solved puzzles
+        setGridData(initialGridData);
+      } else if (gridData.length === 0) {
+        // Create empty grid for new puzzles
+        const newGridData: GridCellData[][] = grid.map(row => 
+          row.map(() => ({ 
+            letter: '', 
+            acrossLetter: undefined, 
+            downLetter: undefined, 
+            lastActiveDirection: undefined 
+          }))
+        );
+        setGridData(newGridData);
+      }
+    }
+  }, [grid, initialGridData, gridData.length]);
+
+  // Pure grid-based approach - no need to sync with progress answers
+  // Grid state is managed independently
+
+  // Notify parent component when grid data changes
+  useEffect(() => {
+    if (onGridDataChange) {
+      console.log('Sending grid data to parent:', gridData.length > 0 ? `${gridData.length}x${gridData[0]?.length || 0}` : 'empty');
+      onGridDataChange(gridData);
+    }
+  }, [gridData, onGridDataChange]);
+
+  // Handle victory message display and auto-dismiss
+  useEffect(() => {
+    if (isCompleted) {
+      setShowVictoryMessage(true);
+      
+      // Clear any existing timeout
+      if (victoryTimeoutRef.current) {
+        clearTimeout(victoryTimeoutRef.current);
+      }
+      
+      // Set timeout to hide the message after 5 seconds
+      victoryTimeoutRef.current = setTimeout(() => {
+        setShowVictoryMessage(false);
+      }, 5000);
+    } else {
+      setShowVictoryMessage(false);
+      if (victoryTimeoutRef.current) {
+        clearTimeout(victoryTimeoutRef.current);
+        victoryTimeoutRef.current = null;
+      }
+    }
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (victoryTimeoutRef.current) {
+        clearTimeout(victoryTimeoutRef.current);
+      }
+    };
+  }, [isCompleted]);
 
   const getClueAtPosition = (row: number, col: number): CrosswordClue[] => {
     return clues.filter(clue => {
@@ -55,24 +128,41 @@ export const CrosswordGrid: React.FC<CrosswordGridProps> = ({
   };
 
   const getLetterAtPosition = (row: number, col: number): string => {
-    const cluesAtPosition = getClueAtPosition(row, col);
-    if (cluesAtPosition.length === 0) return '';
+    // Pure grid-based approach - no fallback needed
 
-    // Check for answer from current input
-    for (const clue of cluesAtPosition) {
-      const answer = currentAnswers[clue.number.toString()];
-      if (answer) {
-        if (clue.direction === 'across') {
-          const letterIndex = col - clue.startCol;
-          return answer[letterIndex] || '';
+    if (row >= gridData.length || col >= gridData[0]?.length) return '';
+    
+    const cellData = gridData[row][col];
+    if (!cellData.letter) return '';
+
+    // If there's a focused cell, only show letters that match the focused direction
+    if (focusedCell) {
+      const isFocusedCluePosition = (
+        (focusedCell.direction === 'across' && 
+         row === focusedCell.clue.startRow && 
+         col >= focusedCell.clue.startCol && 
+         col < focusedCell.clue.startCol + focusedCell.clue.length) ||
+        (focusedCell.direction === 'down' && 
+         col === focusedCell.clue.startCol && 
+         row >= focusedCell.clue.startRow && 
+         row < focusedCell.clue.startRow + focusedCell.clue.length)
+      );
+
+      if (isFocusedCluePosition) {
+        // This cell is part of the focused clue - show the letter for this direction
+        if (focusedCell.direction === 'across') {
+          return cellData.acrossLetter || '';
         } else {
-          const letterIndex = row - clue.startRow;
-          return answer[letterIndex] || '';
+          return cellData.downLetter || '';
         }
+      } else {
+        // This cell is NOT part of the focused clue - show the displayed letter
+        return cellData.letter;
       }
     }
 
-    return '';
+    // No focused cell - show any letter
+    return cellData.letter;
   };
 
   const handleCellClick = (row: number, col: number) => {
@@ -109,53 +199,59 @@ export const CrosswordGrid: React.FC<CrosswordGridProps> = ({
       e.preventDefault();
       const letter = e.key.toUpperCase();
       
-      // Update the answer
-      const currentAnswer = currentAnswers[clue.number.toString()] || '';
-      let newAnswer = currentAnswer;
-      
-      if (direction === 'across') {
-        const letterIndex = col - clue.startCol;
-        newAnswer = currentAnswer.padEnd(clue.length);
-        newAnswer = newAnswer.substring(0, letterIndex) + letter + newAnswer.substring(letterIndex + 1);
-      } else {
-        const letterIndex = row - clue.startRow;
-        newAnswer = currentAnswer.padEnd(clue.length);
-        newAnswer = newAnswer.substring(0, letterIndex) + letter + newAnswer.substring(letterIndex + 1);
-      }
-      
-      setCurrentAnswers(prev => ({
-        ...prev,
-        [clue.number.toString()]: newAnswer.trimEnd()
-      }));
-
-      onAnswerChange(clue.number, newAnswer.trimEnd());
+      // Update grid data directly
+      setGridData(prevGrid => {
+        const newGrid = prevGrid.map(gridRow => gridRow.map(cell => ({ ...cell })));
+        
+        // Set the letter for the specific direction
+        if (row < newGrid.length && col < newGrid[0].length) {
+          if (direction === 'across') {
+            newGrid[row][col].acrossLetter = letter;
+          } else {
+            newGrid[row][col].downLetter = letter;
+          }
+          // Display the letter from the currently active direction
+          newGrid[row][col].letter = letter;
+          newGrid[row][col].lastActiveDirection = direction;
+        }
+        
+        return newGrid;
+      });
 
       // Move to next cell
       moveToNextCell();
     } else if (e.key === 'Backspace') {
       e.preventDefault();
       
-      const currentAnswer = currentAnswers[clue.number.toString()] || '';
-      let newAnswer = currentAnswer;
-      
-      if (direction === 'across') {
-        const letterIndex = col - clue.startCol;
-        if (letterIndex >= 0 && letterIndex < newAnswer.length) {
-          newAnswer = newAnswer.substring(0, letterIndex) + newAnswer.substring(letterIndex + 1);
+      // Clear the letter from grid data
+      setGridData(prevGrid => {
+        const newGrid = prevGrid.map(gridRow => gridRow.map(cell => ({ ...cell })));
+        
+        if (row < newGrid.length && col < newGrid[0].length) {
+          // Clear the letter for the specific direction
+          if (direction === 'across') {
+            newGrid[row][col].acrossLetter = undefined;
+            // If no down letter exists, clear display
+            if (!newGrid[row][col].downLetter) {
+              newGrid[row][col].letter = '';
+            } else {
+              newGrid[row][col].letter = newGrid[row][col].downLetter!;
+              newGrid[row][col].lastActiveDirection = 'down';
+            }
+          } else {
+            newGrid[row][col].downLetter = undefined;
+            // If no across letter exists, clear display
+            if (!newGrid[row][col].acrossLetter) {
+              newGrid[row][col].letter = '';
+            } else {
+              newGrid[row][col].letter = newGrid[row][col].acrossLetter!;
+              newGrid[row][col].lastActiveDirection = 'across';
+            }
+          }
         }
-      } else {
-        const letterIndex = row - clue.startRow;
-        if (letterIndex >= 0 && letterIndex < newAnswer.length) {
-          newAnswer = newAnswer.substring(0, letterIndex) + newAnswer.substring(letterIndex + 1);
-        }
-      }
-      
-      setCurrentAnswers(prev => ({
-        ...prev,
-        [clue.number.toString()]: newAnswer
-      }));
-
-      onAnswerChange(clue.number, newAnswer);
+        
+        return newGrid;
+      });
 
       // Move to previous cell
       moveToPreviousCell();
@@ -260,28 +356,27 @@ export const CrosswordGrid: React.FC<CrosswordGridProps> = ({
     const letter = getLetterAtPosition(row, col);
     
     let validationClass = '';
-    if (validationResults && !isEffectivelyBlocked) {
-      for (const clue of cluesAtPosition) {
-        // Check if this clue has been validated (regardless of completion status)
-        if (validationResults[clue.number] !== undefined) {
-          if (validationResults[clue.number] === true) {
-            validationClass = '!bg-gradient-to-br !from-green-400 !to-emerald-500 !border-green-400 !text-white !shadow-lg validation-shimmer';
-          } else if (validationResults[clue.number] === false) {
-            validationClass = '!bg-gradient-to-br !from-red-400 !to-pink-500 !border-red-400 !text-white !shadow-lg validation-shimmer';
-          }
-          break;
+    if (cellValidation && !isEffectivelyBlocked) {
+      // PURE GRID-BASED VALIDATION - check this specific cell's validation status
+      const cellKey = `${row},${col}`;
+      
+      if (cellValidation[cellKey] !== undefined) {
+        if (cellValidation[cellKey] === true) {
+          validationClass = '!bg-gradient-to-br !from-green-400 !to-emerald-500 !border-green-400 !text-black !shadow-lg validation-shimmer';
+        } else if (cellValidation[cellKey] === false) {
+          validationClass = '!bg-gradient-to-br !from-red-400 !to-pink-500 !border-red-400 !text-black !shadow-lg validation-shimmer';
         }
       }
     }
 
     return clsx(
-      'w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-9 lg:h-9 border flex items-center justify-center text-xs font-bold relative transition-all duration-500 text-white',
+      'w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-9 lg:h-9 border flex items-center justify-center text-xs font-bold relative transition-all duration-500 text-black',
       {
         'bg-gradient-to-br from-gray-900 to-black border-gray-700': isEffectivelyBlocked,
-        'bg-gradient-to-br from-purple-900/40 via-blue-900/30 to-indigo-900/40 border-purple-500/30 cursor-pointer hover:border-purple-400/50 hover:shadow-md backdrop-blur-sm': !isEffectivelyBlocked && !readOnly && !validationClass,
+        'bg-gradient-to-br from-white via-gray-50 to-purple-50 border-purple-200 cursor-pointer hover:border-purple-400/50 hover:shadow-md backdrop-blur-sm': !isEffectivelyBlocked && !readOnly && !validationClass,
         'bg-gradient-to-br from-blue-500/40 to-purple-500/40 border-blue-400/50 shadow-lg': isInFocusedClue && !isEffectivelyBlocked && !validationClass,
         'bg-gradient-to-br from-purple-500/80 to-blue-500/80 border-purple-400 ring-2 ring-purple-400/50 shadow-xl': isFocused && !validationClass,
-        'bg-gradient-to-br from-gray-700/40 to-gray-800/40 border-gray-600/30': readOnly && !isEffectivelyBlocked && !validationClass,
+        'bg-gradient-to-br from-white via-gray-50 to-purple-50 border-purple-200': readOnly && !isEffectivelyBlocked && !validationClass,
       },
       // Apply validation classes with higher priority
       validationClass
@@ -290,12 +385,15 @@ export const CrosswordGrid: React.FC<CrosswordGridProps> = ({
 
   return (
     <div 
-      className="inline-block cosmic-card p-6 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
-      tabIndex={0}
-      onKeyDown={handleKeyDown}
-      ref={gridRef}
+      className="flex flex-col items-center w-full"
     >
-      <div className="grid gap-px rounded-lg overflow-hidden shadow-2xl" style={{ gridTemplateColumns: `repeat(${grid[0]?.length || 0}, minmax(0, 1fr))` }}>
+      <div 
+        className="inline-block cosmic-card p-4 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+        tabIndex={0}
+        onKeyDown={handleKeyDown}
+        ref={gridRef}
+      >
+        <div className="grid gap-px rounded-lg overflow-hidden shadow-2xl mx-auto" style={{ gridTemplateColumns: `repeat(${grid[0]?.length || 0}, minmax(0, 1fr))` }}>
         {grid.map((row, rowIndex) =>
           row.map((cell, colIndex) => {
             const cluesAtPosition = getClueAtPosition(rowIndex, colIndex);
@@ -308,7 +406,7 @@ export const CrosswordGrid: React.FC<CrosswordGridProps> = ({
                 onClick={() => handleCellClick(rowIndex, colIndex)}
               >
                 {cell.number && !isEffectivelyBlocked && (
-                  <span className="absolute top-0 left-0 text-xs text-purple-300 leading-none p-0.5 font-semibold">
+                  <span className="absolute top-0 left-0 text-xs text-black leading-none p-0.5 font-semibold">
                     {cell.number}
                   </span>
                 )}
@@ -321,11 +419,22 @@ export const CrosswordGrid: React.FC<CrosswordGridProps> = ({
             );
           })
         )}
+        </div>
       </div>
       
+      {progress.isCompleted && !progress.solveTime && (
+        <div className="mt-4 cosmic-card p-3 text-center border-2 border-orange-500/50 bg-gradient-to-br from-orange-500/20 to-yellow-500/20">
+          <div className="text-2xl mb-2">🔍</div>
+          <div className="text-lg font-bold text-white mb-1">Auto-Solved!</div>
+          <div className="text-purple-200 text-sm">All answers revealed</div>
+        </div>
+      )}
+      
       {isCompleted && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="cosmic-card p-8 text-center border-2 border-yellow-500/50 bg-gradient-to-br from-yellow-500/20 via-orange-500/20 to-red-500/20 max-w-md w-full">
+        <div className={`fixed inset-0 flex items-center justify-center z-50 p-4 transition-opacity duration-1000 ${
+          showVictoryMessage ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}>
+          <div className="cosmic-card p-8 text-center border-2 border-yellow-500/50 bg-transparent backdrop-blur-sm max-w-md w-full">
             <div className="text-8xl mb-6 cosmic-float">🌟</div>
             <h2 className="text-4xl md:text-5xl font-bold stellar-text mb-4">
               COSMIC VICTORY!
