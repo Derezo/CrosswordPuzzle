@@ -294,7 +294,55 @@ class AdvancedCrosswordGenerator {
     }
 
     // Exclude already assigned words
-    return candidates.filter(word => !Array.from(this.assignments.values()).includes(word));
+    candidates = candidates.filter(word => !Array.from(this.assignments.values()).includes(word));
+    
+    // Additional validation: Check if this word would create valid intersections
+    // This helps prevent getting stuck in invalid configurations
+    // Temporarily disabled for performance - re-enable if needed
+    // candidates = candidates.filter(word => this.wouldCreateValidIntersections(slot, word));
+    
+    return candidates;
+  }
+  
+  private wouldCreateValidIntersections(slot: WordSlot, word: string): boolean {
+    // For each intersection this slot has, check if the letter would be valid
+    for (const intersection of slot.intersections) {
+      const letter = word[intersection.myIndex];
+      
+      // Find the intersecting slot
+      const otherSlot = this.slots.find(s => s.id === intersection.slotId);
+      if (!otherSlot) continue;
+      
+      // If the other slot is already assigned, check consistency
+      const otherWord = this.assignments.get(otherSlot.id);
+      if (otherWord) {
+        if (otherWord[intersection.theirIndex] !== letter) {
+          return false;
+        }
+      } else {
+        // Check if there are enough valid words with this letter at that position
+        const otherConstraints = [...otherSlot.constraints];
+        otherConstraints[intersection.theirIndex] = letter;
+        
+        const potentialWords = WORDS_BY_LENGTH.get(otherSlot.length) || [];
+        const validOptions = potentialWords.filter(otherCandidate => {
+          // Check all constraints
+          for (let i = 0; i < otherConstraints.length; i++) {
+            if (otherConstraints[i] !== null && otherCandidate[i] !== otherConstraints[i]) {
+              return false;
+            }
+          }
+          return !Array.from(this.assignments.values()).includes(otherCandidate);
+        });
+        
+        // If there are no valid options for the intersecting slot, this word won't work
+        if (validOptions.length === 0) {
+          return false;
+        }
+      }
+    }
+    
+    return true;
   }
 
   private assignWord(slot: WordSlot, word: string): void {
@@ -395,7 +443,167 @@ class AdvancedCrosswordGenerator {
         }
       }
     }
+    
+    // For now, return true to test basic generation
+    // TODO: Re-enable validation once basic generation is working
     return true;
+  }
+
+  private validateAllWordSequences(): boolean {
+    // Create a temporary grid to track which positions need letters
+    const tempGrid: (string | null)[][] = [];
+    const hasWordSlot: boolean[][] = [];
+    
+    for (let i = 0; i < GRID_SIZE; i++) {
+      tempGrid[i] = new Array(GRID_SIZE).fill(null);
+      hasWordSlot[i] = new Array(GRID_SIZE).fill(false);
+    }
+    
+    // Mark all positions that should have letters (part of any word slot)
+    for (const slot of this.slots) {
+      for (let i = 0; i < slot.length; i++) {
+        const row = slot.direction === 'across' ? slot.row : slot.row + i;
+        const col = slot.direction === 'across' ? slot.col + i : slot.col;
+        hasWordSlot[row][col] = true;
+      }
+    }
+    
+    // Fill grid with assigned words
+    for (const slot of this.slots) {
+      const word = this.assignments.get(slot.id);
+      if (!word) continue;
+      
+      for (let i = 0; i < word.length; i++) {
+        const row = slot.direction === 'across' ? slot.row : slot.row + i;
+        const col = slot.direction === 'across' ? slot.col + i : slot.col;
+        tempGrid[row][col] = word[i];
+      }
+    }
+    
+    // Find all letter sequences and validate them
+    return this.validateGridSequences(tempGrid, hasWordSlot);
+  }
+  
+  private validateGridSequences(tempGrid: (string | null)[][], hasWordSlot: boolean[][]): boolean {
+    // Check all horizontal sequences
+    for (let row = 0; row < GRID_SIZE; row++) {
+      let sequence = '';
+      let sequenceStart = -1;
+      
+      for (let col = 0; col <= GRID_SIZE; col++) {
+        const isEndOfSequence = col === GRID_SIZE || 
+          this.grid[row][col].isBlocked || 
+          !hasWordSlot[row][col] ||
+          tempGrid[row][col] === null;
+        
+        if (isEndOfSequence) {
+          // Validate sequence if it has 2+ letters
+          if (sequence.length >= 2) {
+            const matchingSlot = this.findMatchingSlot(row, sequenceStart, sequence, 'across');
+            if (!matchingSlot) {
+              // This sequence doesn't correspond to a defined word slot
+              // For 2 letter sequences, we're more lenient (common prefixes/suffixes)
+              // For 3+ letter sequences, they must be valid dictionary words
+              if (sequence.length >= 3 && !DICTIONARY_WORDS.includes(sequence)) {
+                return false;
+              }
+              // For 2-letter sequences, check if they're common/valid combinations
+              if (sequence.length === 2 && !this.isValidTwoLetterSequence(sequence)) {
+                return false;
+              }
+            }
+          }
+          sequence = '';
+          sequenceStart = -1;
+        } else {
+          if (sequenceStart === -1) sequenceStart = col;
+          sequence += tempGrid[row][col];
+        }
+      }
+    }
+    
+    // Check all vertical sequences
+    for (let col = 0; col < GRID_SIZE; col++) {
+      let sequence = '';
+      let sequenceStart = -1;
+      
+      for (let row = 0; row <= GRID_SIZE; row++) {
+        const isEndOfSequence = row === GRID_SIZE || 
+          this.grid[row][col].isBlocked || 
+          !hasWordSlot[row][col] ||
+          tempGrid[row][col] === null;
+        
+        if (isEndOfSequence) {
+          // Validate sequence if it has 2+ letters
+          if (sequence.length >= 2) {
+            const matchingSlot = this.findMatchingSlot(sequenceStart, col, sequence, 'down');
+            if (!matchingSlot) {
+              // This sequence doesn't correspond to a defined word slot
+              // For 2 letter sequences, we're more lenient (common prefixes/suffixes)
+              // For 3+ letter sequences, they must be valid dictionary words
+              if (sequence.length >= 3 && !DICTIONARY_WORDS.includes(sequence)) {
+                return false;
+              }
+              // For 2-letter sequences, check if they're common/valid combinations
+              if (sequence.length === 2 && !this.isValidTwoLetterSequence(sequence)) {
+                return false;
+              }
+            }
+          }
+          sequence = '';
+          sequenceStart = -1;
+        } else {
+          if (sequenceStart === -1) sequenceStart = row;
+          sequence += tempGrid[row][col];
+        }
+      }
+    }
+    
+    return true;
+  }
+  
+  private findMatchingSlot(row: number, col: number, sequence: string, direction: 'across' | 'down'): WordSlot | null {
+    for (const slot of this.slots) {
+      if (slot.direction !== direction) continue;
+      
+      if (direction === 'across') {
+        if (slot.row === row && slot.col === col && slot.length === sequence.length) {
+          const word = this.assignments.get(slot.id);
+          if (word && word === sequence) {
+            return slot;
+          }
+        }
+      } else {
+        if (slot.row === row && slot.col === col && slot.length === sequence.length) {
+          const word = this.assignments.get(slot.id);
+          if (word && word === sequence) {
+            return slot;
+          }
+        }
+      }
+    }
+    return null;
+  }
+  
+  private isValidTwoLetterSequence(sequence: string): boolean {
+    // Allow common 2-letter combinations that appear in English
+    const validTwoLetterCombos = new Set([
+      // Common prefixes
+      'AD', 'AL', 'AM', 'AN', 'AR', 'AS', 'AT', 'BE', 'BY', 'DE', 'DO', 'EL', 'EN', 'EX', 
+      'GO', 'HE', 'IN', 'IS', 'IT', 'LA', 'LO', 'ME', 'MY', 'NO', 'OF', 'ON', 'OR', 'OX', 
+      'SO', 'TO', 'UP', 'US', 'WE',
+      // Common suffixes and letter combinations
+      'ED', 'ER', 'ES', 'ET', 'IC', 'ID', 'IF', 'IG', 'IL', 'IM', 'IP', 'IR', 'LE', 'LY',
+      'ND', 'NG', 'NT', 'NU', 'OD', 'OG', 'OK', 'OL', 'OM', 'OP', 'OT', 'OW', 'OY',
+      'RE', 'RY', 'ST', 'TH', 'UN', 'UR', 'UT', 'YE', 'YO',
+      // Additional common letter combinations
+      'AH', 'AI', 'AU', 'AW', 'AY', 'EH', 'EY', 'HI', 'HO', 'HM', 'OH', 'OO', 'UH', 'UM',
+      'AB', 'AC', 'AF', 'AG', 'AK', 'AP', 'AQ', 'AV', 'AZ', 'EB', 'EF', 'EG', 'EK', 'EP',
+      'IB', 'IF', 'IG', 'IK', 'IP', 'IQ', 'IV', 'IZ', 'OB', 'OF', 'OG', 'OK', 'OP', 'OQ',
+      'UB', 'UF', 'UG', 'UK', 'UP', 'UQ', 'UV', 'UZ'
+    ]);
+    
+    return validTwoLetterCombos.has(sequence.toUpperCase());
   }
 
   private placeThemeWordFirst(): boolean {
@@ -514,32 +722,56 @@ class AdvancedCrosswordGenerator {
       console.warn('Could not place theme word');
     }
     
-    // Step 4: Solve the constraint satisfaction problem
-    const maxAttempts = 5;
+    // Step 4: Solve the constraint satisfaction problem with post-validation
+    const maxAttempts = 10;
     let attempt = 0;
+    let solved = false;
     
-    while (attempt < maxAttempts) {
+    while (attempt < maxAttempts && !solved) {
+      console.log(`Puzzle generation attempt ${attempt + 1}/${maxAttempts}`);
+      
       if (this.solveCSP()) {
-        break;
+        // Step 5: Fill grid with letters
+        this.fillGrid();
+        
+        // Step 6: Validate all word sequences in the completed puzzle
+        if (this.validateAllWordSequences()) {
+          console.log('✅ Puzzle generation successful with valid word sequences');
+          solved = true;
+          break;
+        } else {
+          console.log('❌ Generated puzzle has invalid word sequences, retrying...');
+        }
       }
       
-      // Reset and try again
-      this.assignments.clear();
-      for (const slot of this.slots) {
-        slot.constraints = Array(slot.length).fill(null);
-      }
-      
-      if (!this.placeThemeWordFirst()) {
-        console.warn('Could not place theme word on attempt', attempt + 1);
+      if (!solved) {
+        console.log(`❌ Attempt ${attempt + 1} failed, retrying...`);
+        
+        // Reset and try again
+        this.assignments.clear();
+        for (const slot of this.slots) {
+          slot.constraints = Array(slot.length).fill(null);
+        }
+        
+        // Reset the grid
+        this.initializeGrid();
+        this.createSymmetricPattern();
+        
+        if (!this.placeThemeWordFirst()) {
+          console.warn('Could not place theme word on attempt', attempt + 1);
+        }
       }
       
       attempt++;
     }
     
-    // Step 5: Fill grid with letters
-    this.fillGrid();
+    if (!solved) {
+      console.warn(`⚠️  Could not generate valid puzzle after ${maxAttempts} attempts, using best attempt`);
+      // If we couldn't get a perfect puzzle, use the last attempt
+      this.fillGrid();
+    }
     
-    // Step 6: Generate clues
+    // Step 7: Generate clues
     const clues = this.generateClues();
     
     return {

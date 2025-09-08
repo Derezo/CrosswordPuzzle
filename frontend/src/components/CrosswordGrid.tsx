@@ -240,6 +240,11 @@ export const CrosswordGrid: React.FC<CrosswordGridProps> = ({
 
   const getCellClasses = (row: number, col: number) => {
     const cell = grid[row][col];
+    const cluesAtPosition = getClueAtPosition(row, col);
+    
+    // If cell is not part of any clue, treat it as blocked (black)
+    const isEffectivelyBlocked = cell.isBlocked || cluesAtPosition.length === 0;
+    
     const isInFocusedClue = focusedCell && (
       (focusedCell.direction === 'across' && 
        row === focusedCell.clue.startRow && 
@@ -255,8 +260,7 @@ export const CrosswordGrid: React.FC<CrosswordGridProps> = ({
     const letter = getLetterAtPosition(row, col);
     
     let validationClass = '';
-    if (validationResults) {
-      const cluesAtPosition = getClueAtPosition(row, col);
+    if (validationResults && !isEffectivelyBlocked) {
       for (const clue of cluesAtPosition) {
         // Check if this clue has been validated (regardless of completion status)
         if (validationResults[clue.number] !== undefined) {
@@ -271,13 +275,13 @@ export const CrosswordGrid: React.FC<CrosswordGridProps> = ({
     }
 
     return clsx(
-      'w-8 h-8 md:w-10 md:h-10 border flex items-center justify-center text-xs md:text-sm font-bold relative transition-all duration-500 text-white',
+      'w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-9 lg:h-9 border flex items-center justify-center text-xs font-bold relative transition-all duration-500 text-white',
       {
-        'bg-gradient-to-br from-gray-900 to-black border-gray-700': cell.isBlocked,
-        'bg-gradient-to-br from-purple-900/40 via-blue-900/30 to-indigo-900/40 border-purple-500/30 cursor-pointer hover:border-purple-400/50 hover:shadow-md backdrop-blur-sm': !cell.isBlocked && !readOnly && !validationClass,
-        'bg-gradient-to-br from-blue-500/40 to-purple-500/40 border-blue-400/50 shadow-lg': isInFocusedClue && !cell.isBlocked && !validationClass,
+        'bg-gradient-to-br from-gray-900 to-black border-gray-700': isEffectivelyBlocked,
+        'bg-gradient-to-br from-purple-900/40 via-blue-900/30 to-indigo-900/40 border-purple-500/30 cursor-pointer hover:border-purple-400/50 hover:shadow-md backdrop-blur-sm': !isEffectivelyBlocked && !readOnly && !validationClass,
+        'bg-gradient-to-br from-blue-500/40 to-purple-500/40 border-blue-400/50 shadow-lg': isInFocusedClue && !isEffectivelyBlocked && !validationClass,
         'bg-gradient-to-br from-purple-500/80 to-blue-500/80 border-purple-400 ring-2 ring-purple-400/50 shadow-xl': isFocused && !validationClass,
-        'bg-gradient-to-br from-gray-700/40 to-gray-800/40 border-gray-600/30': readOnly && !cell.isBlocked && !validationClass,
+        'bg-gradient-to-br from-gray-700/40 to-gray-800/40 border-gray-600/30': readOnly && !isEffectivelyBlocked && !validationClass,
       },
       // Apply validation classes with higher priority
       validationClass
@@ -293,24 +297,29 @@ export const CrosswordGrid: React.FC<CrosswordGridProps> = ({
     >
       <div className="grid gap-px rounded-lg overflow-hidden shadow-2xl" style={{ gridTemplateColumns: `repeat(${grid[0]?.length || 0}, minmax(0, 1fr))` }}>
         {grid.map((row, rowIndex) =>
-          row.map((cell, colIndex) => (
-            <div
-              key={`${rowIndex}-${colIndex}`}
-              className={getCellClasses(rowIndex, colIndex)}
-              onClick={() => handleCellClick(rowIndex, colIndex)}
-            >
-              {cell.number && (
-                <span className="absolute top-0 left-0 text-xs text-purple-300 leading-none p-0.5 font-semibold">
-                  {cell.number}
-                </span>
-              )}
-              {!cell.isBlocked && (
-                <span className="mt-1 font-bold text-center">
-                  {getLetterAtPosition(rowIndex, colIndex)}
-                </span>
-              )}
-            </div>
-          ))
+          row.map((cell, colIndex) => {
+            const cluesAtPosition = getClueAtPosition(rowIndex, colIndex);
+            const isEffectivelyBlocked = cell.isBlocked || cluesAtPosition.length === 0;
+            
+            return (
+              <div
+                key={`${rowIndex}-${colIndex}`}
+                className={getCellClasses(rowIndex, colIndex)}
+                onClick={() => handleCellClick(rowIndex, colIndex)}
+              >
+                {cell.number && !isEffectivelyBlocked && (
+                  <span className="absolute top-0 left-0 text-xs text-purple-300 leading-none p-0.5 font-semibold">
+                    {cell.number}
+                  </span>
+                )}
+                {!isEffectivelyBlocked && (
+                  <span className="mt-1 font-bold text-center">
+                    {getLetterAtPosition(rowIndex, colIndex)}
+                  </span>
+                )}
+              </div>
+            );
+          })
         )}
       </div>
       

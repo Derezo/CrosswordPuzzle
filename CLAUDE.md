@@ -10,17 +10,17 @@ Galactic Crossword is a full-stack web application that allows users to solve da
 
 ### Backend (Node.js/Express)
 - **Framework**: Express.js with TypeScript
-- **Database**: MongoDB with Mongoose ODM
+- **Database**: SQLite with Prisma ORM
 - **Authentication**: Passport.js (Local + Google OAuth)
-- **Security**: JWT tokens, bcrypt, helmet, CORS, rate limiting
+- **Security**: JWT tokens, bcryptjs, helmet, CORS, rate limiting
 - **Task Scheduling**: node-cron for daily puzzle generation
 - **Location**: `./backend/`
 
 ### Frontend (Next.js/React)
-- **Framework**: Next.js 15 with App Router
+- **Framework**: Next.js 15 with App Router and Turbopack
 - **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **UI Components**: Custom components with framer-motion
+- **Styling**: Tailwind CSS v4
+- **UI Components**: Custom components with framer-motion and Heroicons
 - **State Management**: React Context API
 - **HTTP Client**: Axios
 - **Location**: `./frontend/`
@@ -40,17 +40,33 @@ npm start                     # Run production build
 ```bash
 cd frontend
 npm install                   # Install dependencies
-npm run dev                   # Start Next.js development server
-npm run build                 # Build for production
+npm run dev                   # Start Next.js development server with Turbopack
+npm run build                 # Build for production with Turbopack
 npm start                     # Run production build
-npm run lint                  # Run ESLint
+npm run lint                  # Run ESLint (configured but minimal rules)
 ```
 
 ### Database Setup
-1. Install and start MongoDB locally OR use MongoDB Atlas
-2. Copy `backend/.env.example` to `backend/.env`
-3. Update `MONGODB_URI` in `.env` file
-4. The application will automatically create collections and seed achievements on first run
+1. Copy `backend/.env.example` to `backend/.env` 
+2. Update `DATABASE_URL` in `.env` file (uses SQLite by default)
+3. Run Prisma commands:
+   ```bash
+   cd backend
+   npx prisma generate      # Generate Prisma client
+   npx prisma db push       # Push schema to database
+   npx prisma db seed       # Seed achievements (if configured)
+   ```
+4. The application uses SQLite database stored at `backend/prisma/dev.db`
+
+### Prisma Commands
+```bash
+cd backend
+npx prisma generate          # Generate client after schema changes
+npx prisma db push           # Push schema changes to database  
+npx prisma studio            # Open Prisma Studio GUI
+npx prisma migrate dev       # Create and apply migration (if using migrations)
+npx prisma db seed           # Run seed script (if configured)
+```
 
 ## Environment Variables
 
@@ -58,7 +74,7 @@ npm run lint                  # Run ESLint
 ```
 PORT=5000
 NODE_ENV=development
-MONGODB_URI=mongodb://localhost:27017/crossword_puzzle
+DATABASE_URL="file:./prisma/dev.db"
 JWT_SECRET=your-super-secret-jwt-key
 JWT_EXPIRE=7d
 GOOGLE_CLIENT_ID=your-google-client-id
@@ -75,13 +91,15 @@ NEXT_PUBLIC_API_URL=http://localhost:5000/api
 ## Architecture Overview
 
 ### Backend Architecture
-- **Models**: User, DailyPuzzle, UserProgress, Achievement, UserAchievement
+- **Models**: User, DailyPuzzle, UserProgress, Achievement, UserAchievement (Prisma schema)
 - **Routes**: `/api/auth`, `/api/puzzle`, `/api/leaderboard`, `/api/achievement`
 - **Services**: 
-  - `puzzle/generator.ts` - Deterministic crossword generation
+  - `puzzle/hybridGenerator.ts` - Main crossword generation system
+  - `puzzle/fastGenerator.ts`, `standardGenerator.ts`, `properGenerator.ts` - Specialized generators
   - `puzzle/cronService.ts` - Daily puzzle scheduling
   - `achievement/achievementService.ts` - Achievement logic
 - **Middleware**: Authentication, rate limiting, error handling
+- **Database**: Prisma client configuration in `lib/prisma.ts`
 
 ### Frontend Architecture
 - **Pages**: Login, Register, Puzzle, Leaderboard, Achievements
@@ -159,22 +177,79 @@ npm test
 
 ## Database Schema
 
-### Collections
+### Tables (Prisma Models)
 - `users` - User accounts and points
-- `dailypuzzles` - Generated crossword data
-- `userprogresses` - Individual solving progress
-- `achievements` - Available achievements
-- `userachievements` - Earned achievements
+- `daily_puzzles` - Generated crossword data with JSON grid/clues
+- `user_progress` - Individual solving progress with JSON answers
+- `achievements` - Available achievements with condition data
+- `user_achievements` - Earned achievements with metadata
 
-### Indexes
-- Compound indexes on userId + puzzleDate
-- Date indexes for efficient puzzle queries
-- Point sorting indexes for leaderboards
+### Key Relationships
+- User → UserProgress (one-to-many)
+- User → UserAchievement (one-to-many)
+- DailyPuzzle → UserProgress (one-to-many via puzzleDate)
+- Achievement → UserAchievement (one-to-many)
+
+### Important Fields
+- All models use `cuid()` for primary keys
+- JSON stored as strings: gridData, cluesData, answersData, conditionData
+- Unique constraints: email, puzzleDate, userId+puzzleDate, userId+achievementId
 
 ## Troubleshooting
 
 ### Common Issues
-1. **MongoDB Connection**: Check MongoDB service and connection string
+1. **Database Connection**: Check SQLite file permissions and DATABASE_URL
 2. **CORS Errors**: Verify frontend URL in backend CORS configuration
 3. **Authentication**: Ensure JWT secrets match between sessions
 4. **Build Errors**: Check TypeScript configuration and imports
+5. **Prisma Issues**: Run `npx prisma generate` after schema changes
+6. **Turbopack Issues**: Fall back to regular Next.js dev server if needed
+
+## Key File Locations
+
+### Backend Structure
+```
+backend/
+├── src/
+│   ├── server.ts                    # Main Express server
+│   ├── lib/prisma.ts               # Prisma client configuration
+│   ├── routes/                     # API route handlers
+│   │   ├── auth.ts                 # Authentication endpoints
+│   │   ├── puzzle.ts               # Puzzle CRUD operations
+│   │   ├── leaderboard.ts          # Leaderboard data
+│   │   └── achievement.ts          # Achievement management
+│   ├── services/
+│   │   ├── puzzle/                 # Puzzle generation services
+│   │   │   ├── hybridGenerator.ts  # Main puzzle generator
+│   │   │   ├── cronService.ts      # Daily puzzle scheduler
+│   │   │   └── [other generators]  # Specialized generators
+│   │   └── achievement/            # Achievement system
+│   ├── middleware/auth.ts          # JWT authentication middleware
+│   └── utils/jwt.ts               # JWT utilities
+├── prisma/
+│   ├── schema.prisma              # Database schema
+│   └── dev.db                     # SQLite database file
+└── .env                           # Environment variables
+```
+
+### Frontend Structure  
+```
+frontend/
+├── src/
+│   ├── app/                       # Next.js App Router pages
+│   │   ├── layout.tsx             # Root layout with AuthProvider
+│   │   ├── page.tsx               # Home page
+│   │   ├── puzzle/page.tsx        # Main puzzle interface
+│   │   ├── login/page.tsx         # Login form
+│   │   ├── register/page.tsx      # Registration form
+│   │   ├── leaderboard/page.tsx   # Leaderboard display
+│   │   └── achievements/page.tsx  # Achievement gallery
+│   ├── components/
+│   │   ├── CrosswordGrid.tsx      # Interactive crossword grid
+│   │   ├── CrosswordClues.tsx     # Clue display component
+│   │   └── Navigation.tsx         # Main navigation
+│   ├── contexts/AuthContext.tsx   # User authentication state
+│   ├── lib/api.ts                # API client configuration
+│   └── types/index.ts            # TypeScript type definitions
+└── .env.local                     # Frontend environment variables
+```

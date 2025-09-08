@@ -36,7 +36,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PuzzleCronService = void 0;
 const cron = __importStar(require("node-cron"));
 const prisma_1 = require("../../lib/prisma");
-const hybridGenerator_1 = require("./hybridGenerator");
+const properGenerator_1 = require("./properGenerator");
 class PuzzleCronService {
     constructor() {
         this.job = null;
@@ -75,8 +75,8 @@ class PuzzleCronService {
                 return;
             }
             console.log(`🧩 Generating puzzle for ${today}...`);
-            // Generate the puzzle using hybrid algorithm
-            const puzzleData = (0, hybridGenerator_1.generateHybridDailyPuzzle)(today);
+            // Generate the puzzle using proper algorithm
+            const puzzleData = (0, properGenerator_1.generateProperDailyPuzzle)(today);
             // Save to database
             await prisma_1.prisma.dailyPuzzle.create({
                 data: {
@@ -102,8 +102,8 @@ class PuzzleCronService {
                 throw new Error(`Puzzle for ${date} already exists`);
             }
             console.log(`🧩 Manually generating puzzle for ${date}...`);
-            // Generate the puzzle using hybrid algorithm
-            const puzzleData = (0, hybridGenerator_1.generateHybridDailyPuzzle)(date);
+            // Generate the puzzle using proper algorithm
+            const puzzleData = (0, properGenerator_1.generateProperDailyPuzzle)(date);
             // Save to database
             await prisma_1.prisma.dailyPuzzle.create({
                 data: {
