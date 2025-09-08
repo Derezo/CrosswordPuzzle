@@ -53,11 +53,11 @@ const initializeDictionary = () => {
       for (const [length, words] of wordsPerLength) {
         let sampleSize;
         if (length >= 3 && length <= 5) {
-          sampleSize = Math.min(600, words.length); // Less short words
+          sampleSize = Math.min(3000, words.length); // Less short words
         } else if (length >= 6 && length <= 8) {
-          sampleSize = Math.min(5000, words.length); // Good medium words
+          sampleSize = Math.min(9000, words.length); // Good medium words
         } else {
-          sampleSize = Math.min(1200, words.length);  // Lots of long words
+          sampleSize = Math.min(4200, words.length);  // Lots of long words
         }
         
         // Shuffle and take sample
@@ -231,6 +231,38 @@ export class ProperCrosswordGenerator {
       }
     }
 
+    if (direction === 'across') {
+      // Black square before word
+      if (col > 0) {
+        if (this.grid[row][col - 1].letter || this.grid[row][col - 1].isBlocked) {
+          return false;
+        }
+      }
+      
+      // Black square after word
+      const endCol = col + word.length;
+      if (endCol < GRID_SIZE) {
+        if(this.grid[row][endCol].letter || this.grid[row][endCol].isBlocked) {
+          return false;
+        }
+      }
+    } else {
+      // Black square before word
+      if (row > 0) {
+        if (this.grid[row - 1][col].letter || this.grid[row - 1][col].isBlocked) {
+          return false;
+        }
+      }
+      
+      // Black square after word
+      const endRow = row + word.length;
+      if (endRow < GRID_SIZE) {
+        if (this.grid[endRow][col].letter && this.grid[endRow][col].isBlocked) {
+          return false;
+        }
+      }
+    }
+
     // Rule: Must intersect with existing words (except first word)
     if (this.placedWords.length > 0 && intersectionCount === 0) return false;
 
@@ -398,7 +430,8 @@ export class ProperCrosswordGenerator {
    */
   private placeWord(word: string, row: number, col: number, direction: 'across' | 'down'): void {
     const intersections = [];
-    
+    let placements = [];
+
     // Place each letter - NEVER CHANGE EXISTING LETTERS
     for (let i = 0; i < word.length; i++) {
       const r = direction === 'across' ? row : row + i;
@@ -414,21 +447,19 @@ export class ProperCrosswordGenerator {
         intersections.push({ row: r, col: c, letter: word[i] });
       } else {
         // Only set letter if cell is empty
-        this.grid[r][c].letter = word[i];
+        if(this.grid[r][c].isBlocked) {
+          throw new Error(`Cannot place letter at blocked cell (${r},${c})`);
+        }
+        placements.push({ row: r, col: c, letter: word[i] });
       }
     }
     
-    // Add word to tracking
-    const placement = { word, row, col, direction, intersections };
-    this.placedWords.push(placement);
-    this.usedWords.add(word);
-
-      
     if (direction === 'across') {
       // Black square before word
       if (col > 0) {
         if (!this.grid[row][col - 1].letter && !this.grid[row][col - 1].isBlocked) {
           this.grid[row][col - 1].isBlocked = true;
+          console.log(`   Placed black square at (${row},${col - 1}) before word`);
         } else {
           throw new Error(`Cannot place black square before word at (${row},${col})`);
         }
@@ -439,6 +470,7 @@ export class ProperCrosswordGenerator {
       if (endCol < GRID_SIZE) {
         if(!this.grid[row][endCol].letter && !this.grid[row][endCol].isBlocked) {
           this.grid[row][endCol].isBlocked = true;
+          console.log(`   Placed black square at (${row},${endCol}) after word`);
         } else {
           throw new Error(`Cannot place black square after word at (${row},${endCol})`);
         }
@@ -448,6 +480,7 @@ export class ProperCrosswordGenerator {
       if (row > 0) {
         if (!this.grid[row - 1][col].letter && !this.grid[row - 1][col].isBlocked) {
           this.grid[row - 1][col].isBlocked = true;
+          console.log(`   Placed black square at (${row - 1},${col}) before word`);
         } else {
           throw new Error(`Cannot place black square before word at (${row},${col})`);
         }
@@ -458,17 +491,32 @@ export class ProperCrosswordGenerator {
       if (endRow < GRID_SIZE) {
         if (!this.grid[endRow][col].letter && !this.grid[endRow][col].isBlocked) {
           this.grid[endRow][col].isBlocked = true;
+          console.log(`   Placed black square at (${endRow},${col}) after word`);
         } else {
           throw new Error(`Cannot place black square after word at (${endRow},${col})`);
         }
       }
     }
+    for (let i = 0; i < placements.length; i++) {
+      const r = placements[i];
+      if (this.grid[r.row][r.col].isBlocked) {
+        throw new Error(`Cannot place letter at blocked cell (${r.row},${r.col})`);
+      }
+    }
+
+    // Add word to tracking
+    const placement = { word, row, col, direction, intersections };
+    for (let i = 0; i < placements.length; i++) {
+      const r = placements[i];
+      this.grid[r.row][r.col].letter = r.letter;
+    }
+    this.placedWords.push(placement);
+    this.usedWords.add(word);
+
     
     // Update connection points for future intersections
     this.updateConnectionPoints(placement);
-    
-    // NO BLACK SQUARES DURING PLACEMENT - only at the very end
-    
+        
     console.log(`✅ Placed "${word}" ${direction} at (${row},${col}) with ${intersections.length} intersections`);
   }
 
@@ -855,31 +903,6 @@ export class ProperCrosswordGenerator {
       'STAR': 'Night light',
       'MOON': 'Earth\'s satellite',
       'ORBIT': 'Circular path',
-      
-      // Common words
-      'THE': 'Article',
-      'AND': 'Plus',
-      'ARE': 'Exist',
-      'TIME': 'Duration',
-      'LIFE': 'Existence',
-      'LOVE': 'Affection',
-      'WORD': 'Vocabulary unit',
-      'WORK': 'Labor',
-      'YEAR': '365 days',
-      'GOOD': 'Fine',
-      'MAKE': 'Create',
-      'COME': 'Arrive',
-      'KNOW': 'Understand',
-      'TAKE': 'Grab',
-      'TREE': 'Oak or pine',
-      'BLUE': 'Sky color',
-      'BOOK': 'Reading material',
-      'FIRE': 'Flame',
-      'WATER': 'H2O',
-      'HOUSE': 'Home',
-      'HEART': 'Ticker',
-      'POWER': 'Strength',
-      'MUSIC': 'Harmonious sounds'
     };
     
     return clues[word.toUpperCase()] || `Word: ${word}`;
