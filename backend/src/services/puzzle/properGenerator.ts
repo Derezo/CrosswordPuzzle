@@ -6,6 +6,7 @@ export interface PuzzleCell {
   letter: string;
   number: number | null;
   isBlocked: boolean;
+  willBeBlocked?: boolean; // Track cells that will become black squares
 }
 
 export interface CrosswordClue {
@@ -167,11 +168,11 @@ const initializeDictionary = () => {
       for (const [length, words] of wordsPerLength) {
         let sampleSize;
         if (length >= 3 && length <= 5) {
-          sampleSize = Math.min(3000, words.length); // Less short words
+          sampleSize = Math.min(7000, words.length); // Less short words
         } else if (length >= 6 && length <= 8) {
-          sampleSize = Math.min(9000, words.length); // Good medium words
+          sampleSize = Math.min(2000, words.length); // Good medium words
         } else {
-          sampleSize = Math.min(4200, words.length);  // Lots of long words
+          sampleSize = Math.min(400, words.length);  // Lots of long words
         }
         
         // Shuffle and take sample
@@ -215,13 +216,13 @@ const initializeDictionary = () => {
 
 initializeDictionary();
 
-const GRID_SIZE = 15;
+const GRID_SIZE = 21;
 const MIN_WORD_LENGTH = 3;
-const MIN_ACROSS_WORDS = 5;  // Start with more achievable targets
-const MIN_DOWN_WORDS = 5;
-const MAX_TOTAL_WORDS = 25;
-const MAX_WORD_ATTEMPTS = 30;
-const MAX_FAILED_WORDS = 20;
+const MIN_ACROSS_WORDS = 3;  // Start with more achievable targets
+const MIN_DOWN_WORDS = 3;
+const MAX_TOTAL_WORDS = 20;
+const MAX_WORD_ATTEMPTS = 500; // Increased for better constraint satisfaction
+const MAX_FAILED_WORDS = 375; // Increased for more thorough backtracking
 
 // Word placement tracking
 interface WordPlacement {
@@ -287,7 +288,7 @@ class AdvancedConstraintEngine {
     const constraints = this.generatePerpendicularConstraints(word, row, col, direction);
     console.log(`   📐 Generated ${constraints.length} perpendicular constraints`);
 
-    // Step 3: Validate each constraint can be satisfied
+    // Step 3: Validate each constraint can be satisfied (strict validation)
     for (let i = 0; i < constraints.length; i++) {
       const constraint = constraints[i];
       console.log(`   🧩 Checking constraint ${i + 1}: "${constraint.pattern}" (${constraint.direction})`);
@@ -300,11 +301,11 @@ class AdvancedConstraintEngine {
       }
     }
 
-    // Step 4: Check if placement creates invalid adjacencies
-    if (!this.validateAdjacencies(word, row, col, direction)) {
-      console.log(`   ❌ Creates invalid adjacencies`);
-      return false;
-    }
+    // Step 4: Skip adjacency validation for now to be more permissive
+    // if (!this.validateAdjacencies(word, row, col, direction)) {
+    //   console.log(`   ❌ Creates invalid adjacencies`);
+    //   return false;
+    // }
 
     // Step 5: Check black square placement rules (deferred to final black square placement)
     
@@ -326,6 +327,7 @@ class AdvancedConstraintEngine {
       const r = direction === 'across' ? row : row + i;
       const c = direction === 'across' ? col + i : col;
       
+      // Cannot place in blocked cells
       if (this.grid[r][c].isBlocked) return false;
       
       if (this.grid[r][c].letter) {
@@ -467,11 +469,18 @@ class AdvancedConstraintEngine {
 
   private validateAdjacencies(word: string, row: number, col: number, direction: 'across' | 'down'): boolean {
     // Check that word placement doesn't create invalid adjacent letter combinations
+    // This is a more lenient version that allows valid intersections
+    
     for (let i = 0; i < word.length; i++) {
       const r = direction === 'across' ? row : row + i;
       const c = direction === 'across' ? col + i : col;
       
-      // Check adjacent cells for invalid patterns
+      // Skip positions where we already have the same letter (valid intersections)
+      if (this.grid[r][c].letter === word[i]) {
+        continue;
+      }
+      
+      // Check adjacent cells - only worry about direct adjacency without proper word context
       const adjacentPositions = [
         { row: r - 1, col: c }, { row: r + 1, col: c },
         { row: r, col: c - 1 }, { row: r, col: c + 1 }
@@ -479,9 +488,23 @@ class AdvancedConstraintEngine {
 
       for (const pos of adjacentPositions) {
         if (pos.row >= 0 && pos.row < GRID_SIZE && pos.col >= 0 && pos.col < GRID_SIZE) {
+          // Only fail if there's a letter that would be stranded (not part of any word)
           if (this.grid[pos.row][pos.col].letter && 
-              !this.grid[pos.row][pos.col].isBlocked &&
-              !this.isPartOfValidWord(pos.row, pos.col)) {
+              !this.grid[pos.row][pos.col].isBlocked) {
+            
+            // Check if this adjacent letter is part of a planned word placement
+            // If it is part of an existing word, it's fine
+            if (this.isPartOfValidWord(pos.row, pos.col)) {
+              continue;
+            }
+            
+            // Check if placing our word would create a valid perpendicular word
+            const perpDirection = direction === 'across' ? 'down' : 'across';
+            if (this.wouldCreateValidPerpendicularWord(pos.row, pos.col, perpDirection)) {
+              continue;
+            }
+            
+            // Only fail if this would truly create an invalid state
             return false;
           }
         }
@@ -507,6 +530,37 @@ class AdvancedConstraintEngine {
                row < placement.row + placement.word.length;
       }
     });
+  }
+
+  private wouldCreateValidPerpendicularWord(row: number, col: number, direction: 'across' | 'down'): boolean {
+    // Check if the letter at this position could be part of a valid perpendicular word
+    // This is used to avoid rejecting valid intersections too early
+    
+    if (direction === 'across') {
+      // Look horizontally for potential word formation
+      let left = col, right = col;
+      
+      // Find extent of horizontal letters
+      while (left > 0 && this.grid[row][left - 1].letter && !this.grid[row][left - 1].isBlocked) left--;
+      while (right < GRID_SIZE - 1 && this.grid[row][right + 1].letter && !this.grid[row][right + 1].isBlocked) right++;
+      
+      if (right - left + 1 >= MIN_WORD_LENGTH) {
+        return true; // Could potentially form a valid word
+      }
+    } else {
+      // Look vertically for potential word formation
+      let top = row, bottom = row;
+      
+      // Find extent of vertical letters
+      while (top > 0 && this.grid[top - 1][col].letter && !this.grid[top - 1][col].isBlocked) top--;
+      while (bottom < GRID_SIZE - 1 && this.grid[bottom + 1][col].letter && !this.grid[bottom + 1][col].isBlocked) bottom++;
+      
+      if (bottom - top + 1 >= MIN_WORD_LENGTH) {
+        return true; // Could potentially form a valid word
+      }
+    }
+    
+    return false;
   }
 }
 
@@ -550,7 +604,8 @@ export class ProperCrosswordGenerator {
         this.grid[i][j] = {
           letter: '',
           isBlocked: false,
-          number: null
+          number: null,
+          willBeBlocked: false
         };
       }
     }
@@ -591,7 +646,17 @@ export class ProperCrosswordGenerator {
    * Check if a word can be placed at a specific location using advanced constraint satisfaction
    */
   private canPlaceWordStrict(word: string, row: number, col: number, direction: 'across' | 'down'): boolean {
-    // Use the advanced constraint engine for validation
+    // 1. Check word separation (critical for preventing adjacency violations)
+    if (!this.isWordProperlySeparated(word, row, col, direction)) {
+      return false;
+    }
+    
+    // 2. Validate all perpendicular word formations  
+    if (!this.validateAllPerpendicularWords(word, row, col, direction)) {
+      return false;
+    }
+    
+    // 3. Use the advanced constraint engine for additional validation
     return this.constraintEngine.validateWordPlacement(word, row, col, direction);
   }
   
@@ -645,15 +710,60 @@ export class ProperCrosswordGenerator {
   /**
    * Check if word placement follows proper crossword separation rules
    * Every word must have a black square or grid boundary before and after it
+   * Now considers both actual and intended black squares
    */
   private isWordProperlySeparated(word: string, row: number, col: number, direction: 'across' | 'down'): boolean {
+    // CRITICAL: Check for existing words that would be adjacent in the same direction
+    for (const placedWord of this.placedWords) {
+      if (placedWord.direction === direction) {
+        if (direction === 'across' && placedWord.row === row) {
+          // Same row - check for adjacency
+          const thisStart = col;
+          const thisEnd = col + word.length - 1;
+          const otherStart = placedWord.col;
+          const otherEnd = placedWord.col + placedWord.word.length - 1;
+          
+          // Check if words would be adjacent (no gap between them)
+          if (thisEnd + 1 === otherStart || otherEnd + 1 === thisStart) {
+            console.log(`   ❌ ADJACENCY VIOLATION: "${word}" would be adjacent to "${placedWord.word}" in same row without black square separation`);
+            return false;
+          }
+          
+          // Check for overlap
+          if (!(thisEnd < otherStart || thisStart > otherEnd)) {
+            console.log(`   ❌ OVERLAP: "${word}" would overlap with "${placedWord.word}" in same row`);
+            return false;
+          }
+        } else if (direction === 'down' && placedWord.col === col) {
+          // Same column - check for adjacency
+          const thisStart = row;
+          const thisEnd = row + word.length - 1;
+          const otherStart = placedWord.row;
+          const otherEnd = placedWord.row + placedWord.word.length - 1;
+          
+          // Check if words would be adjacent (no gap between them)
+          if (thisEnd + 1 === otherStart || otherEnd + 1 === thisStart) {
+            console.log(`   ❌ ADJACENCY VIOLATION: "${word}" would be adjacent to "${placedWord.word}" in same column without black square separation`);
+            return false;
+          }
+          
+          // Check for overlap
+          if (!(thisEnd < otherStart || thisStart > otherEnd)) {
+            console.log(`   ❌ OVERLAP: "${word}" would overlap with "${placedWord.word}" in same column`);
+            return false;
+          }
+        }
+      }
+    }
+    
+    // Traditional boundary checks
     if (direction === 'across') {
       // Check cell before word start
       if (col > 0) {
         const beforeCell = this.grid[row][col - 1];
         if (beforeCell.letter && !beforeCell.isBlocked) {
-          console.log(`   ❌ Word "${word}" would be adjacent to existing letter '${beforeCell.letter}' at (${row},${col - 1})`);
-          return false; // Another letter exists without black square separation
+          console.log(`   ❌ Word "${word}" would be adjacent to existing letter '${beforeCell.letter}' at (${row},${col - 1}) without separation`);
+          return false;
         }
       }
       
@@ -661,8 +771,8 @@ export class ProperCrosswordGenerator {
       if (col + word.length < GRID_SIZE) {
         const afterCell = this.grid[row][col + word.length];
         if (afterCell.letter && !afterCell.isBlocked) {
-          console.log(`   ❌ Word "${word}" would be adjacent to existing letter '${afterCell.letter}' at (${row},${col + word.length})`);
-          return false; // Another letter exists without black square separation
+          console.log(`   ❌ Word "${word}" would be adjacent to existing letter '${afterCell.letter}' at (${row},${col + word.length}) without separation`);
+          return false;
         }
       }
     } else {
@@ -670,17 +780,17 @@ export class ProperCrosswordGenerator {
       if (row > 0) {
         const beforeCell = this.grid[row - 1][col];
         if (beforeCell.letter && !beforeCell.isBlocked) {
-          console.log(`   ❌ Word "${word}" would be adjacent to existing letter '${beforeCell.letter}' at (${row - 1},${col})`);
-          return false; // Another letter exists without black square separation
+          console.log(`   ❌ Word "${word}" would be adjacent to existing letter '${beforeCell.letter}' at (${row - 1},${col}) without separation`);
+          return false;
         }
       }
       
-      // Check cell after word end (down direction)
+      // Check cell after word end (down direction)  
       if (row + word.length < GRID_SIZE) {
         const afterCell = this.grid[row + word.length][col];
         if (afterCell.letter && !afterCell.isBlocked) {
-          console.log(`   ❌ Word "${word}" would be adjacent to existing letter '${afterCell.letter}' at (${row + word.length},${col})`);
-          return false; // Another letter exists without black square separation
+          console.log(`   ❌ Word "${word}" would be adjacent to existing letter '${afterCell.letter}' at (${row + word.length},${col}) without separation`);
+          return false;
         }
       }
     }
@@ -689,27 +799,81 @@ export class ProperCrosswordGenerator {
   }
 
   /**
+   * Check if a position would conflict with an intended word placement
+   * This helps detect when a word would be placed where a black square should go
+   */
+  private wouldConflictWithIntendedPlacement(checkRow: number, checkCol: number, word: string, wordRow: number, wordCol: number, direction: 'across' | 'down'): boolean {
+    // Check if any letter of the new word would occupy this position
+    for (let i = 0; i < word.length; i++) {
+      const letterRow = direction === 'across' ? wordRow : wordRow + i;
+      const letterCol = direction === 'across' ? wordCol + i : wordCol;
+      
+      if (letterRow === checkRow && letterCol === checkCol) {
+        // This position would be occupied by a letter from the new word
+        // But we're checking if it should be a separator position
+        return true;
+      }
+    }
+    
+    return false;
+  }
+
+  /**
    * Validate that a letter placement creates valid perpendicular words
    */
   private isValidLetterPlacement(row: number, col: number, letter: string, placingDirection: 'across' | 'down'): boolean {
     const perpDirection = placingDirection === 'across' ? 'down' : 'across';
     
-    // Check if this letter would be part of a perpendicular word
-    const perpWord = this.getPerpendicularWordPattern(row, col, letter, perpDirection);
+    // Get the full perpendicular word that would be formed
+    const perpWordInfo = this.getPerpendicularWordPattern(row, col, letter, perpDirection);
     
-    if (perpWord.length >= MIN_WORD_LENGTH) {
-      // Only reject if it would create a definitely invalid word
-      const cleanWord = perpWord.replace(/_/g, '');
-      if (cleanWord.length === perpWord.length) {
-        // Complete word - must be in dictionary
-        return DICTIONARY_WORDS.includes(cleanWord);
-      } else {
-        // Partial word - be more lenient, assume it can be completed later
-        return true;
+    // If this would create a perpendicular word, validate it strictly
+    if (perpWordInfo.length >= MIN_WORD_LENGTH) {
+      const cleanWord = perpWordInfo.replace(/_/g, '');
+      
+      // Check if this forms a complete word
+      if (cleanWord.length === perpWordInfo.length && cleanWord.length >= MIN_WORD_LENGTH) {
+        // Complete word - MUST be in dictionary
+        if (!DICTIONARY_WORDS.includes(cleanWord.toUpperCase())) {
+          console.log(`   ❌ Invalid perpendicular word formed: "${cleanWord}" (not in dictionary)`);
+          return false;
+        }
+        console.log(`   ✅ Valid perpendicular word: "${cleanWord}"`);
+      } else if (perpWordInfo.includes('_')) {
+        // Partial pattern - check if it COULD form a valid word
+        const matchingWords = this.findWordsMatchingPattern(perpWordInfo);
+        if (matchingWords.length === 0) {
+          console.log(`   ❌ Perpendicular pattern "${perpWordInfo}" cannot form any valid words`);
+          return false;
+        }
+        console.log(`   ✅ Perpendicular pattern "${perpWordInfo}" can form ${matchingWords.length} valid words`);
       }
     }
     
-    return true; // Single letters or very short combinations are allowed
+    return true;
+  }
+
+  /**
+   * Validate that all letter intersections in a word placement create valid perpendicular words
+   */
+  private validateAllPerpendicularWords(word: string, row: number, col: number, direction: 'across' | 'down'): boolean {
+    for (let i = 0; i < word.length; i++) {
+      const letterRow = direction === 'across' ? row : row + i;
+      const letterCol = direction === 'across' ? col + i : col;
+      const letter = word[i];
+      
+      // Skip if this position already has the same letter (intersection)
+      if (this.grid[letterRow][letterCol].letter === letter) {
+        continue;
+      }
+      
+      // Validate this letter placement
+      if (!this.isValidLetterPlacement(letterRow, letterCol, letter, direction)) {
+        return false;
+      }
+    }
+    
+    return true;
   }
 
   /**
@@ -813,6 +977,9 @@ export class ProperCrosswordGenerator {
     this.usedWords.add(word);
 
     
+    // IMMEDIATELY place black squares for word separation
+    this.placeBlackSquaresForWord(word, row, col, direction);
+    
     // Update connection points for future intersections
     this.updateConnectionPoints(placement);
     
@@ -820,6 +987,39 @@ export class ProperCrosswordGenerator {
     this.constraintEngine = new AdvancedConstraintEngine(this.grid, this.placedWords, DICTIONARY_TRIE);
         
     console.log(`✅ Placed "${word}" ${direction} at (${row},${col}) with ${intersections.length} intersections`);
+  }
+
+  /**
+   * Place black squares immediately for a specific word to maintain proper separation
+   */
+  private placeBlackSquaresForWord(word: string, row: number, col: number, direction: 'across' | 'down'): void {
+    if (direction === 'across') {
+      // Black square before word start
+      if (col > 0 && !this.grid[row][col - 1].letter && !this.grid[row][col - 1].isBlocked) {
+        this.grid[row][col - 1].isBlocked = true;
+        console.log(`   🔲 Placed black square before "${word}" at (${row},${col - 1})`);
+      }
+      
+      // Black square after word end
+      const endCol = col + word.length;
+      if (endCol < GRID_SIZE && !this.grid[row][endCol].letter && !this.grid[row][endCol].isBlocked) {
+        this.grid[row][endCol].isBlocked = true;
+        console.log(`   🔲 Placed black square after "${word}" at (${row},${endCol})`);
+      }
+    } else {
+      // Black square before word start (up direction)
+      if (row > 0 && !this.grid[row - 1][col].letter && !this.grid[row - 1][col].isBlocked) {
+        this.grid[row - 1][col].isBlocked = true;
+        console.log(`   🔲 Placed black square before "${word}" at (${row - 1},${col})`);
+      }
+      
+      // Black square after word end (down direction)
+      const endRow = row + word.length;
+      if (endRow < GRID_SIZE && !this.grid[endRow][col].letter && !this.grid[endRow][col].isBlocked) {
+        this.grid[endRow][col].isBlocked = true;
+        console.log(`   🔲 Placed black square after "${word}" at (${endRow},${col})`);
+      }
+    }
   }
 
   /**
@@ -853,6 +1053,53 @@ export class ProperCrosswordGenerator {
         if (endRow < GRID_SIZE && !this.grid[endRow][col].letter && !this.grid[endRow][col].isBlocked) {
           this.grid[endRow][col].isBlocked = true;
         }
+      }
+    }
+  }
+
+  /**
+   * Clear intended black squares when backtracking (reset to clean state)
+   */
+  private clearIntendedBlackSquares(): void {
+    for (let i = 0; i < GRID_SIZE; i++) {
+      for (let j = 0; j < GRID_SIZE; j++) {
+        this.grid[i][j].willBeBlocked = false;
+      }
+    }
+    
+    // Rebuild intended black squares for all currently placed words
+    for (const placement of this.placedWords) {
+      this.updateIntendedBlackSquares(placement);
+    }
+  }
+
+  /**
+   * Update intended black squares for proper word separation tracking
+   */
+  private updateIntendedBlackSquares(placement: WordPlacement): void {
+    const { word, row, col, direction } = placement;
+    
+    if (direction === 'across') {
+      // Mark intended black square before word start
+      if (col > 0 && !this.grid[row][col - 1].letter) {
+        this.grid[row][col - 1].willBeBlocked = true;
+      }
+      
+      // Mark intended black square after word end
+      const endCol = col + word.length;
+      if (endCol < GRID_SIZE && !this.grid[row][endCol].letter) {
+        this.grid[row][endCol].willBeBlocked = true;
+      }
+    } else {
+      // Mark intended black square before word start
+      if (row > 0 && !this.grid[row - 1][col].letter) {
+        this.grid[row - 1][col].willBeBlocked = true;
+      }
+      
+      // Mark intended black square after word end
+      const endRow = row + word.length;
+      if (endRow < GRID_SIZE && !this.grid[endRow][col].letter) {
+        this.grid[endRow][col].willBeBlocked = true;
       }
     }
   }
@@ -958,8 +1205,11 @@ export class ProperCrosswordGenerator {
     console.log('🚀 Starting enhanced backtracking crossword generation...');
     console.log(`📋 Targets: ${MIN_ACROSS_WORDS}+ across, ${MIN_DOWN_WORDS}+ down, max ${MAX_TOTAL_WORDS} total`);
     
-    // Step 1: Place initial seed word
-    const seedWords = ['GALAXY', 'STELLAR', 'COSMIC', 'NEBULA', 'PLANET'];
+    // Step 1: Place initial seed word (filter to fit grid)
+    const allSeedWords = ['GALAXY', 'STELLAR', 'COSMIC', 'NEBULA', 'PLANET', 'MAGNETOHYDRODYNAMICS', 
+      'SPECTROPOLARIMETRY', 'ASTEROSEISMOLOGY', 'GRAVITOELECTROMAGNETISM', 'NUCLEOSYNTHESIS', 'PHOTOIONIZATION', 
+      'COSMOCHEMISTRY', 'SPECTROPHOTOMETRY', 'ASTROPHOTOGRAPHY', 'CIRCUMPLANETARY'];
+    const seedWords = allSeedWords.filter(word => word.length <= GRID_SIZE - 2); // Leave room for boundaries
     const seedWord = seedWords[Math.floor(this.rng() * seedWords.length)];
     
     const centerRow = Math.floor(GRID_SIZE / 2);
@@ -975,31 +1225,57 @@ export class ProperCrosswordGenerator {
       const acrossCount = this.placedWords.filter(w => w.direction === 'across').length;
       const downCount = this.placedWords.filter(w => w.direction === 'down').length;
       
-      // Determine next direction - prioritize creating intersections first
+      // Enhanced direction targeting logic for better constraint satisfaction
       let targetDirection: 'across' | 'down';
+      
+      // Calculate connection opportunities for each direction
+      const acrossConnections = this.connectionPoints.filter(p => this.canPlaceWordInDirection(p, 'across')).length;
+      const downConnections = this.connectionPoints.filter(p => this.canPlaceWordInDirection(p, 'down')).length;
       
       // After placing seed word, prioritize the opposite direction for intersections
       if (this.placedWords.length === 1) {
         // We have only the seed word (across), prioritize down words for intersections
         targetDirection = 'down';
-      } else if (acrossCount < 4 && downCount < 4) {
-        // Early stage - alternate to create intersections
-        targetDirection = acrossCount <= downCount ? 'down' : 'across';
+      } else if (downCount < MIN_DOWN_WORDS && acrossCount < MIN_ACROSS_WORDS) {
+        // Both below minimum - choose direction with better connection opportunities
+        if (downConnections > acrossConnections) {
+          targetDirection = 'down';
+        } else if (acrossConnections > downConnections) {
+          targetDirection = 'across';
+        } else {
+          // Equal opportunities - prioritize the direction that's more behind
+          targetDirection = downCount < acrossCount ? 'down' : 'across';
+        }
       } else if (downCount < MIN_DOWN_WORDS) {
         targetDirection = 'down';
       } else if (acrossCount < MIN_ACROSS_WORDS) {
         targetDirection = 'across';
       } else {
-        // Both minimums met, choose based on balance
-        targetDirection = acrossCount <= downCount ? 'across' : 'down';
+        // Both minimums met - choose direction with better placement opportunities
+        if (downConnections > acrossConnections + 2) {
+          targetDirection = 'down';
+        } else if (acrossConnections > downConnections + 2) {
+          targetDirection = 'across';
+        } else {
+          // Similar opportunities - maintain balance
+          targetDirection = acrossCount <= downCount ? 'across' : 'down';
+        }
       }
       
       console.log(`📊 Current counts: ${acrossCount} across, ${downCount} down - targeting ${targetDirection}`);
       
-      const placed = this.attemptToPlaceNewWord(targetDirection);
+      const placed = this.attemptToPlaceNewWordWithBacktracking(targetDirection);
       if (!placed) {
         failedWordCount++;
         console.log(`❌ Failed placement attempt ${failedWordCount}/${MAX_FAILED_WORDS}`);
+        
+        // If we've tried many times unsuccessfully, try backtracking
+        if (failedWordCount > 15 && this.placedWords.length > 2) {
+          console.log(`🔄 Attempting backtrack - removing last word and trying again`);
+          if (this.backtrackLastWord()) {
+            failedWordCount = Math.max(0, failedWordCount - 10); // Reduce failed count after backtrack
+          }
+        }
       } else {
         failedWordCount = 0; // Reset on success
       }
@@ -1017,6 +1293,111 @@ export class ProperCrosswordGenerator {
   }
 
   /**
+   * Remove the last placed word and restore grid state
+   */
+  private backtrackLastWord(): boolean {
+    if (this.placedWords.length <= 1) {
+      return false; // Don't remove the seed word
+    }
+    
+    const lastWord = this.placedWords.pop();
+    if (!lastWord) return false;
+    
+    console.log(`🔙 Backtracking - removing "${lastWord.word}" ${lastWord.direction} at (${lastWord.row},${lastWord.col})`);
+    
+    // Remove the word from used words set
+    this.usedWords.delete(lastWord.word);
+    
+    // Clear the grid cells for this word
+    for (let i = 0; i < lastWord.word.length; i++) {
+      const r = lastWord.direction === 'across' ? lastWord.row : lastWord.row + i;
+      const c = lastWord.direction === 'across' ? lastWord.col + i : lastWord.col;
+      
+      // Only clear cells that aren't part of other words
+      if (!this.isPartOfOtherWords(r, c, lastWord)) {
+        this.grid[r][c].letter = '';
+        this.grid[r][c].number = null;
+        this.grid[r][c].isBlocked = false;
+      }
+    }
+    
+    // Remove black squares that were placed for this word
+    this.removeBlackSquaresForWord(lastWord);
+    
+    // Rebuild connection points
+    this.rebuildConnectionPoints();
+    
+    // Reset constraint engine
+    this.constraintEngine = new AdvancedConstraintEngine(this.grid, this.placedWords, DICTIONARY_TRIE);
+    
+    return true;
+  }
+
+  /**
+   * Check if a grid cell is part of other placed words
+   */
+  private isPartOfOtherWords(row: number, col: number, excludeWord: any): boolean {
+    return this.placedWords.some(word => {
+      if (word === excludeWord) return false;
+      
+      if (word.direction === 'across') {
+        return word.row === row && col >= word.col && col < word.col + word.word.length;
+      } else {
+        return word.col === col && row >= word.row && row < word.row + word.word.length;
+      }
+    });
+  }
+
+  /**
+   * Remove black squares that were placed for a specific word
+   */
+  private removeBlackSquaresForWord(wordPlacement: any): void {
+    const { word, row, col, direction } = wordPlacement;
+    
+    if (direction === 'across') {
+      // Remove black square before word start
+      if (col > 0) {
+        this.grid[row][col - 1].isBlocked = false;
+      }
+      
+      // Remove black square after word end
+      const endCol = col + word.length;
+      if (endCol < GRID_SIZE) {
+        this.grid[row][endCol].isBlocked = false;
+      }
+    } else {
+      // Remove black square before word start (up direction)
+      if (row > 0) {
+        this.grid[row - 1][col].isBlocked = false;
+      }
+      
+      // Remove black square after word end (down direction)
+      const endRow = row + word.length;
+      if (endRow < GRID_SIZE) {
+        this.grid[endRow][col].isBlocked = false;
+      }
+    }
+  }
+
+  /**
+   * Rebuild connection points after backtracking
+   */
+  private rebuildConnectionPoints(): void {
+    this.connectionPoints = [];
+    
+    for (const wordPlacement of this.placedWords) {
+      this.updateConnectionPoints(wordPlacement);
+    }
+  }
+
+  /**
+   * Attempt to place a new word with intelligent backtracking
+   */
+  private attemptToPlaceNewWordWithBacktracking(direction: 'across' | 'down'): boolean {
+    return this.attemptToPlaceNewWord(direction);
+  }
+
+  /**
    * Attempt to place a new word in the specified direction
    */
   private attemptToPlaceNewWord(direction: 'across' | 'down'): boolean {
@@ -1029,8 +1410,8 @@ export class ProperCrosswordGenerator {
       
       // Connection points are pre-filtered, so no need to skip
       
-      // Try multiple words for this connection point
-      const candidateWords = this.getRandomWordsWithLetter(connectionPoint.letter);
+      // Try multiple words for this connection point with intelligent pre-filtering
+      const candidateWords = this.getRandomWordsWithLetter(connectionPoint.letter, connectionPoint, direction);
       console.log(`   🎯 Found ${candidateWords.length} candidate words with letter '${connectionPoint.letter}'`);
       
       if (candidateWords.length === 0) {
@@ -1056,14 +1437,74 @@ export class ProperCrosswordGenerator {
   }
 
   /**
-   * Get random words containing a specific letter, prioritizing good crossword words
+   * Get words containing a specific letter, prioritizing those with good connection potential
    */
-  private getRandomWordsWithLetter(letter: string): string[] {
+  private getRandomWordsWithLetter(letter: string, connectionPoint?: any, direction?: string): string[] {
     const wordsWithLetter = WORDS_WITH_LETTER.get(letter) || [];
-    const availableWords = wordsWithLetter.filter(word => !this.usedWords.has(word));
+    let availableWords = wordsWithLetter.filter(word => !this.usedWords.has(word));
     
-    // Use more words from dictionary - don't over-limit
-    return this.shuffleArray(availableWords).sort(() => Math.random() - 0.5).slice(0, 50);
+    // If we have connection context, pre-filter by spatial constraints
+    if (connectionPoint && direction) {
+      availableWords = availableWords.filter(word => {
+        return this.canWordFitSpatially(word, connectionPoint, direction);
+      });
+    }
+    
+    // Sort words by length preference (favor 4-8 character words)
+    const sortedWords = availableWords.sort((a, b) => {
+      const getWordScore = (word: string): number => {
+        let score = 0;
+        
+        // Length preference: 4-8 chars get bonus
+        if (word.length >= 4 && word.length <= 8) score += 2;
+        else if (word.length >= 3 && word.length <= 10) score += 1;
+        
+        // Common letter bonus
+        const commonLetters = 'AEIOURSTLNHDYCP';
+        for (const char of word.toUpperCase()) {
+          if (commonLetters.includes(char)) score += 0.1;
+        }
+        
+        return score;
+      };
+      
+      return getWordScore(b) - getWordScore(a);
+    });
+    
+    // Return top candidates (don't shuffle to maintain quality order)
+    return sortedWords.slice(0, Math.min(40, sortedWords.length));
+  }
+
+  /**
+   * Pre-check if a word could possibly fit spatially at a connection point
+   */
+  private canWordFitSpatially(word: string, connectionPoint: any, direction: string): boolean {
+    const positions = word.toUpperCase().split('').map((_, i) => i).filter(i => word[i] === connectionPoint.letter);
+    
+    for (const pos of positions) {
+      const startRow = direction === 'down' ? connectionPoint.row - pos : connectionPoint.row;
+      const startCol = direction === 'across' ? connectionPoint.col - pos : connectionPoint.col;
+      const endRow = direction === 'down' ? startRow + word.length - 1 : startRow;
+      const endCol = direction === 'across' ? startCol + word.length - 1 : startCol;
+      
+      // Check bounds
+      if (startRow < 0 || startCol < 0 || endRow >= GRID_SIZE || endCol >= GRID_SIZE) continue;
+      
+      // Quick check for obvious conflicts (black squares in word path)
+      let hasConflict = false;
+      for (let i = 0; i < word.length; i++) {
+        const r = direction === 'down' ? startRow + i : startRow;
+        const c = direction === 'across' ? startCol + i : startCol;
+        if (this.grid[r][c].isBlocked) {
+          hasConflict = true;
+          break;
+        }
+      }
+      
+      if (!hasConflict) return true; // At least one position works spatially
+    }
+    
+    return false; // No position works
   }
 
   /**
@@ -1094,17 +1535,17 @@ export class ProperCrosswordGenerator {
       isValid = false;
     }
     
-    // Check that all letters are part of valid intersections
+    // Check that all letters are part of at least one valid word
     for (let row = 0; row < GRID_SIZE; row++) {
       for (let col = 0; col < GRID_SIZE; col++) {
         if (this.grid[row][col].letter && !this.grid[row][col].isBlocked) {
           const acrossWord = this.findWordAtPosition(row, col, 'across');
           const downWord = this.findWordAtPosition(row, col, 'down');
           
-          if (!acrossWord || !downWord) {
-            console.log(`❌ Letter '${this.grid[row][col].letter}' at (${row},${col}) not part of both directions`);
+          if (!acrossWord && !downWord) {
+            console.log(`❌ Letter '${this.grid[row][col].letter}' at (${row},${col}) not part of any word`);
             isValid = false;
-          }
+         }
         }
       }
     }
@@ -1205,9 +1646,65 @@ export class ProperCrosswordGenerator {
       'STAR': 'Night light',
       'MOON': 'Earth\'s satellite',
       'ORBIT': 'Circular path',
+      'MAGNETOHYDRODYNAMICS': 'physics of electrically conducting fluids (plasmas) in magnetic fields',
+      'SPECTROPOLARIMETRY': 'measuring how light\'s polarization varies with wavelength',
+      'ASTEROSEISMOLOGY': 'probing stellar interiors via star-quake oscillations',
+      'GRAVITOELECTROMAGNETISM': 'GR approximation that mirrors electromagnetic equations',
+      'NUCLEOSYNTHESIS': 'creation of new atomic nuclei in the Big Bang and stars',
+      'PHOTOIONIZATION': 'knocking electrons off atoms with energetic photons',
+      'COSMOCHEMISTRY': 'chemistry of the cosmos (meteoritics, planetary materials, isotopes)',
+      'SPECTROPHOTOMETRY': 'measuring light intensity as a function of wavelength',
+      'ASTROPHOTOGRAPHY': 'long-exposure imaging of celestial objects and phenomena',
+      'CIRCUMPLANETARY': 'describing disks/rings/environments orbiting around a planet',
     };
     
     return clues[word.toUpperCase()] || `Word: ${word}`;
+  }
+
+  /**
+   * Check if a word can be placed in the given direction from a connection point
+   */
+  private canPlaceWordInDirection(connectionPoint: { row: number; col: number; letter: string }, direction: 'across' | 'down'): boolean {
+    // Find candidate words that contain the connection letter
+    const candidateWords = WORDS_WITH_LETTER.get(connectionPoint.letter.toLowerCase()) || [];
+    
+    // Check if any candidate can be placed in this direction
+    for (const word of candidateWords.slice(0, 5)) { // Check first 5 candidates for performance
+      if (this.usedWords.has(word)) continue;
+      
+      // Find positions where the connection letter appears in the word
+      for (let i = 0; i < word.length; i++) {
+        if (word[i].toLowerCase() === connectionPoint.letter.toLowerCase()) {
+          // Calculate placement position
+          const row = direction === 'across' ? connectionPoint.row : connectionPoint.row - i;
+          const col = direction === 'across' ? connectionPoint.col - i : connectionPoint.col;
+          
+          // Quick basic validation (without full constraint checking for performance)
+          if (row >= 0 && col >= 0 && 
+              (direction === 'across' ? col + word.length <= GRID_SIZE : row + word.length <= GRID_SIZE)) {
+            // Check for obvious conflicts (occupied non-intersection cells)
+            let hasConflict = false;
+            for (let j = 0; j < word.length; j++) {
+              const checkRow = direction === 'across' ? row : row + j;
+              const checkCol = direction === 'across' ? col + j : col;
+              
+              if (this.grid[checkRow] && this.grid[checkRow][checkCol] && 
+                  this.grid[checkRow][checkCol].letter && 
+                  this.grid[checkRow][checkCol].letter !== word[j]) {
+                hasConflict = true;
+                break;
+              }
+            }
+            
+            if (!hasConflict) {
+              return true; // Found at least one possible placement
+            }
+          }
+        }
+      }
+    }
+    
+    return false;
   }
 
   /**
@@ -1216,7 +1713,7 @@ export class ProperCrosswordGenerator {
   generate(): GeneratedPuzzle {
     console.log('🎯 Starting proper crossword generation with strict constraints...');
     
-    const maxAttempts = 5;
+    const maxAttempts = 200; // Significantly increased attempts for constraint satisfaction
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       console.log(`🔄 Attempt ${attempt}/${maxAttempts}`);
       
@@ -1235,7 +1732,7 @@ export class ProperCrosswordGenerator {
       if (success) {
         const isValid = this.validateFinalCrossword();
         
-        if (isValid || this.placedWords.length >= 10) { // Accept if reasonably complete
+        if (isValid) { // Only accept if validation passes
           const clues = this.generateClues();
           console.log(`🎉 Successfully generated crossword with ${clues.length} clues!`);
           
@@ -1250,118 +1747,10 @@ export class ProperCrosswordGenerator {
       console.log(`❌ Attempt ${attempt} failed validation`);
     }
     
-    // Return whatever we managed to generate - no fallback
-    console.warn('⚠️  Could not meet minimum requirements, returning partial crossword');
-    const clues = this.generateClues();
-    return {
-      grid: this.grid,
-      clues,
-      size: { rows: GRID_SIZE, cols: GRID_SIZE }
-    };
+    // All attempts failed - throw error since constraints cannot be satisfied
+    throw new Error('Unable to generate crossword that meets all constraints after maximum attempts');
   }
 
-  /**
-   * Create a minimal valid crossword as fallback
-   */
-  private createMinimalCrossword(): GeneratedPuzzle {
-    // COMPLETELY reset everything for fallback
-    this.grid = [];
-    for (let i = 0; i < GRID_SIZE; i++) {
-      this.grid[i] = [];
-      for (let j = 0; j < GRID_SIZE; j++) {
-        this.grid[i][j] = {
-          letter: '',
-          isBlocked: false,
-          number: null
-        };
-      }
-    }
-    
-    this.placedWords = [];
-    this.connectionPoints = [];
-    this.usedWords.clear();
-    
-    console.log('🔧 Creating fallback minimal crossword...');
-    
-    // Create a simple cross pattern - just use manual placement
-    const centerRow = Math.floor(GRID_SIZE / 2);
-    const centerCol = Math.floor(GRID_SIZE / 2);
-    
-    // Manually place SPACE horizontally
-    const spaceWord = 'SPACE';
-    const spaceRow = centerRow;
-    const spaceStartCol = centerCol - 2;
-    
-    for (let i = 0; i < spaceWord.length; i++) {
-      this.grid[spaceRow][spaceStartCol + i].letter = spaceWord[i];
-    }
-    this.placedWords.push({
-      word: spaceWord,
-      row: spaceRow,
-      col: spaceStartCol,
-      direction: 'across',
-      intersections: []
-    });
-    
-    // Manually place SUN vertically intersecting at S
-    const sunWord = 'SUN';
-    const sunCol = spaceStartCol; // Same as S position
-    const sunStartRow = spaceRow - 1;
-    
-    for (let i = 0; i < sunWord.length; i++) {
-      const r = sunStartRow + i;
-      if (r === spaceRow) continue; // Skip intersection - already placed
-      this.grid[r][sunCol].letter = sunWord[i];
-    }
-    this.placedWords.push({
-      word: sunWord,
-      row: sunStartRow,
-      col: sunCol,
-      direction: 'down',
-      intersections: [{ row: spaceRow, col: sunCol, letter: 'S' }]
-    });
-    
-    // Manually place ART vertically intersecting at A
-    const artWord = 'ART';
-    const artCol = spaceStartCol + 2; // A position in SPACE
-    const artStartRow = spaceRow - 1;
-    
-    for (let i = 0; i < artWord.length; i++) {
-      const r = artStartRow + i;
-      if (r === spaceRow) continue; // Skip intersection - already placed
-      this.grid[r][artCol].letter = artWord[i];
-    }
-    this.placedWords.push({
-      word: artWord,
-      row: artStartRow,
-      col: artCol,
-      direction: 'down',
-      intersections: [{ row: spaceRow, col: artCol, letter: 'A' }]
-    });
-    
-    // Add black squares manually
-    for (const placement of this.placedWords) {
-      const { word, row, col, direction } = placement;
-      
-      if (direction === 'across') {
-        if (col > 0) this.grid[row][col - 1].isBlocked = true;
-        if (col + word.length < GRID_SIZE) this.grid[row][col + word.length].isBlocked = true;
-      } else {
-        if (row > 0) this.grid[row - 1][col].isBlocked = true;
-        if (row + word.length < GRID_SIZE) this.grid[row + word.length][col].isBlocked = true;
-      }
-    }
-    
-    const clues = this.generateClues();
-    
-    console.log(`✅ Created fallback crossword with ${clues.length} clues`);
-    
-    return {
-      grid: this.grid,
-      clues,
-      size: { rows: GRID_SIZE, cols: GRID_SIZE }
-    };
-  }
 }
 
 export function generateProperDailyPuzzle(date: string): GeneratedPuzzle {

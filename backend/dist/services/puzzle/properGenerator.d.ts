@@ -2,6 +2,7 @@ export interface PuzzleCell {
     letter: string;
     number: number | null;
     isBlocked: boolean;
+    willBeBlocked?: boolean;
 }
 export interface CrosswordClue {
     number: number;
@@ -26,6 +27,7 @@ export declare class ProperCrosswordGenerator {
     private connectionPoints;
     private usedWords;
     private rng;
+    private constraintEngine;
     constructor(seed: string);
     private initializeGrid;
     /**
@@ -37,31 +39,57 @@ export declare class ProperCrosswordGenerator {
      */
     private findWordsMatchingPattern;
     /**
-     * Check if a word can be placed at a specific location following all constraints
+     * Check if a word can be placed at a specific location using advanced constraint satisfaction
      */
     private canPlaceWordStrict;
     /**
-     * Check if word placement would create adjacent words in same direction
-     * Since black squares aren't placed yet, check if letters would be adjacent
+     * Legacy validation method (kept for reference but not used)
+     */
+    private legacyValidation;
+    /**
+     * Check if word placement follows proper crossword separation rules
+     * Every word must have a black square or grid boundary before and after it
+     * Now considers both actual and intended black squares
      */
     private isWordProperlySeparated;
+    /**
+     * Check if a position would conflict with an intended word placement
+     * This helps detect when a word would be placed where a black square should go
+     */
+    private wouldConflictWithIntendedPlacement;
     /**
      * Validate that a letter placement creates valid perpendicular words
      */
     private isValidLetterPlacement;
+    /**
+     * Validate that all letter intersections in a word placement create valid perpendicular words
+     */
+    private validateAllPerpendicularWords;
     /**
      * Get the perpendicular word pattern that would be formed by placing a letter
      * Without black squares, we check for adjacent letters only
      */
     private getPerpendicularWordPattern;
     /**
-     * Place a word on the grid with proper tracking - NO BLACK SQUARES YET
+     * Place a word on the grid with proper tracking - place black squares at beginning and end of word
      */
     private placeWord;
+    /**
+     * Place black squares immediately for a specific word to maintain proper separation
+     */
+    private placeBlackSquaresForWord;
     /**
      * Add all black squares at the end of generation to maintain proper word separation
      */
     private addAllBlackSquares;
+    /**
+     * Clear intended black squares when backtracking (reset to clean state)
+     */
+    private clearIntendedBlackSquares;
+    /**
+     * Update intended black squares for proper word separation tracking
+     */
+    private updateIntendedBlackSquares;
     /**
      * Update connection points for future word intersections
      */
@@ -79,13 +107,37 @@ export declare class ProperCrosswordGenerator {
      */
     private generateCrosswordWithBacktracking;
     /**
+     * Remove the last placed word and restore grid state
+     */
+    private backtrackLastWord;
+    /**
+     * Check if a grid cell is part of other placed words
+     */
+    private isPartOfOtherWords;
+    /**
+     * Remove black squares that were placed for a specific word
+     */
+    private removeBlackSquaresForWord;
+    /**
+     * Rebuild connection points after backtracking
+     */
+    private rebuildConnectionPoints;
+    /**
+     * Attempt to place a new word with intelligent backtracking
+     */
+    private attemptToPlaceNewWordWithBacktracking;
+    /**
      * Attempt to place a new word in the specified direction
      */
     private attemptToPlaceNewWord;
     /**
-     * Get random words containing a specific letter, prioritizing good crossword words
+     * Get words containing a specific letter, prioritizing those with good connection potential
      */
     private getRandomWordsWithLetter;
+    /**
+     * Pre-check if a word could possibly fit spatially at a connection point
+     */
+    private canWordFitSpatially;
     /**
      * Shuffle array using seeded random
      */
@@ -107,13 +159,13 @@ export declare class ProperCrosswordGenerator {
      */
     private generateClueForWord;
     /**
+     * Check if a word can be placed in the given direction from a connection point
+     */
+    private canPlaceWordInDirection;
+    /**
      * Main generation method
      */
     generate(): GeneratedPuzzle;
-    /**
-     * Create a minimal valid crossword as fallback
-     */
-    private createMinimalCrossword;
 }
 export declare function generateProperDailyPuzzle(date: string): GeneratedPuzzle;
 //# sourceMappingURL=properGenerator.d.ts.map
