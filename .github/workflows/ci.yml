@@ -1,0 +1,263 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '8'
+
+jobs:
+  # Dependency and Security Scanning
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: pnpm install --frozen-lockfile
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Run npm audit (Backend)
+        working-directory: ./backend
+        run: pnpm audit --audit-level moderate
+        continue-on-error: true
+
+      - name: Run npm audit (Frontend)
+        working-directory: ./frontend
+        run: pnpm audit --audit-level moderate
+        continue-on-error: true
+
+      - name: Run Snyk security scan
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --all-projects --severity-threshold=high
+        continue-on-error: true
+
+  # Backend Build and Test
+  backend-build:
+    name: Backend Build & Test
+    runs-on: ubuntu-latest
+    needs: security-scan
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        working-directory: ./backend
+        run: npx prisma generate
+
+      - name: TypeScript type check
+        working-directory: ./backend
+        run: npx tsc --noEmit
+
+      - name: Build backend
+        working-directory: ./backend
+        run: pnpm run build
+
+      - name: Test Prisma schema
+        working-directory: ./backend
+        run: npx prisma validate
+
+      - name: Test puzzle generation
+        working-directory: ./backend
+        run: |
+          cp .env.example .env
+          sed -i 's|MONGODB_URI=.*|DATABASE_URL="file:./test.db"|' .env
+          npx prisma db push --force-reset
+          node -e "
+            const { generateStrictPuzzle } = require('./dist/services/puzzle/strictCrosswordGenerator');
+            const puzzle = generateStrictPuzzle('2024-01-01');
+            if (!puzzle || !puzzle.grid || !puzzle.clues) {
+              process.exit(1);
+            }
+            console.log('✅ Puzzle generation test passed');
+          "
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-build
+          path: backend/dist/
+
+  # Frontend Build and Test
+  frontend-build:
+    name: Frontend Build & Test
+    runs-on: ubuntu-latest
+    needs: security-scan
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: TypeScript type check
+        working-directory: ./frontend
+        run: npx tsc --noEmit
+
+      - name: Run ESLint
+        working-directory: ./frontend
+        run: pnpm run lint
+
+      - name: Build frontend
+        working-directory: ./frontend
+        run: pnpm run build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:5000/api
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend/.next/
+
+  # Integration Tests
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: [backend-build, frontend-build]
+    services:
+      # Add this when you move to PostgreSQL in production
+      # postgres:
+      #   image: postgres:15
+      #   env:
+      #     POSTGRES_PASSWORD: test
+      #     POSTGRES_DB: crossword_test
+      #   options: >-
+      #     --health-cmd pg_isready
+      #     --health-interval 10s
+      #     --health-timeout 5s
+      #     --health-retries 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Download backend artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-build
+          path: backend/dist/
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup test database
+        working-directory: ./backend
+        run: |
+          cp .env.example .env
+          sed -i 's|MONGODB_URI=.*|DATABASE_URL="file:./test.db"|' .env
+          npx prisma db push --force-reset
+
+      - name: Test API endpoints
+        working-directory: ./backend
+        run: |
+          # Start server in background
+          node dist/server.js &
+          SERVER_PID=$!
+          
+          # Wait for server to start
+          sleep 5
+          
+          # Test health endpoint
+          curl -f http://localhost:5000/api/puzzle/today || exit 1
+          
+          # Kill server
+          kill $SERVER_PID
+
+  # Docker Build (if containerization is implemented)
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: [backend-build, frontend-build]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/backend:latest
+            ghcr.io/${{ github.repository }}/backend:${{ github.sha }}
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/frontend:latest
+            ghcr.io/${{ github.repository }}/frontend:${{ github.sha }}
