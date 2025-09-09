@@ -10,11 +10,16 @@ interface CrosswordGridProps {
   progress: UserProgress;
   onCellFocus: (clue: CrosswordClue) => void;
   onGridDataChange?: (gridData: GridCellData[][]) => void;
-  validationResults?: { [clueNumber: number]: boolean };
+  onCellEdit?: () => void; // Callback when user edits a cell
   cellValidation?: { [cellKey: string]: boolean }; // "row,col": boolean
   isCompleted?: boolean;
   readOnly?: boolean;
   initialGridData?: GridCellData[][]; // Pre-populated grid data for solved puzzles
+  // Action handlers
+  onCheckAnswers?: () => void;
+  onAutoSolve?: () => void;
+  canCheckAnswers?: boolean;
+  autoSolving?: boolean;
 }
 
 interface FocusedCell {
@@ -39,11 +44,15 @@ export const CrosswordGrid: React.FC<CrosswordGridProps> = ({
   progress,
   onCellFocus,
   onGridDataChange,
-  validationResults,
+  onCellEdit,
   cellValidation,
   isCompleted,
   readOnly = false,
   initialGridData,
+  onCheckAnswers,
+  onAutoSolve,
+  canCheckAnswers = false,
+  autoSolving = false,
 }) => {
   const [focusedCell, setFocusedCell] = useState<FocusedCell | null>(null);
   const [gridData, setGridData] = useState<GridCellData[][]>([]);
@@ -128,41 +137,11 @@ export const CrosswordGrid: React.FC<CrosswordGridProps> = ({
   };
 
   const getLetterAtPosition = (row: number, col: number): string => {
-    // Pure grid-based approach - no fallback needed
-
+    // Pure grid-based approach - always show the actual letter in the cell
     if (row >= gridData.length || col >= gridData[0]?.length) return '';
     
     const cellData = gridData[row][col];
-    if (!cellData.letter) return '';
-
-    // If there's a focused cell, only show letters that match the focused direction
-    if (focusedCell) {
-      const isFocusedCluePosition = (
-        (focusedCell.direction === 'across' && 
-         row === focusedCell.clue.startRow && 
-         col >= focusedCell.clue.startCol && 
-         col < focusedCell.clue.startCol + focusedCell.clue.length) ||
-        (focusedCell.direction === 'down' && 
-         col === focusedCell.clue.startCol && 
-         row >= focusedCell.clue.startRow && 
-         row < focusedCell.clue.startRow + focusedCell.clue.length)
-      );
-
-      if (isFocusedCluePosition) {
-        // This cell is part of the focused clue - show the letter for this direction
-        if (focusedCell.direction === 'across') {
-          return cellData.acrossLetter || '';
-        } else {
-          return cellData.downLetter || '';
-        }
-      } else {
-        // This cell is NOT part of the focused clue - show the displayed letter
-        return cellData.letter;
-      }
-    }
-
-    // No focused cell - show any letter
-    return cellData.letter;
+    return cellData.letter || '';
   };
 
   const handleCellClick = (row: number, col: number) => {
@@ -210,13 +189,17 @@ export const CrosswordGrid: React.FC<CrosswordGridProps> = ({
           } else {
             newGrid[row][col].downLetter = letter;
           }
-          // Display the letter from the currently active direction
+          
+          // Always display the letter (same for both directions if they match)
           newGrid[row][col].letter = letter;
           newGrid[row][col].lastActiveDirection = direction;
         }
         
         return newGrid;
       });
+
+      // Notify parent that cell was edited (to clear validation)
+      if (onCellEdit) onCellEdit();
 
       // Move to next cell
       moveToNextCell();
@@ -231,27 +214,27 @@ export const CrosswordGrid: React.FC<CrosswordGridProps> = ({
           // Clear the letter for the specific direction
           if (direction === 'across') {
             newGrid[row][col].acrossLetter = undefined;
-            // If no down letter exists, clear display
-            if (!newGrid[row][col].downLetter) {
-              newGrid[row][col].letter = '';
-            } else {
-              newGrid[row][col].letter = newGrid[row][col].downLetter!;
-              newGrid[row][col].lastActiveDirection = 'down';
-            }
           } else {
             newGrid[row][col].downLetter = undefined;
-            // If no across letter exists, clear display
-            if (!newGrid[row][col].acrossLetter) {
-              newGrid[row][col].letter = '';
-            } else {
-              newGrid[row][col].letter = newGrid[row][col].acrossLetter!;
-              newGrid[row][col].lastActiveDirection = 'across';
-            }
+          }
+          
+          // Update display letter - show the remaining letter if any, otherwise clear
+          const remainingLetter = newGrid[row][col].acrossLetter || newGrid[row][col].downLetter;
+          newGrid[row][col].letter = remainingLetter || '';
+          
+          // Update last active direction to the remaining letter's direction if any
+          if (remainingLetter) {
+            newGrid[row][col].lastActiveDirection = newGrid[row][col].acrossLetter ? 'across' : 'down';
+          } else {
+            newGrid[row][col].lastActiveDirection = undefined;
           }
         }
         
         return newGrid;
       });
+
+      // Notify parent that cell was edited (to clear validation)
+      if (onCellEdit) onCellEdit();
 
       // Move to previous cell
       moveToPreviousCell();
@@ -370,10 +353,10 @@ export const CrosswordGrid: React.FC<CrosswordGridProps> = ({
     }
 
     return clsx(
-      'w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-9 lg:h-9 border flex items-center justify-center text-xs font-bold relative transition-all duration-500 text-black',
+      'w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-9 lg:h-9 border flex items-center justify-center text-xs font-bold relative text-black',
       {
         'bg-gradient-to-br from-gray-900 to-black border-gray-700': isEffectivelyBlocked,
-        'bg-gradient-to-br from-white via-gray-50 to-purple-50 border-purple-200 cursor-pointer hover:border-purple-400/50 hover:shadow-md backdrop-blur-sm': !isEffectivelyBlocked && !readOnly && !validationClass,
+        'bg-gradient-to-br from-white via-gray-50 to-purple-50 border-purple-200 cursor-pointer backdrop-blur-sm': !isEffectivelyBlocked && !readOnly && !validationClass,
         'bg-gradient-to-br from-blue-500/40 to-purple-500/40 border-blue-400/50 shadow-lg': isInFocusedClue && !isEffectivelyBlocked && !validationClass,
         'bg-gradient-to-br from-purple-500/80 to-blue-500/80 border-purple-400 ring-2 ring-purple-400/50 shadow-xl': isFocused && !validationClass,
         'bg-gradient-to-br from-white via-gray-50 to-purple-50 border-purple-200': readOnly && !isEffectivelyBlocked && !validationClass,
@@ -422,13 +405,65 @@ export const CrosswordGrid: React.FC<CrosswordGridProps> = ({
         </div>
       </div>
       
-      {progress.isCompleted && !progress.solveTime && (
-        <div className="mt-4 cosmic-card p-3 text-center border-2 border-orange-500/50 bg-gradient-to-br from-orange-500/20 to-yellow-500/20">
-          <div className="text-2xl mb-2">🔍</div>
-          <div className="text-lg font-bold text-white mb-1">Auto-Solved!</div>
-          <div className="text-purple-200 text-sm">All answers revealed</div>
-        </div>
-      )}
+      {/* Actions or Completion Status */}
+      <div className="mt-4 w-full max-w-md mx-auto">
+        {!isCompleted ? (
+          /* Action Buttons */
+          <div className="flex gap-3">
+            <button
+              onClick={onCheckAnswers}
+              disabled={!canCheckAnswers}
+              className={`flex-1 aurora-button text-sm py-2.5 px-4 ${!canCheckAnswers ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <span className="flex items-center justify-center gap-2">
+                <span>✨</span>
+                <span>Check & Save</span>
+              </span>
+            </button>
+
+            <button
+              onClick={onAutoSolve}
+              disabled={autoSolving}
+              className="flex-1 stellar-button text-sm py-2.5 px-4 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {autoSolving ? (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent"></div>
+                  <span>Revealing...</span>
+                </div>
+              ) : (
+                <span className="flex items-center justify-center gap-2">
+                  <span>🔍</span>
+                  <span>Auto-Solve</span>
+                </span>
+              )}
+            </button>
+          </div>
+        ) : (
+          /* Completion Status */
+          <div className={`cosmic-card p-3 text-center border-2 ${
+            !progress.solveTime
+              ? 'border-orange-500/50 bg-gradient-to-br from-orange-500/20 to-yellow-500/20'
+              : 'border-green-500/50 bg-gradient-to-br from-green-500/20 to-blue-500/20'
+          }`}>
+            <div className="text-3xl mb-2">
+              {!progress.solveTime ? '🔍' : '🎉'}
+            </div>
+            <div className="text-lg font-bold text-white mb-1">
+              {!progress.solveTime ? 'Auto-Solved!' : 'Victory! 🌟'}
+            </div>
+            <div className="text-purple-200 text-sm">
+              {!progress.solveTime ? (
+                <p>All answers revealed</p>
+              ) : progress.solveTime ? (
+                <p>Time: {Math.floor(progress.solveTime / 60)}:{(progress.solveTime % 60).toString().padStart(2, '0')} ⏱️</p>
+              ) : (
+                <p>Stellar! 🚀</p>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
       
       {isCompleted && (
         <div className={`fixed inset-0 flex items-center justify-center z-50 p-4 transition-opacity duration-1000 ${

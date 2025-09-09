@@ -80,10 +80,12 @@ router.get('/today', authenticateToken, async (req: AuthenticatedRequest, res) =
 
     const progressData = {
       answers: JSON.parse(progress.answersData),
+      gridData: progress.gridData ? JSON.parse(progress.gridData) : null,
       completedClues: JSON.parse(progress.completedClues),
       isCompleted: progress.isCompleted,
       completedAt: progress.completedAt,
-      solveTime: progress.solveTime
+      solveTime: progress.solveTime,
+      firstViewedAt: progress.firstViewedAt
     };
 
     res.json({
@@ -129,6 +131,7 @@ router.post('/validate', authenticateToken, async (req: AuthenticatedRequest, re
           userId: user.id,
           puzzleDate,
           answersData: '{}',
+          gridData: null,
           completedClues: '[]',
           isCompleted: false
         }
@@ -252,6 +255,7 @@ router.post('/validate-grid', authenticateToken, async (req: AuthenticatedReques
           userId: user.id,
           puzzleDate,
           answersData: '{}',
+          gridData: null,
           completedClues: '[]',
           isCompleted: false
         }
@@ -274,9 +278,10 @@ router.post('/validate-grid', authenticateToken, async (req: AuthenticatedReques
       allNewCompletedClues.includes(clue.number)
     );
 
-    // Update progress (store solved clues for UI compatibility)
+    // Update progress (store solved clues for UI compatibility and grid state)
     const updateData: any = {
       answersData: JSON.stringify(validationResult.solvedClues),
+      gridData: JSON.stringify(gridData), // Save current grid state
       completedClues: JSON.stringify(allNewCompletedClues),
       updatedAt: new Date()
     };
@@ -342,17 +347,21 @@ router.get('/progress/:date', authenticateToken, async (req: AuthenticatedReques
     if (!progress) {
       return res.json({
         answers: {},
+        gridData: null,
         completedClues: [],
-        isCompleted: false
+        isCompleted: false,
+        firstViewedAt: null
       });
     }
 
     res.json({
       answers: JSON.parse(progress.answersData),
+      gridData: progress.gridData ? JSON.parse(progress.gridData) : null,
       completedClues: JSON.parse(progress.completedClues),
       isCompleted: progress.isCompleted,
       completedAt: progress.completedAt,
-      solveTime: progress.solveTime
+      solveTime: progress.solveTime,
+      firstViewedAt: progress.firstViewedAt
     });
 
   } catch (error) {
@@ -377,14 +386,21 @@ router.post('/auto-solve', authenticateToken, async (req: AuthenticatedRequest, 
       return res.status(404).json({ error: 'Puzzle not found' });
     }
 
-    // Check if puzzle is less than 12 hours old
+    // Check if puzzle is within the cooldown period
     const puzzleCreatedAt = new Date(puzzle.createdAt);
     const currentTime = new Date();
     const timeDifference = currentTime.getTime() - puzzleCreatedAt.getTime();
+    
+    // Use environment variable for cooldown duration
+    // 5 minutes (0.083 hours) in dev, 12 hours in production
+    const cooldownHours = process.env.NODE_ENV === 'development' 
+      ? 5 / 60  // 5 minutes converted to hours
+      : parseFloat(process.env.AUTO_SOLVE_COOLDOWN_HOURS || '12');
+    
     const hoursElapsed = timeDifference / (1000 * 60 * 60); // Convert to hours
 
-    if (hoursElapsed < 12) {
-      const remainingTime = 12 - hoursElapsed;
+    if (hoursElapsed < cooldownHours) {
+      const remainingTime = cooldownHours - hoursElapsed;
       const remainingHours = Math.floor(remainingTime);
       const remainingMinutes = Math.floor((remainingTime % 1) * 60);
       const remainingSeconds = Math.floor(((remainingTime % 1) * 60 % 1) * 60);
@@ -398,7 +414,7 @@ router.post('/auto-solve', authenticateToken, async (req: AuthenticatedRequest, 
           seconds: remainingSeconds,
           totalSeconds: Math.floor(remainingTime * 3600)
         },
-        canAutoSolveAt: new Date(puzzleCreatedAt.getTime() + (12 * 60 * 60 * 1000)).toISOString()
+        canAutoSolveAt: new Date(puzzleCreatedAt.getTime() + (cooldownHours * 60 * 60 * 1000)).toISOString()
       });
     }
 
@@ -418,6 +434,7 @@ router.post('/auto-solve', authenticateToken, async (req: AuthenticatedRequest, 
           userId: user.id,
           puzzleDate,
           answersData: '{}',
+          gridData: null,
           completedClues: '[]',
           isCompleted: false
         }
@@ -448,6 +465,7 @@ router.post('/auto-solve', authenticateToken, async (req: AuthenticatedRequest, 
     // Update progress with auto-solved state (no achievements/points)
     const updateData = {
       answersData: JSON.stringify(validationResult.solvedClues),
+      gridData: JSON.stringify(completeSolutionGrid), // Save complete solution grid
       completedClues: JSON.stringify(validationResult.newCompletedClues),
       isCompleted: true,
       completedAt: new Date(),

@@ -7,7 +7,7 @@ export interface CrosswordClue {
     number: number;
     clue: string;
     answer: string;
-    direction: 'across' | 'down';
+    direction: "across" | "down";
     startRow: number;
     startCol: number;
     length: number;

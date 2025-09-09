@@ -8,6 +8,7 @@ const auth_1 = require("../middleware/auth");
 const prisma_1 = require("../lib/prisma");
 const cronService_1 = __importDefault(require("../services/puzzle/cronService"));
 const achievementService_1 = __importDefault(require("../services/achievement/achievementService"));
+const gridValidator_1 = require("../services/puzzle/gridValidator");
 const router = (0, express_1.Router)();
 // Get today's puzzle
 router.get('/today', auth_1.authenticateToken, async (req, res) => {
@@ -226,67 +227,16 @@ router.post('/validate-grid', auth_1.authenticateToken, async (req, res) => {
         const cluesData = JSON.parse(puzzle.cluesData);
         const solutionGrid = JSON.parse(puzzle.gridData);
         const currentCompletedClues = JSON.parse(progress.completedClues);
-        // PURE GRID-BASED VALIDATION
-        // Compare user grid with solution grid cell by cell
-        const cellValidation = {}; // "row,col": boolean
-        const results = {}; // clue validation results
-        const solvedClues = {}; // extracted answers for UI
-        const newCompletedClues = [];
-        // Step 1: Validate each cell against solution
-        for (let row = 0; row < gridData.length; row++) {
-            for (let col = 0; col < gridData[0].length; col++) {
-                const userCell = gridData[row][col];
-                const solutionCell = solutionGrid[row][col];
-                if (!solutionCell.isBlocked && userCell && userCell.letter) {
-                    const cellKey = `${row},${col}`;
-                    cellValidation[cellKey] = userCell.letter.toUpperCase() === solutionCell.letter.toUpperCase();
-                }
-            }
-        }
-        // Step 2: Check clue completion based on cell validation
-        for (const clue of cluesData) {
-            let allCellsCorrect = true;
-            let extractedAnswer = '';
-            // Check each cell position for this clue
-            for (let i = 0; i < clue.length; i++) {
-                const row = clue.direction === 'across' ? clue.startRow : clue.startRow + i;
-                const col = clue.direction === 'across' ? clue.startCol + i : clue.startCol;
-                const cellKey = `${row},${col}`;
-                // Extract letter for UI display
-                if (row < gridData.length && col < gridData[0].length && gridData[row][col]) {
-                    const userCell = gridData[row][col];
-                    let letter = '';
-                    // Get direction-specific letter or fallback
-                    if (clue.direction === 'across' && userCell.acrossLetter) {
-                        letter = userCell.acrossLetter;
-                    }
-                    else if (clue.direction === 'down' && userCell.downLetter) {
-                        letter = userCell.downLetter;
-                    }
-                    else if (userCell.letter) {
-                        letter = userCell.letter;
-                    }
-                    extractedAnswer += letter.toUpperCase();
-                }
-                // Check if this cell is incorrect
-                if (!cellValidation[cellKey]) {
-                    allCellsCorrect = false;
-                }
-            }
-            results[clue.number] = allCellsCorrect && extractedAnswer.length === clue.length;
-            solvedClues[clue.number.toString()] = extractedAnswer;
-            // Track newly completed clues
-            if (results[clue.number] && !currentCompletedClues.includes(clue.number)) {
-                newCompletedClues.push(clue.number);
-                currentCompletedClues.push(clue.number);
-            }
-        }
+        // Use shared validation logic
+        const validationResult = (0, gridValidator_1.validateGrid)(gridData, solutionGrid, cluesData, currentCompletedClues);
+        // Update completed clues list
+        const allNewCompletedClues = [...currentCompletedClues, ...validationResult.newCompletedClues];
         // Check if puzzle is completed
-        const allCluesCompleted = cluesData.every((clue) => currentCompletedClues.includes(clue.number));
+        const allCluesCompleted = cluesData.every((clue) => allNewCompletedClues.includes(clue.number));
         // Update progress (store solved clues for UI compatibility)
         const updateData = {
-            answersData: JSON.stringify(solvedClues),
-            completedClues: JSON.stringify(currentCompletedClues),
+            answersData: JSON.stringify(validationResult.solvedClues),
+            completedClues: JSON.stringify(allNewCompletedClues),
             updatedAt: new Date()
         };
         if (allCluesCompleted && !progress.isCompleted) {
@@ -303,17 +253,17 @@ router.post('/validate-grid', auth_1.authenticateToken, async (req, res) => {
             user,
             puzzleDate,
             progress,
-            newCompletedClues,
+            newCompletedClues: validationResult.newCompletedClues,
             solveTime: progress.solveTime
         });
         // Return both grid validation and solved clues (for UI only)
         res.json({
-            results, // Per-clue validation results
-            cellValidation, // Per-cell validation results (new)
-            newCompletedClues,
+            results: validationResult.clueResults, // Per-clue validation results
+            cellValidation: validationResult.cellValidation, // Per-cell validation results
+            newCompletedClues: validationResult.newCompletedClues,
             isCompleted: progress.isCompleted,
             solveTime: progress.solveTime,
-            solvedClues, // Extracted clue answers for UI display only
+            solvedClues: validationResult.solvedClues, // Extracted clue answers for UI display only
             validatedGrid: gridData, // Return the validated grid
             newAchievements: newAchievements.map(ua => ({
                 id: ua.id,
@@ -374,6 +324,28 @@ router.post('/auto-solve', auth_1.authenticateToken, async (req, res) => {
         if (!puzzle) {
             return res.status(404).json({ error: 'Puzzle not found' });
         }
+        // Check if puzzle is less than 12 hours old
+        const puzzleCreatedAt = new Date(puzzle.createdAt);
+        const currentTime = new Date();
+        const timeDifference = currentTime.getTime() - puzzleCreatedAt.getTime();
+        const hoursElapsed = timeDifference / (1000 * 60 * 60); // Convert to hours
+        if (hoursElapsed < 12) {
+            const remainingTime = 12 - hoursElapsed;
+            const remainingHours = Math.floor(remainingTime);
+            const remainingMinutes = Math.floor((remainingTime % 1) * 60);
+            const remainingSeconds = Math.floor(((remainingTime % 1) * 60 % 1) * 60);
+            return res.status(429).json({
+                error: 'AUTO_SOLVE_COOLDOWN',
+                message: 'This puzzle cannot be auto-solved yet!',
+                remainingTime: {
+                    hours: remainingHours,
+                    minutes: remainingMinutes,
+                    seconds: remainingSeconds,
+                    totalSeconds: Math.floor(remainingTime * 3600)
+                },
+                canAutoSolveAt: new Date(puzzleCreatedAt.getTime() + (12 * 60 * 60 * 1000)).toISOString()
+            });
+        }
         // Get or create user progress
         let progress = await prisma_1.prisma.userProgress.findUnique({
             where: {
@@ -394,19 +366,27 @@ router.post('/auto-solve', auth_1.authenticateToken, async (req, res) => {
                 }
             });
         }
-        // Parse puzzle clues
+        // Parse puzzle data
         const cluesData = JSON.parse(puzzle.cluesData);
-        // Create answers object with all correct answers
-        const allAnswers = {};
-        const allCompletedClues = [];
-        cluesData.forEach((clue) => {
-            allAnswers[clue.number.toString()] = clue.answer;
-            allCompletedClues.push(clue.number);
-        });
+        const solutionGrid = JSON.parse(puzzle.gridData);
+        // Create solution grid using shared function
+        const completeSolutionGrid = (0, gridValidator_1.createSolutionGrid)(solutionGrid, cluesData);
+        // Validate the complete solution grid to get proper validation results
+        const validationResult = (0, gridValidator_1.validateGrid)(completeSolutionGrid, solutionGrid, cluesData, []);
+        // Create cell validation results (all cells should be correct)
+        const cellValidation = {};
+        for (let row = 0; row < solutionGrid.length; row++) {
+            for (let col = 0; col < solutionGrid[0]?.length || 0; col++) {
+                const cell = solutionGrid[row][col];
+                if (!cell.isBlocked) {
+                    cellValidation[`${row},${col}`] = true;
+                }
+            }
+        }
         // Update progress with auto-solved state (no achievements/points)
         const updateData = {
-            answersData: JSON.stringify(allAnswers),
-            completedClues: JSON.stringify(allCompletedClues),
+            answersData: JSON.stringify(validationResult.solvedClues),
+            completedClues: JSON.stringify(validationResult.newCompletedClues),
             isCompleted: true,
             completedAt: new Date(),
             solveTime: null, // No solve time for auto-solved puzzles
@@ -416,12 +396,15 @@ router.post('/auto-solve', auth_1.authenticateToken, async (req, res) => {
             where: { id: progress.id },
             data: updateData
         });
-        // Return all answers (no achievements are checked or awarded)
+        // Return grid-based response (no achievements are checked or awarded)
         res.json({
-            answers: allAnswers,
-            completedClues: allCompletedClues,
+            answers: validationResult.solvedClues, // Clue answers for UI compatibility
+            completedClues: validationResult.newCompletedClues,
             isCompleted: true,
-            autoSolved: true // Flag to indicate this was auto-solved
+            autoSolved: true, // Flag to indicate this was auto-solved
+            cellValidation, // Cell-level validation results
+            validatedGrid: completeSolutionGrid, // The complete solution grid
+            results: validationResult.clueResults // Per-clue validation results
         });
     }
     catch (error) {

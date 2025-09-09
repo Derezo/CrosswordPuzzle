@@ -24,6 +24,7 @@ model User {
   // Relations
   progresses     UserProgress[]
   achievements   UserAchievement[]
+  suggestions    Suggestion[]
 
   @@map("users")
 }
@@ -38,7 +39,8 @@ model DailyPuzzle {
   createdAt DateTime @default(now())
 
   // Relations
-  progresses UserProgress[]
+  progresses  UserProgress[]
+  suggestions Suggestion[]
 
   @@map("daily_puzzles")
 }
@@ -48,10 +50,12 @@ model UserProgress {
   userId        String
   puzzleDate    String
   answersData   String    @default("{}") // JSON string of answers
+  gridData      String?   // JSON string of current grid state
   completedClues String   @default("[]") // JSON string of completed clue numbers
   isCompleted   Boolean   @default(false)
   completedAt   DateTime?
   solveTime     Int?      // in seconds
+  firstViewedAt DateTime  @default(now()) // When user first viewed this puzzle
   startedAt     DateTime  @default(now())
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -95,4 +99,26 @@ model UserAchievement {
 
   @@unique([userId, achievementId])
   @@map("user_achievements")
+}
+
+model Suggestion {
+  id               String   @id @default(cuid())
+  userId           String
+  puzzleId         String
+  puzzleDate       String
+  clueNumber       Int
+  originalClue     String
+  originalAnswer   String
+  suggestedClue    String?
+  suggestedAnswer  String?
+  comments         String?  // Optional user comments about the suggestion
+  status           String   @default("pending") // pending, reviewed, implemented, rejected
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  puzzle DailyPuzzle @relation(fields: [puzzleId], references: [id], onDelete: Cascade)
+
+  @@map("suggestions")
 }

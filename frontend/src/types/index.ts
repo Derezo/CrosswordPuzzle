@@ -31,10 +31,12 @@ export interface DailyPuzzle {
 
 export interface UserProgress {
   answers: { [clueNumber: string]: string };
+  gridData?: any[][]; // Saved grid state
   completedClues: number[];
   isCompleted: boolean;
   completedAt?: string;
   solveTime?: number;
+  firstViewedAt?: string;
 }
 
 export interface Achievement {

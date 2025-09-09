@@ -140,4 +140,34 @@ export const leaderboardAPI = {
   },
 };
 
+// Suggestion API
+export const suggestionAPI = {
+  submitSuggestion: async (data: {
+    puzzleDate: string;
+    clueNumber: number;
+    originalClue: string;
+    originalAnswer: string;
+    suggestedClue?: string;
+    suggestedAnswer?: string;
+    comments?: string;
+  }) => {
+    const response = await api.post('/suggestion/submit', data);
+    return response.data;
+  },
+
+  getMySuggestions: async () => {
+    const response = await api.get('/suggestion/my-suggestions');
+    return response.data;
+  },
+
+  getAllSuggestions: async (params?: {
+    status?: string;
+    limit?: number;
+    offset?: number;
+  }) => {
+    const response = await api.get('/suggestion/all', { params });
+    return response.data;
+  },
+};
+
 export default api;

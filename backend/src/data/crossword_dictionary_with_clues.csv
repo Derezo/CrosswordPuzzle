@@ -2225,6 +2225,7 @@ ALDERNEY,Small British island,False,True,False
 ALDERS,"Type of tree, plural",False,True,True
 ALDERWOMAN,"Female elder, in a family or tribe",False,True,False
 ALDERWOMEN,Group of elderly women,False,True,True
+ALDM,First four letters of 'Alameda',False,True,False
 ALDRIN,First name of a lunar walker,False,True,False
 ALDUS,Publisher who lived in a tower,False,True,False
 ALE,Brewing product,False,True,False
@@ -13075,3 +13076,3260 @@ BULGY,"Having a rounded, protuberant shape",False,True,False
 BULIES,"A misspelling of 'bullies', those who are cruel and abusive",False,True,False
 BULK,Large quantity or volume,False,True,False
 BULKED,Past tense of increase in size,False,True,False
+BULKIER,"Compared to what, something takes up more space?",False,True,False
+BULKIEST,The superlative form of bulkiness,False,True,False
+BULKILY,In an awkwardly bulky manner,False,True,False
+BULKIN,To swell up,False,True,False
+BULKINESS,State of being thick and padded,False,True,False
+BULKISH,Stout or thick,False,True,False
+BULKS,Sells in large quantities,False,True,True
+BULKY,Clumsy and spacious,False,True,False
+BULL,Male cattle,False,True,False
+BULLBATS,A type of bat,False,True,False
+BULLBOAT,Type of boat used by some Native American tribes,False,True,False
+BULLCART,Old-fashioned farm vehicle,False,True,False
+BULLDOG,A tenacious breed,False,True,False
+BULLDOGGED,"Persistent and tenacious, like a bulldog",False,True,False
+BULLDOGGEDNESS,Steadfast determination,False,True,False
+BULLDOGGER,Rough rider; person who roughhouses,False,True,False
+BULLDOGGING,Type of aggressive bicycle racing,False,True,False
+BULLDOGGISH,"Strenuously persistent, like a bulldog",False,True,False
+BULLDOGGISHLY,"Adverb form of a persistent, determined manner",False,True,False
+BULLDOGGISHNESS,"Stubborn determination, like a bulldog's",False,True,False
+BULLDOGGY,"Like a bulldog, but in a playful way",False,True,False
+BULLDOGISM,British spirit or attitude,False,True,False
+BULLDOGS,Canine athletes,False,True,True
+BULLDOZE,"To level or clear roughly, especially with a bulldozer",False,True,False
+BULLDOZED,Verb for clearing land with a bulldozer,False,True,False
+BULLDOZER,Earth-moving machine,False,True,False
+BULLDOZERS,Earth-moving vehicles,False,True,True
+BULLDOZES,Moves earth with great force,False,True,False
+BULLDOZING,Verb for moving earth with a large machine,False,True,False
+BULLED,Slang term for being shocked,False,True,False
+BULLER,Small stream,False,True,False
+BULLET,Small arms projectile,False,True,False
+BULLETED,Marked with bullet points,False,True,False
+BULLETHEADED,"Having a head full of ideas, often misguided",False,True,False
+BULLETIN,Type of news update,False,True,False
+BULLETINED,Notified in writing,False,True,False
+BULLETINING,News announcement process,False,True,False
+BULLETINS,News updates,False,True,True
+BULLETLESS,Armed but empty,False,True,False
+BULLETLIKE,Like a bullet in shape,False,True,False
+BULLETPROOFED,Made to withstand bullets,False,True,False
+BULLETPROOFS,Protective of bullets,False,True,False
+BULLETS,Small metal projectiles,False,True,True
+BULLFIGHT,Spanish tradition,False,True,False
+BULLFIGHTER,斗牛士（7）,False,True,False
+BULLFIGHTERS,Participants in a bullfight,False,True,False
+BULLFIGHTING,Spanish spectacle,False,True,False
+BULLFIGHTS,"Spanish spectacle, plural",False,True,True
+BULLFINCH,Small bird with a distinctive red chest,False,True,False
+BULLFINCHES,Small seed-eating birds,False,True,True
+BULLFLOWER,"Type of plant with large, showy flowers",False,True,False
+BULLFROG,Large amphibian often found in ponds,False,True,False
+BULLFROGS,Large amphibians often found in ponds,False,True,True
+BULLHEAD,Fish with a distinctive nose,False,True,False
+BULLHEADED,"Stubborn, like a bull",False,True,False
+BULLHEADEDLY,Stubbornly,False,True,False
+BULLHEADEDNESS,"Stubbornness, often in capital letters",False,True,False
+BULLHEADS,Fish with distinctive heads,False,True,True
+BULLHORN,Public address device,False,True,False
+BULLHORNS,Animal's loud-speaking organs,False,True,False
+BULLIED,Past participle of a verb meaning to torment,False,True,False
+BULLIER,Comparative form of ox,False,True,False
+BULLIES,Plural form of a person who bullies,False,True,True
+BULLIEST,Most bullying,False,True,False
+BULLING,"Harassment, often in schools",False,True,False
+BULLISH,Optimistic about market prices,False,True,False
+BULLISHLY,"In a market, this adverb describes confidence",False,True,False
+BULLISHNESS,"Market optimism, often in excess",False,True,False
+BULLLIKE,Resembles a bull,False,True,False
+BULLNECK,"A long, strong neck",False,True,False
+BULLNECKED,"Having a thick, strong neck like a bull's",False,True,False
+BULLOCK,Ox used for draft,False,True,False
+BULLOCKER,One who drives oxen,False,True,False
+BULLOCKMAN,Driver of bullock carts,False,True,False
+BULLOCKS,"Oxen, plural",False,True,True
+BULLOCKY,"Like a bullock, possibly in behavior",False,True,False
+BULLPEN,Place where comic strip artists work,False,True,False
+BULLPENS,Large enclosed areas in comic book companies,False,True,True
+BULLRING,Circular venue for bullfighting,False,True,False
+BULLRINGS,Jewelry often worn by women,False,True,True
+BULLRUSH,Type of plant with sharp leaves,False,True,False
+BULLRUSHES,Type of plant growing in dense stands,False,True,True
+BULLS,Plural form of a male cow,False,True,True
+BULLSEYE,Perfect score in darts,False,True,False
+BULLSHIT,Fruitless talk,False,True,False
+BULLSHITS,Said when speaking nonsense,False,True,True
+BULLSHITTED,Past tense of verb meaning to deceive with nonsense,False,True,False
+BULLSHITTING,Verbally spinning tales,False,True,False
+BULLSHOTS,A slang term for shots,False,True,True
+BULLSNAKE,Type of snake,False,True,False
+BULLTERRIER,Type of feisty dog,False,True,False
+BULLWEEDS,A type of plant that can be a pesky weed in fields,False,True,True
+BULLWHIP,Type of cracking whip,False,True,False
+BULLWHIPPED,Past tense of bullwhip,False,True,False
+BULLWHIPPING,Type of sharp economic downturn,False,True,False
+BULLWHIPS,Type of whip used in rodeos,False,True,False
+BULLY,Torment weaker students,False,True,False
+BULLYABLE,Vulnerable to bullying,False,True,False
+BULLYBOY,"A young, often恃强凌弱的家伙",False,True,False
+BULLYBOYS,Group of school bullies,False,True,True
+BULLYDOM,Domain of bullying,False,True,False
+BULLYING,Harassment,False,True,False
+BULLYINGLY,Adverb form of bullying,False,True,False
+BULLYISM,Harassment or bullying behavior,False,True,False
+BULLYRAGGER,"Slang term for a bullying person, especially in a school setting",False,True,False
+BULRUSH,"Type of reed, often used in crafts",False,True,False
+BULT,"Type of small, sturdy boat",False,True,False
+BULTELL,Small bullet,False,True,False
+BULTER,Slightly misspelled term for a type of small cake,False,True,False
+BULTEY,"Odd-shaped, like some eggs",False,True,False
+BULWARK,Defense against attacks,False,True,False
+BULWARKED,Defended like a fortress,False,True,False
+BULWARKS,"Defensive structures, often plural",False,True,True
+BUM,Street term for a person,False,True,False
+BUMAREE,"A type of loose, sleeveless garment",False,True,False
+BUMBASTE,To speak in a pompous manner,False,True,False
+BUMBEE,A bee with a funny name,False,True,False
+BUMBLE,To move about in a confused way,False,True,False
+BUMBLEBEE,"A slow, loud bee",False,True,False
+BUMBLEBEES,"Large, fuzzy flying insects",False,True,True
+BUMBLED,Past tense of stumble,False,True,False
+BUMBLER,One who bumbles,False,True,False
+BUMBLERS,"Noisy, clumsy performers",False,True,False
+BUMBLES,Flies in a clumsy manner,False,True,False
+BUMBLING,Clumsy or fumbling,False,True,False
+BUMBLINGLY,How a bee might behave,False,True,False
+BUMBLINGNESS,State of acting in a bumbling way,False,True,False
+BUMBLINGS,Silly actions or attempts,False,True,True
+BUMBO,Old-timey term for rum,False,True,False
+BUMBOAT,Small boat that carries passengers or goods between ships and shore,False,True,False
+BUMBOATMAN,Waterfront vendor,False,True,False
+BUMBOATMEN,Waterfront vendors,False,True,False
+BUMBOATS,Small boats that sell snacks and drinks near beaches,False,True,False
+BUMFUZZLE,To confuse or perplex,False,True,False
+BUMKIN,"Country bumpkin, colloquial term",False,True,False
+BUMMED,Past tense of bum,False,True,False
+BUMMER,A disappointing event,False,True,False
+BUMMERISH,Slang term for something disappointing,False,True,False
+BUMMERS,Downer messages or complaints,False,True,True
+BUMMEST,Worst in a superlative way,False,True,False
+BUMMING,"Hippie activity, often location-based",False,True,False
+BUMMLE,To make a confused or noisy mess,False,True,False
+BUMMLER,A person who fumbles or bumbles,False,True,False
+BUMP,"A small, round protuberance",False,True,False
+BUMPED,Past tense of bump,False,True,False
+BUMPEE,Infant's soft toy,False,True,False
+BUMPER,Automobile part that absorbs impact,False,True,False
+BUMPERED,Having multiple bumpers,False,True,False
+BUMPERING,Colliding with bumpers,False,True,False
+BUMPERS,Automobile parts that absorb impact,False,True,False
+BUMPH,Small hill,False,True,False
+BUMPIER,More bumpy than,False,True,False
+BUMPIEST,Most uneven,False,True,False
+BUMPINESS,Surface unevenness,False,True,False
+BUMPING,Type of ride in a roller coaster,False,True,False
+BUMPINGLY,"In an energetic, bouncy manner",False,True,False
+BUMPITY,Rough ride,False,True,False
+BUMPKIN,Country bumpkin,False,True,False
+BUMPKINISH,"Slang for country bumpkin, 6 down",False,True,False
+BUMPKINLY,"Countryish, rustic",False,True,False
+BUMPKINS,Country folk,False,True,False
+BUMPOFF,Slang term; fraudulent claim for payment,False,True,False
+BUMPS,Small rises on a surface,False,True,False
+BUMPSY,Irregularly uneven,False,True,False
+BUMPTIOUS,Overly eager to impress; aggressive in seeking notice,False,True,False
+BUMPTIOUSLY,In an arrogant and pushy manner,False,True,False
+BUMPTIOUSNESS,Arrogance,False,True,False
+BUMPY,Having a rough surface,False,True,False
+BUMS,Baseball players on bench,False,True,True
+BUN,Round loaf often in a game,False,True,False
+BUNCH,A group of grapes,False,True,False
+BUNCHBACKED,Having a hunched back,False,True,False
+BUNCHBERRIES,Group of small fruits,False,True,True
+BUNCHBERRY,"Low-growing plant with small, edible berries",False,True,False
+BUNCHED,"Verb form of bunch, with an extra D",False,True,False
+BUNCHER,Maker of clusters,False,True,False
+BUNCHES,Gathered together in clusters,False,True,True
+BUNCHIER,"Comparative form of bunchy, describing something more clustered",False,True,False
+BUNCHIEST,Most clustered,False,True,False
+BUNCHILY,In a bunchy manner,False,True,False
+BUNCHINESS,The quality of being in clusters,False,True,False
+BUNCHING,Gathering of similar things,False,True,False
+BUNCHY,Describing foliage that grows in tight clusters,False,True,False
+BUNCO,A scam or cheat,False,True,False
+BUNCOMBES,A collection of nonsense or foolish talk,False,True,True
+BUNDA,Type of African drum,False,True,False
+BUNDIES,Plural form of a boot,False,True,True
+BUNDISTS,A member of a Jewish fraternal organization,False,True,False
+BUNDLE,Collection of items tied together,False,True,False
+BUNDLED,Verb form meaning to wrap together,False,True,False
+BUNDLER,One who ties up or bundles things,False,True,False
+BUNDLERS,Those who bundle crops,False,True,False
+BUNDLES,Collection of items,False,True,True
+BUNDLET,A small bundle,False,True,False
+BUNDLING,Grouping together,False,True,False
+BUNDOBUST,A playful term for a significant defeat,False,True,False
+BUNDOCKS,Informal term for buttocks,False,True,False
+BUNDT,Type of bundt cake mold,False,True,False
+BUNDTS,Type of bakery often served with glaze,False,True,False
+BUNDY,Name often used in Australian slang,False,True,False
+BUNG,Stopper for a hole,False,True,False
+BUNGA,"Floral term, plural",False,True,True
+BUNGALOW,"Type of small, single-story house",False,True,False
+BUNGALOWS,"Types of simple, single-story dwellings",False,True,True
+BUNGED,Verb meaning to block or stop up,False,True,False
+BUNGER,A rare misspelling of bungle,False,True,False
+BUNGERLY,Clumsy,False,True,False
+BUNGFULL,Swell with air,False,True,False
+BUNGLE,To make a mess of something,False,True,False
+BUNGLED,Messed up,False,True,False
+BUNGLER,A person who makes a mess,False,True,False
+BUNGLERS,A group of clumsy workers,False,True,True
+BUNGLES,"Fails at tasks, as in craftsmanship",False,True,False
+BUNGLING,Frequently misspelled word meaning clumsy,False,True,False
+BUNGLINGLY,How one might fumble through a task,False,True,False
+BUNGLINGS,Work done carelessly,False,True,False
+BUNGOS,A type of dance,False,True,False
+BUNION,"Kneecap's smaller cousin, in shoe",False,True,False
+BUNK,Sleeping berth,False,True,False
+BUNKED,Past tense of bunk,False,True,False
+BUNKER,Type of fortified shelter,False,True,False
+BUNKERED,"Fortified, often in golf",False,True,False
+BUNKERMAN,Reality TV personality who often wears a helmet,False,True,False
+BUNKERS,Types of underground shelters,False,True,True
+BUNKHOUSE,Type of dwelling on a ranch,False,True,False
+BUNKHOUSES,Buildings where miners would sleep,False,True,True
+BUNKIE,Child or young person [4],False,True,False
+BUNKING,Sleeping in shifts,False,True,False
+BUNKLOAD,A lot of hay or insulation,False,True,False
+BUNKMATE,Sleeping partner in a dorm,False,True,False
+BUNKMATES,Roommates in a dorm,False,True,False
+BUNKO,Type of social gambling game,False,True,False
+BUNKOING,A playful term for a type of social game,False,True,False
+BUNKS,Sleeping berths in a ship or train,False,True,True
+BUNN,Small mammal with long ears,False,True,False
+BUNNIES,Plural form of a furry hopping friend,False,True,True
+BUNNS,Type of small mammals,False,True,False
+BUNNY,Small rabbit,False,True,False
+BUNS,Round baked goods often eaten with gravy,False,True,True
+BUNT,Baseball hit,False,True,False
+BUNTER,Type of bird that gives a warning call,False,True,False
+BUNTERS,Type of social gatherings,False,True,False
+BUNTING,Type of fabric often used in flags,False,True,False
+BUNTINGS,"Small birds, often seen at bird feeders",False,True,False
+BUNTON,"Small hill, colloquially",False,True,False
+BUNUELO,Filipino fried dough snack,False,True,False
+BUNYAN,Author of 'The Pilgrim's Progress',False,True,False
+BUOY,Small floating device anchored to mark dangers,False,True,False
+BUOYANT,Able to float,False,True,False
+BUOYANTLY,Adverb form of something that floats,False,True,False
+BUOYED,Verb form of being light and floating,False,True,False
+BUOYING,The action of floating,False,True,False
+BUOYS,Marine markers,False,True,True
+BUR,Starts a slang term for a brief prison sentence,False,True,False
+BURA,"A type of strong, cold wind",False,True,False
+BURAS,Spanish restaurant dish,False,True,False
+BURBANK,City in California,False,True,False
+BURBANKIAN,"Resident of Burbank, CA",False,True,False
+BURBERRY,"British fashion brand, initially made gabardine coats",False,True,False
+BURBLE,To produce a bubbling sound,False,True,False
+BURBLED,Verb for making fizzy sounds,False,True,False
+BURBLER,Device that makes bubbling sounds,False,True,False
+BURBLERS,Those who produce bubbles,False,True,True
+BURBLES,Fizzing sound,False,True,False
+BURBLIER,More effervescent,False,True,False
+BURBLIEST,Most bubbly,False,True,False
+BURBLING,Description of gentle bubbling,False,True,False
+BURBLY,Full of bubbles,False,True,False
+BURBOTS,A type of potato,False,True,False
+BURBS,Suburban neighborhoods,False,True,True
+BURD,Small bird,False,True,False
+BURDEN,Something heavy to carry,False,True,False
+BURDENED,Feeling weighed down,False,True,False
+BURDENER,One who imposes a burden,False,True,False
+BURDENERS,Group that bears,False,True,True
+BURDENING,Something that weighs heavy on one's mind,False,True,False
+BURDENLESS,"Without a load, in spirit",False,True,False
+BURDENOUS,Weighty in nature,False,True,False
+BURDENS,What one might carry a lot,False,True,False
+BURDENSOME,Describing something that feels heavy to carry metaphorically,False,True,False
+BURDENSOMELY,Adverbially describing something heavy and bothersome,False,True,False
+BURDENSOMENESS,State of being burdensome,False,True,False
+BURDIES,Informal term for birds,False,True,True
+BURDOCK,Thorny plant with distinctive seed heads,False,True,False
+BURDOCKS,Thorny plant with distinctive seed heads,False,True,True
+BURDS,"Birds, flightless or otherwise",False,True,True
+BURE,Starts a department,False,True,False
+BUREAU,Furniture with drawers,False,True,False
+BUREAUCRAT,Government worker,False,True,False
+BUREAUCRATIC,Describing a system with many complex rules,False,True,False
+BUREAUCRATS,Government workers in plural form,False,True,True
+BUREAUS,"Plural form of bureau, office",False,True,True
+BUREAUX,Furniture in a plural sense,False,True,True
+BURG,Type of fortified medieval settlement,False,True,False
+BURGA,"Type of flatbread, often grilled",False,True,False
+BURGE,Grows or increases,False,True,False
+BURGEES,A type of hooded robe,False,True,False
+BURGEONING,"Growing vigorously, often used metaphorically",False,True,False
+BURGEONS,To swell out or develop,False,True,True
+BURGER,"Fast food staple, often with lettuce and tomato",False,True,False
+BURGERS,Fast food served in buns,False,True,True
+BURGESS,Civic leader,False,True,False
+BURGESSES,Civic representatives,False,True,False
+BURGH,"Type of town in medieval Scotland,\nKind of urban place",False,True,False
+BURGHER,A citizen of a town,False,True,False
+BURGHERMASTER,Title of a city official,False,True,False
+BURGHERS,Inhabitants of a borough,False,True,True
+BURGHMASTER,Title of a mayor in medieval towns,False,True,False
+BURGLAR,Nighttime home invader,False,True,False
+BURGLARIES,Plural form of burglar's deeds,False,True,True
+BURGLARISE,Rise up in a dishonest manner,False,True,False
+BURGLARISED,Past tense of to burgle,False,True,False
+BURGLARIZE,To commit burglary,False,True,False
+BURGLARIZED,Past tense of break and enter,False,True,False
+BURGLARIZES,Verb form of burgle,False,True,False
+BURGLARIZING,Verb form of burgle; making a place vulnerable to theft,False,True,False
+BURGLARPROOF,Secure against burglars,False,True,False
+BURGLARPROOFED,Secure from burglars,False,True,False
+BURGLARPROOFING,Security measure against thieves,False,True,False
+BURGLARS,Group of people who break into houses,False,True,True
+BURGLARY,Theft of property from a building,False,True,False
+BURGLE,To commit theft in a house,False,True,False
+BURGLED,Past tense of burgle,False,True,False
+BURGLES,Plural of a verb meaning to steal,False,True,True
+BURGLING,The gerund form of burgle,False,True,False
+BURGOMASTER,Title of a city official,False,True,False
+BURGOMASTERS,Title of a mayor in some European cities,False,True,False
+BURGOO,"A hearty stew, often served at potlucks",False,True,False
+BURGOUT,Fast food container,False,True,False
+BURGOUTS,"Fast food creations, plural",False,True,True
+BURGRAVE,English title of a bailiff,False,True,False
+BURGRAVES,Chief of police in some U.S. cities,False,True,False
+BURGS,Type of German settlement,False,True,False
+BURGUL,Type of bulgur wheat,False,True,False
+BURGUNDIAN,Wine-producing region in France,False,True,False
+BURGUNDIES,Wines from a French region,False,True,True
+BURGUNDY,Color of wine,False,True,False
+BURGWARE,Type of locally produced food,False,True,False
+BURI,A type of palm tree,False,True,False
+BURIABLE,Funeral,False,True,False
+BURIAL,Funeral ceremony,False,True,False
+BURIALS,Burials in the plural form,False,True,True
+BURIAN,A breed of long-haired cat,False,True,False
+BURIAT,A Siberian ethnic group,False,True,False
+BURIED,Hidden underground,False,True,False
+BURIELS,Burial places,False,True,True
+BURIER,To bury [Semi-common English],False,True,False
+BURIERS,Those who bury,False,True,False
+BURIES,Hides something,False,True,False
+BURIN,Tool for carving,False,True,False
+BURK,Shorten a letter,False,True,False
+BURKA,Islamic garment covering,False,True,False
+BURKE,Author of 'A Vindication of the Rights of Woman'; 5 letters,False,True,False
+BURKES,Author of 'A Vindication of the Rights of Woman',False,True,False
+BURKHA,Middle Eastern full-body veil,False,True,False
+BURLAP,"Coarse cloth, often used for bags",False,True,False
+BURLAPS,Coarse cloth often used for sacks,False,True,True
+BURLECUE,Steal from a home,False,True,False
+BURLERS,A type of folk dancer,False,True,False
+BURLESK,Type of comic theatrical performance,False,True,False
+BURLESKS,Theatrical comedies,False,True,False
+BURLESQUE,Theatrical comedy with exaggerated performances,False,True,False
+BURLESQUELY,In a satirical theatrical genre,False,True,False
+BURLESQUER,Performer in a burlesque show,False,True,False
+BURLESQUES,The plural form of a theatrical comedy,False,True,True
+BURLESQUING,Form of comic exaggeration in performance,False,True,False
+BURLET,Brief theatrical scene,False,True,False
+BURLIER,More shaggy than the original,False,True,False
+BURLIEST,Most sturdy,False,True,False
+BURLINGTON,"Vermont city, starts with B",False,True,False
+BURLY,Strong and robust,False,True,False
+BURMA,Former name of Myanmar,False,True,False
+BURMAN,A person from Burma,False,True,False
+BURMESE,Language of Myanmar,False,True,False
+BURN,verb; damage by fire,False,True,False
+BURNABLE,capable of being burned,False,True,False
+BURNED,Past tense of ignite,False,True,False
+BURNER,Kerosene heater,False,True,False
+BURNERS,Devices that produce heat,False,True,True
+BURNEWIN,"A town in Norfolk, England",False,True,False
+BURNFIRE,Type of fire used for heating,False,True,False
+BURNIE,"Small, furry animal",False,True,False
+BURNING,What a flame is doing,False,True,False
+BURNINGLY,Intensely,False,True,False
+BURNINGS,Present participle of burn,False,True,False
+BURNISH,Polish,False,True,False
+BURNISHED,Polished and made bright,False,True,False
+BURNISHES,Polishes,False,True,False
+BURNOUSED,Exhausted from overwork,False,True,False
+BURNOUSES,Protective eyewear often worn by firefighters,False,True,False
+BURNOUT,State of chronic physical and emotional exhaustion,False,True,False
+BURNS,Painful sensation often from heat,False,True,False
+BURNT,Scared,False,True,False
+BURNTLY,"Adverbially, how something was cooked",False,True,False
+BURNUT,A type of peanut,False,True,False
+BURNWOOD,Wood used for burning,False,True,False
+BURNY,Fiery in nature,False,True,False
+BURO,Office or bureau in some countries,False,True,False
+BURP,A noise some make after swallowing air,False,True,False
+BURPED,Passed gas through the mouth,False,True,False
+BURPING,Exhalation after a meal,False,True,False
+BURPS,Flatulent exhalation,False,True,False
+BURR,Small projection,False,True,False
+BURRED,Past tense of burrow,False,True,False
+BURREE,"A type of small, inflated toy",False,True,False
+BURRERS,Tools that give a rough finish,False,True,False
+BURRHEAD,Type of stubborn person,False,True,False
+BURRHEL,"Slang term for a hick, backwoodsman",False,True,False
+BURRIEST,Extremely dusty,False,True,False
+BURRISH,Like a burr,False,True,False
+BURRITO,"Taco cousin, often with beans",False,True,False
+BURRITOS,Mexican dish often filled with meat and cheese,False,True,True
+BURRO,"Donkey, a type of burro",False,True,False
+BURROCK,Small variety of apple,False,True,False
+BURROS,Plural of a sure-footed equine,False,True,True
+BURROUGHS,A less common plural form of borough,False,True,True
+BURROW,"Nest or den, often underground",False,True,False
+BURROWED,Past tense of digging a home,False,True,False
+BURROWEED,"A type of weed, often pesky",False,True,False
+BURROWER,Tunnel-digging creature,False,True,False
+BURROWERS,Small animals that dig tunnels,False,True,True
+BURROWING,Action of a mole,False,True,False
+BURROWS,Holes made by certain animals,False,True,False
+BURRS,"Small, hooked seed pods",False,True,False
+BURRY,Interment,False,True,False
+BURS,Small bursary or sum of money,False,True,False
+BURSA,Turkish city and type of body cavity,False,True,False
+BURSAL,A city in Turkey,False,True,False
+BURSATTEE,A type of footwear,False,True,False
+BURSCH,"German student, often in plural",False,True,False
+BURSEED,Type of seed in a burr,False,True,False
+BURSES,"Plural form of purse, in a historical sense",False,True,True
+BURST,To suddenly expand or break open,False,True,False
+BURSTED,Past tense of burst,False,True,False
+BURSTINESS,Quality of being easily burst,False,True,False
+BURSTING,Expanding quickly,False,True,False
+BURSTS,Explosive action,False,True,False
+BURSTY,Occasional,False,True,False
+BURSULA,"Type of small, waterproof jacket",False,True,False
+BURT,Common first name,False,True,False
+BURTHENED,Feeling weighed down,False,True,False
+BURTHENS,What one might bear mentally or physically,False,True,True
+BURTHENSOME,Describing something that feels heavy to carry,False,True,False
+BURTON,Type of English town,False,True,False
+BURTONS,Plural form of a surname,False,True,True
+BURTREE,Type of tree where birds nest,False,True,False
+BURUNDI,A landlocked country in Eastern Africa,False,True,False
+BURUNDIANS,People from Burundi,False,True,True
+BURWEEDS,A type of weed,False,True,True
+BURY,Entomb or inter,False,True,False
+BURYING,Verbing process,False,True,False
+BUS,Large land vehicle for passengers,False,True,False
+BUSBOY,Stagehand assisting in food service,False,True,False
+BUSBOYS,Kitchen helpers,False,True,False
+BUSBY,Costume worn by Scottish Highlanders,False,True,False
+BUSED,"Mode of transport, briefly",False,True,False
+BUSES,Large vehicles that transport many people,False,True,True
+BUSH,Small tree,False,True,False
+BUSHBABY,A nocturnal primate with big eyes,False,True,False
+BUSHBEATER,One who clears brush,False,True,False
+BUSHBOY,Boy scout for shrubs,False,True,False
+BUSHCRAFT,Skill in living outdoors,False,True,False
+BUSHED,Tired out after a day of exertion,False,True,False
+BUSHEL,Unit of dry measure,False,True,False
+BUSHELERS,Agricultural workers,False,True,False
+BUSHELFULS,A measure of grain stored,False,True,True
+BUSHELLED,Grain stored in a certain quantity,False,True,False
+BUSHELLER,One who deals with bushels of grain,False,True,False
+BUSHELMAN,Person who measures in bushels,False,True,False
+BUSHELS,Unit of dry measure,False,True,False
+BUSHELWOMAN,Female merchant by the peck,False,True,False
+BUSHER,One who bushes [4],False,True,False
+BUSHERS,Tools used in shearing sheep,False,True,False
+BUSHES,Plural form of a plant,False,True,True
+BUSHET,A type of onion,False,True,False
+BUSHFIRE,Wildfire in bushes,False,True,False
+BUSHFIRES,Australian wildfires,False,True,True
+BUSHGRASS,Type of grass forming dense clumps,False,True,False
+BUSHI,Japanese martial artist,False,True,False
+BUSHIDOS,"Code of honor, often plural",False,True,False
+BUSHIE,Small version of a bush,False,True,False
+BUSHIER,Greener and thicker,False,True,False
+BUSHIEST,Most martial,False,True,False
+BUSHILY,Extremely abundantly,False,True,False
+BUSHINESS,Commercial activity or occupation,False,True,False
+BUSHLAND,Type of land with thick vegetation,False,True,False
+BUSHLANDS,A rural area with lots of trees,False,True,True
+BUSHLESS,Without shrubs or small trees,False,True,False
+BUSHLIKE,Resembling a bush; shrubby,False,True,False
+BUSHMAN,South African indigenous person,False,True,False
+BUSHRANGER,"Australian outlaw, sometimes plural",False,True,False
+BUSHTIT,Small bird often in flocks,False,True,False
+BUSHWA,A humorous term for nonsense,False,True,False
+BUSHWACK,Clear a path through bushes,False,True,False
+BUSHWAH,Informal term for nonsense,False,True,False
+BUSHWALKING,Activity involving hiking in bushland,False,True,False
+BUSHWHACK,To clear a path by cutting bushes,False,True,False
+BUSHWHACKED,To attack unexpectedly in a forest,False,True,False
+BUSHWHACKER,One who clears a path through dense vegetation,False,True,False
+BUSHWHACKERS,Rebel fighters in the woods,False,True,False
+BUSHWHACKING,Going through bushes with a machete,False,True,False
+BUSHWIFE,Female resident of a bushland,False,True,False
+BUSHWOMAN,Female fighter in Texas politics,False,True,False
+BUSHY,Tightly growing in tufts,False,True,False
+BUSIED,Occupied,False,True,False
+BUSIER,Comparative form of busy,False,True,False
+BUSIES,Occupies,False,True,False
+BUSIEST,Most active,False,True,False
+BUSILY,"Frequently, in a hurry",False,True,False
+BUSINE,Begin a business,False,True,False
+BUSINESS,Trade or commercial activity,False,True,False
+BUSINESSES,Plural form of business,False,True,True
+BUSINESSLIKE,Professional in manner,False,True,False
+BUSINESSMAN,Male version of a business owner,False,True,False
+BUSINESSMEN,Group of people involved in commerce,False,True,True
+BUSINESSWOMAN,A professional woman in commerce,False,True,False
+BUSINESSWOMEN,Group of female business owners,False,True,True
+BUSING,Process of transporting students,False,True,False
+BUSK,To perform music for money,False,True,False
+BUSKED,"Past tense of busk, to play music for money",False,True,False
+BUSKER,Street performer,False,True,False
+BUSKERS,Street performers,False,True,False
+BUSKIN,Kind of footwear,False,True,False
+BUSKING,Street performance,False,True,False
+BUSKINS,Kind of trousers,False,True,False
+BUSKY,"Like a dark, dense thicket",False,True,False
+BUSLOAD,A full load,False,True,False
+BUSMAN,Person in a related trade,False,True,False
+BUSMEN,Public transport workers,False,True,False
+BUSS,Briefly kissed,False,True,False
+BUSSED,Past tense of buss [10],False,True,False
+BUSSES,Plural of a term meaning brief kiss,False,True,True
+BUSSING,Action taken to integrate schools,False,True,False
+BUST,Ancient artifact section,False,True,False
+BUSTARD,Large ground bird,False,True,False
+BUSTARDS,"Large, flightless birds",False,True,False
+BUSTED,Verb form of being caught,False,True,False
+BUSTER,Actor who often plays a rough character,False,True,False
+BUSTERS,Card game roles,False,True,False
+BUSTHEAD,A humorous term for a bald head,False,True,False
+BUSTI,An Italian region,False,True,False
+BUSTIER,Type of corset,False,True,False
+BUSTIEST,Most ample-breasted,False,True,False
+BUSTING,Action of breaking a strike,False,True,False
+BUSTLE,A lively and bustling activity,False,True,False
+BUSTLED,"Past tense of bustle, to move about in a hurried way",False,True,False
+BUSTLER,A boisterous person,False,True,False
+BUSTLERS,Spectators at a cricket match,False,True,False
+BUSTLES,Moves energetically,False,True,False
+BUSTLING,Thriving and active,False,True,False
+BUSTLINGLY,"Adverbially, in a bustling manner",False,True,False
+BUSTO,Small town in California,False,True,False
+BUSTS,Breaks or collapses,False,True,True
+BUSTY,Plump in the chest,False,True,False
+BUSWAY,Type of transit system,False,True,False
+BUSY,Occupied,False,True,False
+BUSYBODIED,Intrusively active,False,True,False
+BUSYBODIES,People who like to interfere in others' affairs,False,True,False
+BUSYBODY,Intrusive meddler,False,True,False
+BUSYBODYISH,Inclined to meddle in other people's affairs,False,True,False
+BUSYBODYISM,Intrusiveness,False,True,False
+BUSYBODYNESS,Intrusiveness,False,True,False
+BUSYHEAD,Term for someone overly preoccupied,False,True,False
+BUSYING,Verb form indicating occupation,False,True,False
+BUSYISH,Somewhat busy,False,True,False
+BUSYNESS,State of being busy,False,True,False
+BUSYNESSES,Plural form of a bustling enterprise,False,True,True
+BUSYWORK,Useless work,False,True,False
+BUSYWORKS,Employment that may be unnecessary,False,True,True
+BUT,Conjunction linking two clauses,False,True,False
+BUTCH,Butcher's initial,False,True,False
+BUTCHA,Butcher,False,True,False
+BUTCHER,Butcher's trade,False,True,False
+BUTCHERBROOM,Type of broom,False,True,False
+BUTCHERED,Past tense of butchering,False,True,False
+BUTCHERER,Butcher,False,True,False
+BUTCHERESS,Female butcher,False,True,False
+BUTCHERIES,Plural form of a place where meat is sold and prepared,False,True,True
+BUTCHERLESS,Without a butcher,False,True,False
+BUTCHERLY,Cruel or brutal,False,True,False
+BUTCHEROUS,Butcher-like in behavior,False,True,False
+BUTCHERS,Butchers sell this,False,True,False
+BUTCHES,Butchers' collective verb,False,True,False
+BUTE,Scottish town near St Andrews,False,True,False
+BUTLE,A kind of small container,False,True,False
+BUTLER,Household employee,False,True,False
+BUTLERESS,Female butler,False,True,False
+BUTLERIES,Rooms in a large house where butlers work,False,True,True
+BUTLERLIKE,Like a butler in demeanor,False,True,False
+BUTLERS,Mistresses' often-employed servants,False,True,True
+BUTLERSHIP,Position in a household,False,True,False
+BUTLERY,Place where wine and other beverages are stored and served,False,True,False
+BUTS,Endings of jokes,False,True,True
+BUTT,Butt of a golf club,False,True,False
+BUTTED,Contacted,False,True,False
+BUTTER,Buttered roll,False,True,False
+BUTTERBALL,A brand of turkey,False,True,False
+BUTTERBOX,Container for spreading,False,True,False
+BUTTERBUMP,"A colloquial term for a small bump, especially on skin",False,True,False
+BUTTERBUR,"Herb with medicinal properties, sometimes used in beer",False,True,False
+BUTTERBUSH,"Shrub with yellow flowers, not dairy",False,True,False
+BUTTERCUP,A yellow-flowered plant,False,True,False
+BUTTERCUPS,Yellow wildflower,False,True,False
+BUTTERED,With butter on one side,False,True,False
+BUTTERER,Person who spreads butter,False,True,False
+BUTTERERS,Occupation of those who make butter,False,True,False
+BUTTERFINGERED,"Often clumsy, literally and figuratively",False,True,False
+BUTTERFINGERS,Humorously for clumsy butter handlers,False,True,False
+BUTTERFLY,Insect known for its colorful wings,False,True,False
+BUTTERFLYFISH,Fish with colorful patterns resembling butterflies,False,True,False
+BUTTERFLYFISHES,Underwater butterflies,False,True,True
+BUTTERFLYLIKE,Like a butterfly,False,True,False
+BUTTERHEAD,Type of lettuce,False,True,False
+BUTTERIER,One who can butter better,False,True,False
+BUTTERIEST,Superlative form of buttery,False,True,False
+BUTTERINE,Buttery spread,False,True,False
+BUTTERINESS,Quality of being buttery,False,True,False
+BUTTERING,Action of applying butter,False,True,False
+BUTTERLESS,Without its topping,False,True,False
+BUTTERLIKE,Like butter in consistency,False,True,False
+BUTTERMAKER,Device for making butter,False,True,False
+BUTTERMAKING,Process of making butter,False,True,False
+BUTTERMAN,Maker of butter,False,True,False
+BUTTERMILK,Type of milk left after making butter,False,True,False
+BUTTERMONGER,Seller of butter,False,True,False
+BUTTERMOUTH,Type of container for ice cream,False,True,False
+BUTTERNUT,Type of winter squash,False,True,False
+BUTTERNUTS,Type of squash harvested for its nut-like flavor,False,True,True
+BUTTERPASTE,"Cooking ingredient, smooth and yellow",False,True,False
+BUTTERROOT,Vegetable that's a type of turnip,False,True,False
+BUTTERS,Applies butter,False,True,False
+BUTTERSCOTCH,"Taste of a sweet, often crunchy treat",False,True,False
+BUTTERWOMAN,Superwoman with a dairy product name,False,True,False
+BUTTERWORKER,Tool for shaping butter,False,True,False
+BUTTERWRIGHT,Maker of butter,False,True,False
+BUTTERY,Like butter,False,True,False
+BUTTERYFINGERED,"Clumsy, often dropping butter",False,True,False
+BUTTES,Small hills,False,True,False
+BUTTIES,British term for a sandwich,False,True,False
+BUTTING,Type of competition,False,True,False
+BUTTINSKIES,A humorous term for buttocks,False,True,True
+BUTTINSKY,"A humorous term, often used in British slang",False,True,False
+BUTTLE,Container for liquid,False,True,False
+BUTTLED,"Encased in metal, briefly",False,True,False
+BUTTLING,"Action of filling bottles, often with cider",False,True,False
+BUTTOCK,One of the sit parts,False,True,False
+BUTTOCKED,Having buttocks,False,True,False
+BUTTOCKS,Cheeky body part,False,True,True
+BUTTON,Fastener on clothing,False,True,False
+BUTTONBALL,A game played on a billiard table,False,True,False
+BUTTONBUR,"A less common variant of 'buttoned-up', describing someone who is reserved or formal",False,True,False
+BUTTONED,Fully fastened,False,True,False
+BUTTONER,One who fastens buttons,False,True,False
+BUTTONERS,Those who press buttons,False,True,False
+BUTTONHOLD,A wrestling move,False,True,False
+BUTTONHOLDER,Device that holds buttons,False,True,False
+BUTTONHOLE,Hole through which a button can be fastened,False,True,False
+BUTTONHOLED,"Caught in the act, figuratively",False,True,False
+BUTTONHOLER,Device for holding buttons,False,True,False
+BUTTONHOLES,Holes for buttons,False,True,False
+BUTTONHOLING,Method of stealthily advancing an idea,False,True,False
+BUTTONHOOK,Tool with a hooked end for fastening buttons,False,True,False
+BUTTONING,Action of fastening buttons,False,True,False
+BUTTONLESS,Garment without fastenings,False,True,False
+BUTTONLIKE,Resembling a button,False,True,False
+BUTTONS,Small fasteners on clothing,False,True,True
+BUTTONWOOD,Tree on Wall Street,False,True,False
+BUTTONY,Fond of buttons,False,True,False
+BUTTRESSES,"Supporting structures, often seen at cathedrals",False,True,True
+BUTTS,Butt ends of something,False,True,True
+BUTTSTRAP,To pull up by the feet,False,True,False
+BUTTWOMEN,A humorous term for two women,False,True,False
+BUTTY,Type of pie,False,True,False
+BUTTYMAN,"A term for a fan of a particular sports team, especially in cricket",False,True,False
+BUTUT,A variant of 'but',False,True,False
+BUXERRIES,"A type of small, sour fruit",False,True,False
+BUXOM,Well-endowed,False,True,False
+BUXOMEST,Most buxom,False,True,False
+BUY,Purchase,False,True,False
+BUYABLE,Something one can purchase,False,True,False
+BUYER,Purchaser,False,True,False
+BUYERS,Those who purchase,False,True,True
+BUYING,Shopping activity,False,True,False
+BUYS,Purchases,False,True,False
+BUZ,Buzz sound,False,True,False
+BUZZ,Sound made by a bee,False,True,False
+BUZZARD,"Large bird of prey, often seen soaring",False,True,False
+BUZZARDLY,"Like a buzzard, perhaps in behavior",False,True,False
+BUZZARDS,"Large, sometimes carrion-eating birds",False,True,False
+BUZZED,Feeling slightly intoxicated,False,True,False
+BUZZER,Small device that makes a buzzing sound,False,True,False
+BUZZERS,Sports equipment that makes noise,False,True,True
+BUZZES,"Makes a humming sound, plural",False,True,True
+BUZZIER,More active like a bee,False,True,False
+BUZZIES,"Small, flying insects",False,True,True
+BUZZIEST,"Most active, like bees",False,True,False
+BUZZING,蜂鸣声（7）,False,True,False
+BUZZINGLY,How a bee moves,False,True,False
+BUZZLE,Confuse,False,True,False
+BUZZWIG,Small flying insect related to bees,False,True,False
+BUZZWORD,"A trendy term used in business, often without clear meaning",False,True,False
+BUZZWORDS,Current business jargon,False,True,True
+BUZZY,Like a bee's sound,False,True,False
+BYARD,Kind of yard named after a builder,False,True,False
+BYE,Farewell,False,True,False
+BYEE,A less common way to say goodbye,False,True,False
+BYELORUSSIA,"Former Soviet republic, now Belarus",False,True,False
+BYELORUSSIAN,Language of Belarus,False,True,False
+BYELORUSSIANS,Ethnic group in Belarus and nearby,False,True,False
+BYEMAN,A riddling term for a doorkeeper,False,True,False
+BYEPATH,Short cut; alternative route,False,True,False
+BYES,Brief form of a common leave phrase,False,True,False
+BYEWORKER,A worker who says goodbye,False,True,False
+BYGANE,Past events,False,True,False
+BYGOING,Method of travel,False,True,False
+BYGONE,Past events,False,True,False
+BYGONES,"Past events, typically disregarded",False,True,False
+BYHAND,Done without machinery,False,True,False
+BYLAW,Local ordinance,False,True,False
+BYLAWMAN,Enforcer of bylaws,False,True,False
+BYLINE,Journalist's signature line,False,True,False
+BYLINED,Signed with one's name,False,True,False
+BYLINER,Type of ship often used for passenger transport,False,True,False
+BYLINERS,Short stories often found in the back pages,False,True,True
+BYLINES,Newspaper credits,False,True,False
+BYNAME,Informal name,False,True,False
+BYON,Bring Your Own,False,True,False
+BYORDINARY,By common means,False,True,False
+BYOUSLY,Unflatteringly,False,True,False
+BYPASS,To go around,False,True,False
+BYPASSED,Verb for going around,False,True,False
+BYPASSER,Person who operates a bypass,False,True,False
+BYPASSES,Avoids a point,False,True,False
+BYPASSING,Going around,False,True,False
+BYPAST,Passed by,False,True,False
+BYPATHS,Alternate routes,False,True,True
+BYPLACE,Small town,False,True,False
+BYPLAY,Form of entertainment involving flirtation,False,True,False
+BYPLAYS,Brief scenes in a play,False,True,True
+BYRE,Farm building for calves,False,True,False
+BYRES,"Scottish dwellings, often in a row",False,True,True
+BYREWOMAN,A female brewer,False,True,False
+BYRL,First name of a dragon from 'How to Train Your Dragon',False,True,False
+BYROAD,Type of road accessed by,False,True,False
+BYROADS,Minor roads,False,True,False
+BYRON,"English poet, 'Don Juan'",False,True,False
+BYRONESQUE,Like Lord Byron's works,False,True,False
+BYRONIST,Admirer of Lord Byron,False,True,False
+BYRONITE,A follower of Lord Byron,False,True,False
+BYRONIZE,To imitate Lord Byron's style,False,True,False
+BYSEN,First four letters of a word meaning 'to send',False,True,False
+BYSTANDER,Onlooker at a scene,False,True,False
+BYSTANDERS,People watching but not participating,False,True,True
+BYSTREET,Small alley in a city,False,True,False
+BYSTREETS,"Small, often overlooked streets",False,True,False
+BYTALK,Type of casual chat,False,True,False
+BYTIME,Measure of duration,False,True,False
+BYWALK,Kind of walking without a vehicle,False,True,False
+BYWALKER,A person who walks by,False,True,False
+BYWALKING,Mode of transport without a vehicle,False,True,False
+BYWARD,Toward the rear,False,True,False
+BYWAY,"Alternative route, briefly",False,True,False
+BYWAYS,Less traveled roads,False,True,False
+BYWORD,Common phrase used frequently,False,True,False
+BYWORDS,Famous words associated with someone,False,True,True
+BYWORKS,Company producing goods,False,True,False
+BYZANT,"Ancient city, now part of Turkey",False,True,False
+BYZANTIUM,Former name of Istanbul,False,True,False
+CAB,Taxi abbreviation,False,True,False
+CABAAN,"Type of simple shelter, like a hut",False,True,False
+CABACK,Type of supportive cushion,False,True,False
+CABAL,Small group plotting against others,False,True,False
+CABALLED,Past tense of a verb meaning to urge on with a crop,False,True,False
+CABALS,Small group plotting against others,False,True,False
+CABAN,Small dwelling; hut,False,True,False
+CABANA,Small tropical hut,False,True,False
+CABANAS,Tropical beach shelters,False,True,True
+CABARET,Theater with music and dancing,False,True,False
+CABARETIER,Owner or manager of a cabaret,False,True,False
+CABARETS,Variety of theaters often featuring performers,False,True,True
+CABAS,Leather goods shop,False,True,False
+CABBAGE,Common garden vegetable,False,True,False
+CABBAGED,Stole a cabbage,False,True,False
+CABBAGEHEAD,A person with a silly round head,False,True,False
+CABBAGEHEADED,Said of someone naive or simple,False,True,False
+CABBAGELIKE,Vegetable with a similar texture,False,True,False
+CABBAGES,"Vegetable crop, often grown in rows",False,True,True
+CABBAGETOWN,"A neighborhood or district filled with large, leafy vegetables",False,True,False
+CABBAGING,Stealing like a cabbage,False,True,False
+CABBAGY,Like a head of cabbage,False,True,False
+CABBALAHS,A mystical Jewish tradition,False,True,False
+CABBED,"Past tense of to cabbage, to take unfair advantage",False,True,False
+CABBER,One who talks excessively,False,True,False
+CABBIE,Taxi driver,False,True,False
+CABBIES,Taxi drivers,False,True,True
+CABBING,Gathering or appropriating,False,True,False
+CABBLE,To talk at length,False,True,False
+CABBLED,A rarely used term for talking idly,False,True,False
+CABBLER,One who talks a great deal,False,True,False
+CABBLING,Type of argument or plea,False,True,False
+CABBY,Taxi driver,False,True,False
+CABDA,Reverse of ABC,False,True,False
+CABDRIVER,London's licensed vehicle operator,False,True,False
+CABDRIVING,Type of driving often found in city centers,False,True,False
+CABER,Type of log used in Highland games,False,True,False
+CABERNET,Red wine variety,False,True,False
+CABERNETS,Varieties of red wine,False,True,True
+CABFUL,"Six-wheeled vehicle, colloquially",False,True,False
+CABIN,"Small dwelling, perhaps in the woods",False,True,False
+CABINED,Enclosed in a small dwelling,False,True,False
+CABINET,Furniture piece or government body,False,True,False
+CABINETED,"Enclosed or surrounded, often used in architectural descriptions",False,True,False
+CABINETMAKE,Type of furniture production,False,True,False
+CABINETMAKER,One who crafts furniture,False,True,False
+CABINETMAKERS,Woodworkers who craft furniture,False,True,True
+CABINETS,Kitchens of cabinet ministers,False,True,True
+CABINETWORK,Furniture crafting,False,True,False
+CABINETWORKER,Furniture craftsman,False,True,False
+CABINING,Building a small shelter,False,True,False
+CABINLIKE,Like a small shelter,False,True,False
+CABINS,Small log dwellings,False,True,True
+CABLE,Telecommunications line,False,True,False
+CABLED,Placed in a cable,False,True,False
+CABLEGRAM,Type of urgent written message,False,True,False
+CABLELESS,Without wires,False,True,False
+CABLEMAN,Person who installs and maintains cable systems,False,True,False
+CABLEMEN,Workers who install and maintain cables,False,True,False
+CABLES,Multiple cables,False,True,True
+CABLESE,Formal language of cable news,False,True,False
+CABLETS,Small tablet-like candies,False,True,False
+CABLEWAYS,Type of transportation over mountains,False,True,False
+CABMAN,London taxi driver,False,True,False
+CABMEN,Former London public transportation workers,False,True,False
+CABOB,A type of shish kebab,False,True,False
+CABOODLE,Term for a miscellaneous collection,False,True,False
+CABOODLES,A colloquial term for a large number of things,False,True,True
+CABOOK,A type of book with a hard cover,False,True,False
+CABOOSE,The last car of a train,False,True,False
+CABOT,First name of a famous Arctic explorer,False,True,False
+CABRIE,A type of shoe with a flexible sole,False,True,False
+CABRIOLE,Type of elegant jump in dance,False,True,False
+CABS,"Four-wheeled vehicles, plural",False,True,True
+CABSTAND,Taxi stand,False,True,False
+CABSTANDS,A place where cabs park,False,True,False
+CACA,Common term for a bowel movement,False,True,False
+CACAN,A term used in some regions for eating,False,True,False
+CACANA,Sound made by a parrot,False,True,False
+CACAO,Cocoa bean,False,True,False
+CACAOS,Source of cocoa,False,True,True
+CACAS,A verb meaning to defecate,False,True,False
+CACE,Type of seal used in documents,False,True,False
+CACHACA,Brazilian sugar-cane liquor,False,True,False
+CACHED,Stored temporarily,False,True,False
+CACHEPOT,"Type of container, often used in gardening",False,True,False
+CACHES,Stashes,False,True,True
+CACHET,Status or prestige,False,True,False
+CACHETS,Marks of distinction; seals,False,True,False
+CACK,"To emit a loud, shrill noise",False,True,False
+CACKED,"A humorous past tense of 'cack', meaning to laugh",False,True,False
+CACKEREL,Rooster,False,True,False
+CACKING,"Type of loud, explosive noise",False,True,False
+CACKLE,"To laugh in a high-pitched, joyous manner",False,True,False
+CACKLED,"To emit a shrill, ringing laugh",False,True,False
+CACKLER,A hen that emits a shrill noise,False,True,False
+CACKLERS,"What makes high-pitched, laughter-like noises in a flock",False,True,True
+CACKLES,"Short, sharp laughter",False,True,False
+CACKLING,"To emit a sharp, shrill laugh",False,True,False
+CACKS,Noisy laughter,False,True,True
+CACOON,Silken casing for a pupa,False,True,False
+CACTI,Plants often found in deserts,False,True,True
+CACTUS,"Desert plant, spiny and succulent",False,True,False
+CACTUSES,"Plural form of cactus, desert plants",False,True,True
+CACTUSLIKE,Describing plants with spines and reduced leaves,False,True,False
+CADAVERS,Plural form of a deceased person,False,True,True
+CADDED,Past tense of add,False,True,False
+CADDIE,Golf attendant,False,True,False
+CADDIED,"Past tense of caddy, one who carries golf bags",False,True,False
+CADDIES,Group of attendants at a golf course,False,True,True
+CADDING,"Alternative spelling of 'coding', a set of instructions",False,True,False
+CADDISFLIES,Type of insect often near streams,False,True,False
+CADDISFLY,Type of insect often by streams,False,True,False
+CADDISH,Unkind in a petty way,False,True,False
+CADDISHLY,Unpleasantly,False,True,False
+CADDISHNESS,Behavior suggesting a cad; unsportsmanlike conduct in plural form,False,True,True
+CADDLE,Small piece of wood for holding a candle,False,True,False
+CADDO,A Native American tribe,False,True,False
+CADDY,Golf attendant,False,True,False
+CADDYING,Golf attendant's role,False,True,False
+CADE,Short form of a name ending in -cad,False,True,False
+CADENCE,Rhythmic flow in a sentence or step,False,True,False
+CADENCED,Slowed and steady,False,True,False
+CADENCES,A rhythmic phrase in music,False,True,False
+CADENCY,A measure of rank or status,False,True,False
+CADENZAS,"Short passages in arias, often virtuosic",False,True,True
+CADET,New recruit in military training,False,True,False
+CADETS,New recruits in military training,False,True,False
+CADETTE,"Female version of cadet, a beginner in military training",False,True,False
+CADETTES,Female cadets,False,True,True
+CADGE,Obtaining by deceit; beg,False,True,False
+CADGED,Past tense of a verb meaning to obtain by deception,False,True,False
+CADGER,Peddler or hawker,False,True,False
+CADGERS,"Rogues, vagrants",False,True,True
+CADGILY,In an unusually clumsy manner,False,True,False
+CADGING,Stealing small amounts of food,False,True,False
+CADGY,Stubbornly persistent,False,True,False
+CADIE,A variant of a common name,False,True,False
+CADILLAC,A type of luxury car,False,True,False
+CADILLACS,"Type of car, anagram of 'CALICODAS'",False,True,True
+CADJAN,A variant spelling of Cajun,False,True,False
+CADRE,Group of soldiers,False,True,False
+CADRES,Group of leaders,False,True,False
+CADUKE,An alternative name for a common animal,False,True,False
+CADWELL,Singer who recorded 'When You Say Nothing at All',False,True,False
+CADY,Name of a plush toy fox,False,True,False
+CADYING,Obsolescent term for selling by weight,False,True,False
+CAECALLY,With blind eyes,False,True,False
+CAERPHILLY,Type of Welsh cheese,False,True,False
+CAESAR,"Roman leader, first name of Julius",False,True,False
+CAF,Abbreviation for coffee,False,True,False
+CAFE,Place for a quick drink,False,True,False
+CAFES,Plural of a place for coffee and snacks,False,True,True
+CAFETERIA,Place for serving cafeteria-style meals,False,True,False
+CAFETERIAS,"Meal halls, plural",False,True,True
+CAFETIERE,Device for making coffee,False,True,False
+CAFFA,Italian coffeehouse,False,True,False
+CAFFEIN,"Stimulant found in coffee, tea, and chocolate",False,True,False
+CAFFEINE,What some say gives them the jitters,False,True,False
+CAFFEINES,Stimulants in coffee and tea,False,True,True
+CAFFLE,"Noisy behavior, often in a group",False,True,False
+CAFFLED,Past tense of a verb meaning to confuse,False,True,False
+CAFFRE,A term referring to a native or inhabitant of South Africa,False,True,False
+CAFTAN,A type of long robe,False,True,False
+CAFTANS,Long robes worn over swimsuits,False,True,False
+CAGAYAN,River in the Philippines,False,True,False
+CAGAYANS,River in the Philippines,False,True,False
+CAGE,Enclosure for animals,False,True,False
+CAGED,Housed in four walls,False,True,False
+CAGEFUL,A cage filled,False,True,False
+CAGELESS,Without a prison,False,True,False
+CAGELIKE,"Like a cage, but for holding plants",False,True,False
+CAGEOT,Type of parrot,False,True,False
+CAGER,Enclosure for animals,False,True,False
+CAGERS,Fans of a certain sport,False,True,False
+CAGES,Housing for animals,False,True,False
+CAGEY,"Sly and cautious, like a wise old sage",False,True,False
+CAGEYNESS,"Sly caution, as in dealing with foes",False,True,False
+CAGGY,Shy or reserved,False,True,False
+CAGIER,More miserly than a miser,False,True,False
+CAGIEST,Safest,False,True,False
+CAGILY,With precision in a playful manner,False,True,False
+CAGINESS,Skepticism or reluctance to engage,False,True,False
+CAGING,Enclosure for animals,False,True,False
+CAGN,Rare obsolete form of 'knee',False,True,False
+CAGY,"Shy and cautious, like a mouse",False,True,False
+CAHIERS,School notebooks,False,True,False
+CAHILL,Last name in a Irish clan,False,True,False
+CAHOKIA,Ancient Native American city near St. Louis,False,True,False
+CAHOOT,Collaborate in a crooked way,False,True,False
+CAHOT,A horse's gallop,False,True,False
+CAHOW,The call of a certain seabird,False,True,False
+CAIDS,Former name of a well-known software company,False,True,False
+CAILCEDRA,"A less common spelling of 'cauldron', a large pot",False,True,False
+CAIMANS,Reptiles found in South American rivers,False,True,True
+CAIN,Son in biblical stories,False,True,False
+CAINGANG,A indigenous people of Brazil,False,True,False
+CAINISH,Showing behavior reminiscent of Cain,False,True,False
+CAINS,First name of a biblical figure,False,True,False
+CAIR,Small pile of stones as a landmark,False,True,False
+CAIRENE,Of or relating to Cairo,False,True,False
+CAIRN,Stack of stones as a landmark,False,True,False
+CAIRNS,Stacks of stones as markers,False,True,True
+CAIRO,Ancient Egyptian capital,False,True,False
+CAISSE,Vault or cashbox,False,True,False
+CAITE,"Female name, in reverse",False,True,False
+CAJAN,Spicy Louisiana dish,False,True,False
+CAJANG,A Southeast Asian chili paste,False,True,False
+CAJETA,Mexican caramel sauce,False,True,False
+CAJOLE,"To persuade, often used in diplomacy [5]",False,True,False
+CAJOLED,To persuade by flattery,False,True,False
+CAJOLEMENT,A gentle way of persuading,False,True,False
+CAJOLER,One who persuades by flattery,False,True,False
+CAJOLERS,People who persuade with flattery,False,True,True
+CAJOLERY,Art of persuading with flattery,False,True,False
+CAJOLES,Coaxes gently,False,True,False
+CAJOLING,Persuading with flattery,False,True,False
+CAJOLINGLY,In a way that's persuasive but insincere,False,True,False
+CAJON,Draw屉,False,True,False
+CAJUN,Louisiana cuisine style,False,True,False
+CAJUNS,Louisiana French-speaking people,False,True,False
+CAJUPUTS,Plants with leaves used in vapor rubs,False,True,True
+CAKE,Sweet baked dessert,False,True,False
+CAKEBOX,Container for a single cake,False,True,False
+CAKEBREAD,Type of bread shaped like a cake,False,True,False
+CAKED,Became hardened like a cake,False,True,False
+CAKEHOUSE,Type of restaurant,False,True,False
+CAKEMAKER,One who bakes cakes,False,True,False
+CAKEMAKING,Process of baking cakes,False,True,False
+CAKER,Baker in reverse,False,True,False
+CAKES,Sweet baked goods often served at celebrations,False,True,True
+CAKETTE,Small cake mold,False,True,False
+CAKEWALK,Something extremely easy,False,True,False
+CAKEWALKED,Walked off with minimal effort,False,True,False
+CAKEWALKER,Something so easy it's like a cake walk,False,True,False
+CAKEWALKING,A task so easy it's like a cake walk,False,True,False
+CAKEWALKS,Something extremely easy,False,True,True
+CAKEY,"A variant of cake, perhaps in a specific context",False,True,False
+CAKIER,"Tastier, in a baking context",False,True,False
+CAKIEST,Extremely sugary,False,True,False
+CAKING,Process of becoming cake-like,False,True,False
+CAKY,"Like a cake, but in a non-food context",False,True,False
+CALABA,"A type of gourd, sometimes used in musical instruments",False,True,False
+CALABASH,Gourd used as a container,False,True,False
+CALABASHES,A type of gourd often used as a container,False,True,True
+CALABAZA,Type of winter squash,False,True,False
+CALABOOSES,"Jail cells, plural",False,True,True
+CALABRESE,Italian vegetable dish,False,True,False
+CALABRIANS,People from Calabria,False,True,True
+CALADIUMS,"Types of ornamental plants, often used in gardens",False,True,True
+CALAMANCO,Type of fabric with a raised surface,False,True,False
+CALAMINT,Mint used in breath fresheners,False,True,False
+CALAMITIES,Misfortunes plural,False,True,True
+CALAMITOUS,Extremely unfortunate,False,True,False
+CALAMITOUSLY,Adverb form of very unfortunate,False,True,False
+CALAMITY,Misfortune,False,True,False
+CALANDER,Yearly event planner,False,True,False
+CALANDRA,"Type of bird, often found in grasslands",False,True,False
+CALASH,A type of match,False,True,False
+CALCIMINE,Type of wall paint,False,True,False
+CALCULABLE,Capable of being figured out,False,True,False
+CALCULATE,Figure out,False,True,False
+CALCULATED,Carefully thought out,False,True,False
+CALCULATEDLY,Adverb form of someone thinking through actions,False,True,False
+CALCULATING,Performing arithmetic,False,True,False
+CALCULATINGLY,Adverb form of calculating,False,True,False
+CALCULATIVE,Tending to calculate,False,True,False
+CALCULATORS,Small machines for quick math,False,True,True
+CALCUTTA,Former name of a city in India,False,True,False
+CALDRON,Large pot used over a fire,False,True,False
+CALDRONS,Large vessels in witch trials,False,True,False
+CALEB,Joshua's lifelong companion,False,True,False
+CALEDONIA,Ancient name for Scotland,False,True,False
+CALEF,Feel,False,True,False
+CALELECTRIC,Type of electric car,False,True,False
+CALENDAR,Yearly schedule,False,True,False
+CALENDARS,"Plural form of calendar, those yearly timekeepers",False,True,True
+CALENDER,Yearly event,False,True,False
+CALENDERS,"Plural form of calendar, time trackers",False,True,True
+CALENDULA,Type of marigold,False,True,False
+CALENDULAS,"Flower name, often in plural",False,True,True
+CALESAS,"A playful misspelling of 'calas', a type of sweet fried pastry",False,True,False
+CALF,Young cow or bull,False,True,False
+CALFBOUND,Restrained like a calf,False,True,False
+CALFLESS,Without a calf,False,True,False
+CALFRET,Port city in Northern Ireland,False,True,False
+CALFS,Young cattle,False,True,True
+CALFSKIN,Calf-derived leather,False,True,False
+CALFSKINS,Material from young cattle used historically for shoes,False,True,False
+CALGARY,Alberta's largest city,False,True,False
+CALGON,Brand of water softener,False,True,False
+CALIC,Four types of glass containers,False,True,True
+CALICO,Fabric often printed with bright designs,False,True,False
+CALICOED,Of a calico cat,False,True,False
+CALICOES,Feminine plural of calico,False,True,True
+CALICOS,"Type of fabric, often in plural",False,True,False
+CALID,Describing something warm; temperate,False,True,False
+CALIF,Abbreviation for California,False,True,False
+CALIFORNIA,Golden State,False,True,False
+CALIFORNIAN,Person from California,False,True,False
+CALIFORNIANA,Collectibles from California,False,True,False
+CALIFORNIANS,People from California,False,True,True
+CALIGRAPHER,One who writes beautifully by hand,False,True,False
+CALIPHS,"Islamic rulers, plural",False,True,True
+CALK,Hard material for shoe soles,False,True,False
+CALKS,Shoe soles before polishing,False,True,True
+CALL,A brief telephone conversation,False,True,False
+CALLA,Type of lily,False,True,False
+CALLALOOS,Type of sweet potato often used in southern U.S. dishes,False,True,True
+CALLAN,Educational institution,False,True,False
+CALLANTS,"Those called, often in a religious context",False,True,True
+CALLAS,"Operatic soprano, in plural form",False,True,False
+CALLBOY,Waiter at some restaurants,False,True,False
+CALLBOYS,Bar helpers,False,True,False
+CALLED,Past tense of to name,False,True,False
+CALLER,Phone contact,False,True,False
+CALLERS,"People making calls, often on the phone",False,True,True
+CALLETS,Small boys' shoes,False,True,False
+CALLI,Prefix for a type of dance,False,True,False
+CALLIGRAPHER,Person who writes in a decorative handwriting,False,True,False
+CALLIGRAPHERS,Writers of elegant handwriting,False,True,True
+CALLIGRAPHICAL,"Describing a careful, artistic handwriting",False,True,False
+CALLIGRAPHIST,Person who writes in a decorative way,False,True,False
+CALLING,"Phone call, in the context of work",False,True,False
+CALLINGS,Occupations or vocations,False,True,True
+CALLOO,To cry out in a shrill voice,False,True,False
+CALLOSITY,Lack of compassion,False,True,False
+CALLOUS,Unfeeling,False,True,False
+CALLOUSED,Having thickened skin from friction,False,True,False
+CALLOUSES,Hardened skin on feet,False,True,False
+CALLOUSING,The process of making someone emotionally hardened,False,True,False
+CALLOUSLY,Stonily,False,True,False
+CALLOUSNESS,Lack of sensitivity,False,True,False
+CALLOUT,Brief public address,False,True,False
+CALLOW,Young and inexperienced,False,True,False
+CALLOWER,To make less refined,False,True,False
+CALLOWEST,Most innocent or inexperienced,False,True,False
+CALLOWNESS,State of inexperience,False,True,False
+CALLS,Phone messages,False,True,True
+CALLUM,"Male name, 6 letters",False,True,False
+CALLUS,Thickened skin from repeated rubbing,False,True,False
+CALLUSED,Having a toughened skin from friction,False,True,False
+CALLUSES,Skin thickens here,False,True,False
+CALLUSING,"A misspelling of 'calling,' but with an extra 'usin'",False,True,False
+CALM,A state of peace,False,True,False
+CALMED,Verb form of soothing,False,True,False
+CALMER,A state of being more tranquil,False,True,False
+CALMEST,Most tranquil,False,True,False
+CALMIER,calmer,False,True,False
+CALMIEST,The most tranquil,False,True,False
+CALMING,Verb form of a state that soothes,False,True,False
+CALMINGLY,Adverb form of a soothing state,False,True,False
+CALMLY,"Adverbially, serenely",False,True,False
+CALMNESS,State of being peaceful,False,True,False
+CALMNESSES,"State of being very calm, plural form",False,True,True
+CALMS,Verb form of a tranquil state,False,True,False
+CALMY,A state of quietness,False,True,False
+CALOOL,Onomatopoeia for a muffled noise,False,True,False
+CALOTTES,"Small, flat hats",False,True,True
+CALPACKED,Packaged in a can,False,True,False
+CALUMNIES,False accusations in plural form,False,True,True
+CALUMNIOUSLY,Adverb form of a charge often made falsely,False,True,False
+CALUSA,Former Native American tribe of Florida,False,True,False
+CALVARY,Place of Christ's crucifixion,False,True,False
+CALVE,"Give birth, specifically for certain animals",False,True,False
+CALVED,Verb for a cow's action at birth,False,True,False
+CALVES,Young cattle,False,True,True
+CALVIN,Protestant reformer,False,True,False
+CALVINISTS,Followers of John Calvin's Protestant teachings,False,True,False
+CALVISH,Scot. term for bald,False,True,False
+CALVOUS,Bald,False,True,False
+CALYCULATED,"Carefully thought out, like a cup",False,True,False
+CALYPSO,Type of song from Caribbean folklore,False,True,False
+CALZONE,Italian pouch-like pastry,False,True,False
+CALZONES,Italian plural for a type of stuffed pasta,False,True,True
+CAMALIG,Type of Filipino rice cake,False,True,False
+CAMAN,Certain type of Celtic stick used in games and music,False,True,False
+CAMARADA,"Fellow soldier, colloquially",False,True,False
+CAMARADERIE,Kindness and friendliness among people,False,True,False
+CAMARIN,"Small room, often in a theater",False,True,False
+CAMARON,Type of prawn,False,True,False
+CAMAS,"Edible wild onion, Native American food",False,True,False
+CAMASS,Type of wildflower and bulb native to North America,False,True,False
+CAMAY,Brand of skin cleansing product,False,True,False
+CAMBERS,An alternative spelling of chambers,False,True,False
+CAMBIO,"Word for change in some languages, briefly",False,True,False
+CAMBISTS,Currency traders,False,True,False
+CAMBODIA,"Asian country, begins with C",False,True,False
+CAMBODIAN,Type of passport holder,False,True,False
+CAMBODIANS,People from Cambodia,False,True,True
+CAMBRIC,Fine linen-like cloth,False,True,False
+CAMBRICS,Type of fabric used in historical clothing,False,True,False
+CAMBRIDGE,A British university city,False,True,False
+CAMDEN,Name of a U.S. city in New Jersey,False,True,False
+CAME,Past tense of come,False,True,False
+CAMEL,Four-legged desert dweller,False,True,False
+CAMELBACK,Hill shaped like a camel's hump,False,True,False
+CAMELEERS,Guides for camels,False,True,False
+CAMELEON,Reptile known for its ability to change color,False,True,False
+CAMELHAIR,Fiber from a camel,False,True,False
+CAMELIA,"Flower name, like rose",False,True,False
+CAMELIAS,Flowers that start with C,False,True,False
+CAMELKEEPER,Person who cares for camels,False,True,False
+CAMELLIA,"Flower name, starts with C",False,True,False
+CAMELLIAS,Flower often featured in gardens,False,True,False
+CAMELLIKE,Like a camel in appearance,False,True,False
+CAMELMAN,Person who handles camels,False,True,False
+CAMELOT,Legendary castle of King Arthur,False,True,False
+CAMELS,Arabian desert beasts of burden,False,True,False
+CAMEMBERT,Type of soft French cheese,False,True,False
+CAMEO,Small sculpted decoration,False,True,False
+CAMEOING,"Type of appearance, often cameo-like",False,True,False
+CAMEOS,Short cameos,False,True,True
+CAMERA,Device for capturing images,False,True,False
+CAMERAMAN,Person who operates a camera,False,True,False
+CAMERAMEN,Film crew members,False,True,False
+CAMERAS,Plural of camera,False,True,True
+CAMERIER,Waiter in formal dining,False,True,False
+CAMERINA,"Small private room, often in a church",False,True,False
+CAMERINE,Small shelter for poultry,False,True,False
+CAMERLINGOS,A term used in basketball for a player's mischievous antics,False,True,False
+CAMERONIAN,A resident of Cameron,False,True,False
+CAMERONIANS,Members of Clan Cameron,False,True,False
+CAMEROON,A large central African nation,False,True,False
+CAMEROONIAN,Citizen of a Central African country,False,True,False
+CAMEROONIANS,Citizens of Cameroon,False,True,True
+CAMES,Nicknames for a metal,False,True,True
+CAMIKNICKERS,Female undergarment,False,True,False
+CAMILLA,Name of a Trojan princess in mythology,False,True,False
+CAMINO,"A path or road, esp. in Spain",False,True,False
+CAMIS,Short form of a garment,False,True,False
+CAMISA,A type of shirt,False,True,False
+CAMISADOES,A plural term for a type of soft cheese,False,True,True
+CAMISAS,Garments worn next to skin,False,True,True
+CAMISE,"Undergarment, singular",False,True,False
+CAMISES,Undergarments in plural,False,True,True
+CAMISIA,Type of garment,False,True,False
+CAMISIAS,Garment plural,False,True,True
+CAMISOLE,Type of light undergarment,False,True,False
+CAMISOLES,Undergarments,False,True,True
+CAMIZE,Worn under a uniform,False,True,False
+CAMLA,Mountain in Spain,False,True,False
+CAMLETED,A state of being torn or worn out,False,True,False
+CAMLETS,Type of tent,False,True,False
+CAMOMILE,A calming tea herb,False,True,False
+CAMOMILES,Flower used in herbal tea,False,True,True
+CAMOOCH,A playful term for a child,False,True,False
+CAMOODIE,"A type of soft, mildly alcoholic drink",False,True,False
+CAMOTE,"Root vegetable, often mashed",False,True,False
+CAMOUFLAGE,Method of hiding by disguising appearance,False,True,False
+CAMOUFLAGED,Verb form of a noun meaning hidden,False,True,False
+CAMOUFLAGER,Person who uses camouflage,False,True,False
+CAMOUFLAGERS,What might be found in a military unit,False,True,True
+CAMOUFLAGING,Method of hiding by disguise,False,True,False
+CAMP,Temporary shelter,False,True,False
+CAMPA,Portuguese capital,False,True,False
+CAMPAGNOLS,Small rodents known for their burrowing habits,False,True,True
+CAMPAIGN,A long-term political effort,False,True,False
+CAMPAIGNED,Verb form of a verb meaning to campaign,False,True,False
+CAMPAIGNER,One who runs for office,False,True,False
+CAMPAIGNERS,Activists in a cause,False,True,False
+CAMPAIGNING,Political activity,False,True,False
+CAMPAIGNS,Political efforts,False,True,True
+CAMPBELL,Type of soup,False,True,False
+CAMPCRAFT,Skill in setting up camp,False,True,False
+CAMPE,Type of structure in an ancient Iberian settlement,False,True,False
+CAMPED,Past tense of camping,False,True,False
+CAMPEMENT,Temporary campsite,False,True,False
+CAMPER,Person who camps out,False,True,False
+CAMPERS,Campers,False,True,True
+CAMPERSHIP,Type of membership for campers,False,True,False
+CAMPESINOS,Latin American peasants,False,True,True
+CAMPESTRIAN,One who loves camping,False,True,False
+CAMPFIGHT,Type of event where scouts practice camping skills,False,True,False
+CAMPFIRE,Nighttime gathering spot,False,True,False
+CAMPFIRES,Campsite amenities,False,True,False
+CAMPGROUND,Place for tents and RVs,False,True,False
+CAMPGROUNDS,Where scouts might gather in plural,False,True,True
+CAMPHIRE,Aromatic resin used in perfumes,False,True,False
+CAMPHOR,Tree resin used in medicine and as an insect repellent,False,True,False
+CAMPI,Plural form of a term for low-lying areas,False,True,True
+CAMPIER,"A variant of 'campier,' meaning more adventurous or bolder",False,True,False
+CAMPIEST,Most rustic,False,True,False
+CAMPILY,In a crooked manner,False,True,False
+CAMPINESS,Exaggerated theatricality,False,True,False
+CAMPING,Spend a night outdoors,False,True,False
+CAMPINGS,Type of vacation,False,True,True
+CAMPION,A champion in a specific contest,False,True,False
+CAMPMAN,Leader of a camping trip,False,True,False
+CAMPMASTER,Leader of a camp,False,True,False
+CAMPONG,Filipino community,False,True,False
+CAMPONGS,Filipino neighborhood,False,True,True
+CAMPOO,Type of bathroom activity,False,True,False
+CAMPOREE,Scout gathering,False,True,False
+CAMPOREES,"Ranch gatherings, often casual",False,True,False
+CAMPOUT,Sleeping outdoors,False,True,False
+CAMPS,"Sheltered groupings, briefly",False,True,True
+CAMPSHED,Shelter for outdoor activities,False,True,False
+CAMPSHEDDING,Process of removing clothing in a camp,False,True,False
+CAMPSHOT,Quick photo taken during a trip,False,True,False
+CAMPSITE,Sheltered spot for camping,False,True,False
+CAMPSITES,Places for camping,False,True,True
+CAMPSTOOL,Furniture for sitting while camping,False,True,False
+CAMPSTOOLS,Set of equipment for outdoor use,False,True,False
+CAMPUS,College grounds,False,True,False
+CAMPUSES,Educational institutions plural,False,True,True
+CAMPUSSES,"Plural form of campus, academic institutions",False,True,True
+CAMPWARD,Towards the camp,False,True,False
+CAMUS,Algerian novelist and philosopher,False,True,False
+CAMUSED,Caused to laugh,False,True,False
+CAMUSES,Educational institution,False,True,False
+CAN,Container,False,True,False
+CANA,First three letters of cane,False,True,False
+CANAANITES,Ancient people of the Holy Land,False,True,False
+CANABA,Type of joint,False,True,False
+CANADA,Country in North America,False,True,False
+CANADIAN,Citizen of Canada,False,True,False
+CANADIANISMS,"Canadian linguistic or cultural peculiarities, plural",False,True,True
+CANADIANIZE,To adopt Canadian ways,False,True,False
+CANADIANS,People from Canada,False,True,True
+CANAL,Man-made waterway,False,True,False
+CANALBOAT,Waterway vehicle,False,True,False
+CANALED,Past tense of a verb related to creating channels,False,True,False
+CANALLA,Small stream,False,True,False
+CANALLED,"An obsolete spelling of 'called', or a misspelling of 'cannulated'",False,True,False
+CANALLERS,Workers on a canal,False,True,False
+CANALMAN,One who navigates canal boats,False,True,False
+CANALS,Waterways connecting bodies of water,False,True,False
+CANALSIDE,Where boats park near water,False,True,False
+CANAMARY,A bird found in both Canada and America,False,True,False
+CANAP,Small French appetizer,False,True,False
+CANAPE,"Type of small, fancy dish",False,True,False
+CANAPES,Canapés: Small fried or toasted bread snacks,False,True,True
+CANARD,A small model airplane,False,True,False
+CANARI,Type of finch,False,True,False
+CANARIAN,Type of bird,False,True,False
+CANARIES,Small birds often kept as pets,False,True,False
+CANARIOTE,Dietary staple of Canary Islanders,False,True,False
+CANARSEE,"A variant spelling of 'canaries', these birds are known for their songs",False,True,True
+CANARY,Small bird often kept as a pet,False,True,False
+CANASTA,Card game with a basket,False,True,False
+CANASTER,Type of large ceramic container,False,True,False
+CANBERRA,Australian capital,False,True,False
+CANCAN,French dance,False,True,False
+CANCANS,"Small French pastries, often in the plural",False,True,True
+CANCEL,Revoke a decision,False,True,False
+CANCELABILITY,The quality that allows something to be canceled,False,True,False
+CANCELABLE,Subject to being annulled,False,True,False
+CANCELATION,Process of making something null and void,False,True,False
+CANCELED,Past tense of cancel,False,True,False
+CANCELER,One who cancels,False,True,False
+CANCELIER,Furniture with a central pole,False,True,False
+CANCELING,Action of putting an end,False,True,False
+CANCELLABILITY,The quality that allows something to be crossed out,False,True,False
+CANCELLATION,The act of making something null and void,False,True,False
+CANCELLATIONS,Plural form of cancellation,False,True,True
+CANCELLED,Past tense of cancel,False,True,False
+CANCELLER,"Debater's tool, briefly",False,True,False
+CANCELLING,Action of ending or ceasing,False,True,False
+CANCELMENT,The act of canceling,False,True,False
+CANCELS,Verb for making something void,False,True,False
+CANCER,Constellation and zodiac sign,False,True,False
+CANCERED,Infested with cancer,False,True,False
+CANCERISM,Slang term for a cancer patient,False,True,False
+CANCEROPHOBE,One who fears cancer,False,True,False
+CANCH,A ring or enclosure for animals,False,True,False
+CANCRISOCIAL,Social media platform with cancer,False,True,False
+CAND,Brand of chocolate,False,True,False
+CANDACE,Character name in The Cosby Show,False,True,False
+CANDELABRA,Furniture piece with multiple candle holders,False,True,True
+CANDELABRAS,Furniture piece in a foyer,False,True,True
+CANDID,"Honest and open, often in a job interview",False,True,False
+CANDIDATE,Political contestee,False,True,False
+CANDIDATED,Voted for in an election,False,True,False
+CANDIDATES,Election-related plural,False,True,True
+CANDIDATING,Voting process,False,True,False
+CANDIDE,Voltaire's naive protagonist,False,True,False
+CANDIDEST,Most honest,False,True,False
+CANDIDLY,Honesty in speech,False,True,False
+CANDIDNESS,"Honesty, straightforwardness",False,True,False
+CANDIDNESSES,Sufficiency of honest frankness,False,True,True
+CANDIED,Sweetened and preserved,False,True,False
+CANDIEL,Type of citrus candy,False,True,False
+CANDIER,Sweeter,False,True,False
+CANDIES,"Sugary treats, often in a wrapper",False,True,True
+CANDIL,Small oil lamp,False,True,False
+CANDITE,"Political hopeful, often misspelled",False,True,False
+CANDLE,Furniture piece that emits light,False,True,False
+CANDLEBERRY,"Small, berry-like fruit of certain evergreen trees",False,True,False
+CANDLEBOMB,Explosive device made of a candle,False,True,False
+CANDLEBOX,Container for candles,False,True,False
+CANDLED,Past tense of candle,False,True,False
+CANDLEHOLDER,Holds a candle,False,True,False
+CANDLELIGHT,Light from a candle,False,True,False
+CANDLELIGHTED,Past participle of candlelight,False,True,False
+CANDLELIGHTER,Tool for extinguishing candles,False,True,False
+CANDLELIGHTING,Type of dinner,False,True,False
+CANDLELIT,Describing a romantic dinner setting,False,True,False
+CANDLEMAKER,Maker of candles,False,True,False
+CANDLEMAS,Feast celebrating Jesus' presentation in the temple,False,True,False
+CANDLEPIN,Ten-pin bowling,False,True,False
+CANDLEPINS,Lanes in a popular bowling game,False,True,False
+CANDLER,Old term for a person who carries a lamp,False,True,False
+CANDLERS,Producers of candles,False,True,True
+CANDLES,Lighting device often in boxes,False,True,False
+CANDLESHINE,Light from a candle,False,True,False
+CANDLESTAND,Furniture holding candles,False,True,False
+CANDLESTICK,Holding flame,False,True,False
+CANDLESTICKED,Furnished with candlesticks,False,True,False
+CANDLESTICKS,"Holders for candles, often in a pair",False,True,True
+CANDLEWASTER,One who carelessly burns candles,False,True,False
+CANDLEWASTING,Unnecessary use of candles,False,True,False
+CANDLEWICKS,Thread used in candles,False,True,True
+CANDLEWOOD,Type of wood used in making candles,False,True,False
+CANDLEWRIGHT,Maker of candles,False,True,False
+CANDLING,Folklore method of checking a chicken's gender,False,True,False
+CANDOR,"Honesty, straightforwardness",False,True,False
+CANDOUR,Honesty,False,True,False
+CANDY,Sweet treat,False,True,False
+CANDYFLOSS,"Sweet, fluffy fairground treat",False,True,False
+CANDYH,Sweet treat,False,True,False
+CANDYING,Process of making sweet,False,True,False
+CANDYLIKE,Sweet and sugary,False,True,False
+CANDYMAKER,Maker of sugary treats,False,True,False
+CANDYMAKING,Process of creating sweets,False,True,False
+CANDYS,"Sweet treat, often in plural",False,True,True
+CANDYSTICK,A stick with a candle on top,False,True,False
+CANDYWEED,Wildflower with a sweet name,False,True,False
+CANE,Stick used for walking,False,True,False
+CANED,Past tense of cane [Slang],False,True,False
+CANEL,Small Italian cookie,False,True,False
+CANELA,Cinnamon stick,False,True,False
+CANELIKE,Like a cane in shape,False,True,False
+CANELO,Mexican boxer prefix,False,True,False
+CANERS,Athletes in a sport where points are scored by kicking a ball,False,True,True
+CANES,Sticks used as walking aids,False,True,True
+CANETON,Young male goose,False,True,False
+CANETTE,Small beverage container,False,True,False
+CANEWORK,"Work made from canes, often seen in furniture",False,True,False
+CANFIELD,Specific type of poker,False,True,False
+CANFIELDS,Surname of a wealthy family,False,True,False
+CANFUL,A rare variant of 'careful',False,True,False
+CANFULS,Food storage units,False,True,True
+CANGY,Slightly soft,False,True,False
+CANHOOP,Type of exercise equipment,False,True,False
+CANICOLA,"A brief, hot wind in Italy",False,True,False
+CANIKIN,"A variant spelling of 'canine', referring to dogs",False,True,False
+CANINE,Domesticated pet with pointed ears,False,True,False
+CANINES,Type of pets often found in a dog show,False,True,True
+CANING,Form of corporal punishment,False,True,False
+CANION,A variant spelling of canyon,False,True,False
+CANISTER,"Container, often cylindrical",False,True,False
+CANISTERS,"Containers, often in plural",False,True,True
+CANK,Part of a shoe,False,True,False
+CANKER,"A destructive growth or sore, often with a foul smell",False,True,False
+CANKERED,Infected or decayed,False,True,False
+CANKERWORMS,Silkworm-like larva,False,True,True
+CANKERY,"Decay, often in a metaphorical sense",False,True,False
+CANMAKER,Maker of tin containers,False,True,False
+CANMAN,A character from a classic arcade game,False,True,False
+CANN,Container for preserving food,False,True,False
+CANNA,"Type of flower, plural",False,True,True
+CANNALED,Past tense of a verb related to digging trenches,False,True,False
+CANNAS,Type of tall flowering plants,False,True,False
+CANNAT,Not able,False,True,False
+CANNED,Food storage method,False,True,False
+CANNEL,Small pipe or channel,False,True,False
+CANNELLONI,Italian pasta dish rolled around a filling,False,True,False
+CANNELON,Type of pasta rolled into a cylinder,False,True,False
+CANNELONS,Italian pasta rolls,False,True,False
+CANNELS,Channels,False,True,True
+CANNER,Can maker,False,True,False
+CANNERIES,Places where food is canned,False,True,True
+CANNERS,People who make canned goods,False,True,False
+CANNERY,Place where food is canned,False,True,False
+CANNIBAL,Human eater,False,True,False
+CANNIBALIZED,Verb form of breaking down,False,True,False
+CANNIBALIZES,verb form of cannibalism,False,True,False
+CANNIBALIZING,"Process of using parts of something for repair or improvement, often in a metaphorical sense",False,True,False
+CANNIBALLY,With human flesh,False,True,False
+CANNIBALS,Eaters of human flesh,False,True,False
+CANNIE,Small and sprightly,False,True,False
+CANNIER,Wiser in a subtle way,False,True,False
+CANNIEST,Most shrewd,False,True,False
+CANNIKINS,Small drinking vessels,False,True,False
+CANNILY,Shrewdly,False,True,False
+CANNINESS,Type of shrewdness,False,True,False
+CANNINGS,Can storage facility,False,True,False
+CANNOLI,Italian dessert with a crunchy shell,False,True,False
+CANNON,Large weapon firing explosive shells,False,True,False
+CANNONADES,Series of cannon shots,False,True,True
+CANNONBALL,Projectile fired from a cannon,False,True,False
+CANNONBALLED,"Dived into water, often from a height",False,True,False
+CANNONBALLING,Action of diving into water like a cannonball,False,True,False
+CANNONBALLS,Projectile weapons' ammunition,False,True,True
+CANNONED,Verb form of being shot down in a debate,False,True,False
+CANNONEER,Person operating a cannon,False,True,False
+CANNONEERS,Group of soldiers who operate cannons,False,True,False
+CANNONS,Large weapons on ships,False,True,True
+CANNOT,Negation of ability,False,True,False
+CANNY,Shrewd and clever,False,True,False
+CANOE,"Small boat, often made of wood",False,True,False
+CANOED,Past tense of paddling in a canoe,False,True,False
+CANOEING,"Water sport, often done in a canoe",False,True,False
+CANOEIST,Person who paddles a canoe,False,True,False
+CANOEISTS,Paddlers in a canoe,False,True,True
+CANOEMAN,Pilot of a canoe,False,True,False
+CANOES,"Small watercraft, plural",False,True,True
+CANOING,Paddling sport,False,True,False
+CANON,"Book of rules; in photography, multiple exposures",False,True,False
+CANONESS,Female member of a religious order,False,True,False
+CANONICALS,"Religious texts, plural",False,True,True
+CANONISE,To declare a saint,False,True,False
+CANONISED,"Made a saint, in Church",False,True,False
+CANONISES,Verbs form in the third person singular,False,True,False
+CANONIZE,Make a saint,False,True,False
+CANONIZES,Declares a saint,False,True,False
+CANONRIES,Rare variant of 'canonries',False,True,True
+CANOODLE,To coo affectionately,False,True,False
+CANOODLED,To coo affectionately,False,True,False
+CANOODLER,One who coos and cuddles,False,True,False
+CANOODLES,Cozy date activity,False,True,False
+CANOODLING,Type of affectionate behavior between lovers,False,True,False
+CANOPIED,Provided with a canopy,False,True,False
+CANOPIES,Roofs of ancient Egyptian tombs,False,True,False
+CANOPY,Canopy: Shelter overhead,False,True,False
+CANOPYING,Skydiving variant with a safety harness,False,True,False
+CANOS,Small river in Spain,False,True,False
+CANROY,First name of a character in a classic fairy tale,False,True,False
+CANS,Food storage containers,False,True,True
+CANSFUL,Capable of containing,False,True,False
+CANST,A form of 'can' in archaic English,False,True,False
+CANSTICK,A type of candy,False,True,False
+CANT,Type of speech used by members of a secret society,False,True,False
+CANTAB,University town in England,False,True,False
+CANTABRIGIAN,Cambridge resident,False,True,False
+CANTALOUP,A type of melon,False,True,False
+CANTALOUPE,Type of melon,False,True,False
+CANTALOUPES,"A type of melon, plural",False,True,True
+CANTANKEROUS,Malignly disposed; irritable,False,True,False
+CANTANKEROUSLY,In a way that shows persistent bad temper,False,True,False
+CANTAR,To sing in Spanish,False,True,False
+CANTDOG,A dog that can't,False,True,False
+CANTED,"Oblique, with a tilt",False,True,False
+CANTEEN,Place where students commonly grab a quick bite,False,True,False
+CANTEENS,Meal spots in a school or office,False,True,True
+CANTER,"Gait of a horse, quicker than a trot",False,True,False
+CANTERBURIAN,A pilgrim from Canterbury,False,True,False
+CANTERBURIES,Place where pilgrims in a tale by Chaucer,False,True,False
+CANTERBURY,City where pilgrims go in Chaucer's tale,False,True,False
+CANTERED,"Walked in a smooth, trot-like gait",False,True,False
+CANTERER,One who runs a livery stable,False,True,False
+CANTERS,Type of gait that's slower than a trot,False,True,False
+CANTINA,"Small bar, often in Mexico",False,True,False
+CANTINAS,Plural of a place where one can get drinks and snacks,False,True,True
+CANTINESS,Slanginess; insincerity,False,True,False
+CANTINGLY,In a hypocritical manner,False,True,False
+CANTISH,Type of dialect used in the London docks,False,True,False
+CANTLES,Small candles on a church wall,False,True,False
+CANTO,Unit in a song or poem,False,True,False
+CANTON,Administrative division in China,False,True,False
+CANTONESE,Chinese dialect spoken in Guangdong,False,True,False
+CANTOR,Male religious singer,False,True,False
+CANTRAP,Entice with false promises,False,True,False
+CANTRAPS,Deceptive tricks; plural,False,True,True
+CANTWISE,Deceptive in speech; euphemistically,False,True,False
+CANTY,"A type of sweetened, baked pudding",False,True,False
+CANUCK,Canadian slang term,False,True,False
+CANULAR,A kind of lie often told in stories,False,True,False
+CANVAS,Sail material or artist's stretched cloth,False,True,False
+CANVASED,Verbs associated with painting,False,True,False
+CANVASER,Person who stretches canvas,False,True,False
+CANVASERS,People who repair sails,False,True,False
+CANVASES,"Plural of canvas, art medium",False,True,True
+CANVASLIKE,Like a canvas in texture,False,True,False
+CANVASMAN,Sailor handling canvas,False,True,False
+CANVASS,To solicit opinions,False,True,False
+CANVASSER,Person conducting a survey or election,False,True,False
+CANVASSERS,People conducting a survey or gathering opinions,False,True,True
+CANVASSES,"Tent clothings, plural",False,True,True
+CANVASSING,"Political activity, surveying opinions",False,True,False
+CANYON,Deep valley with steep sides,False,True,False
+CANYONS,Large valleys with steep sides,False,True,True
+CAP,Headwear,False,True,False
+CAPABILITIES,Set of attributes,False,True,True
+CAPABILITY,What something has in abundance,False,True,False
+CAPABLE,Able to do,False,True,False
+CAPABLENESS,State of being able,False,True,False
+CAPABLER,More capable,False,True,False
+CAPABLEST,Most skilled,False,True,False
+CAPABLY,Well in what,False,True,False
+CAPACIOUS,Roomy,False,True,False
+CAPACIOUSLY,"Adverbially, there's plenty of room",False,True,False
+CAPACIOUSNESS,"Roominess, as a quality",False,True,False
+CAPACITIES,Range of abilities,False,True,True
+CAPACITY,Volume a container can hold,False,True,False
+CAPCASE,Container for caps,False,True,False
+CAPE,Wearing this might protect you from rain,False,True,False
+CAPED,Dressed in a cape,False,True,False
+CAPELANS,"Small birds, often seen in flocks",False,True,True
+CAPELIN,"Small fish, sometimes canned",False,True,False
+CAPELLET,Small pasta often in soup,False,True,False
+CAPER,A type of small berry,False,True,False
+CAPERED,"Ran wild, in a romp",False,True,False
+CAPERER,One who organizes wild parties,False,True,False
+CAPERING,"Dances wildly, often in a silly manner",False,True,False
+CAPERINGLY,"Merrily, in a lively manner",False,True,False
+CAPERNUTIE,A hat with a brim turned up on one side,False,True,False
+CAPERS,"Small, sour olive",False,True,False
+CAPES,Wings of fabric,False,True,True
+CAPESKIN,Type of leather,False,True,False
+CAPESKINS,Type of leather used in making coats,False,True,False
+CAPETOWN,South African city,False,True,False
+CAPEWEED,A common weed in Australia,False,True,False
+CAPEWORK,Clothing accessory term,False,True,False
+CAPFUL,"Measure of liquid, usually a small amount",False,True,False
+CAPH,Type of coffee container,False,True,False
+CAPIBARA,"Largest rodent, semi-aquatic",False,True,False
+CAPITAL,First letter of the FIDC,False,True,False
+CAPITALING,Slang term for earning money,False,True,False
+CAPITALISED,Verb form of making something capital,False,True,False
+CAPITALIZE,To make something big in importance; to capitalize,False,True,False
+CAPITALIZED,Verb form of making something capital,False,True,False
+CAPITALIZES,"Makes the first letter of a word uppercase, often in writing.",False,True,False
+CAPITALIZING,Verb form of making capital,False,True,False
+CAPITALLY,In terms of wealth,False,True,False
+CAPITALS,First letters of a city name,False,True,True
+CAPITOL,United States government building,False,True,False
+CAPITOLIAN,Resident of a capital city,False,True,False
+CAPITOLS,Capitals of nations,False,True,True
+CAPITULATED,Yielded,False,True,False
+CAPITULATES,Yields under pressure,False,True,False
+CAPITULATING,"Yielding under pressure, often in writing",False,True,False
+CAPITULATION,Surrender,False,True,False
+CAPITULATIONS,"Agreements ending wars, briefly",False,True,False
+CAPKIN,A small cup,False,True,False
+CAPLESS,Without a covering,False,True,False
+CAPLET,Small pill,False,True,False
+CAPLETS,"Small, round medication tablets",False,True,False
+CAPLIN,Film industry executive,False,True,False
+CAPMAKER,One who makes hats,False,True,False
+CAPMAKERS,Hat producers,False,True,True
+CAPMAKING,Hat production,False,True,False
+CAPO,Italian term for leader,False,True,False
+CAPOCHE,A type of hood,False,True,False
+CAPON,Roast young chicken,False,True,False
+CAPONATA,Savory Italian dish with eggplant,False,True,False
+CAPONE,Al Capone,False,True,False
+CAPONS,Roosters specially fattened for meat,False,True,False
+CAPORAL,Rank below sergeant,False,True,False
+CAPOT,Old term for a car hood,False,True,False
+CAPOTE,Type of long overcoat,False,True,False
+CAPOTES,Type of outerwear often given to patients,False,True,False
+CAPPADOCHIO,Ancient region in central Turkey,False,True,False
+CAPPAGH,A type of cabbage,False,True,False
+CAPPED,Sealed with a top,False,True,False
+CAPPER,One who finishes,False,True,False
+CAPPERS,Preservers of corn,False,True,False
+CAPPIER,More cappy,False,True,False
+CAPPIEST,Most capacious,False,True,False
+CAPPING,Action of putting a top on,False,True,False
+CAPPUCCINO,Italian coffee drink,False,True,False
+CAPPY,Playful,False,True,False
+CAPRI,Italian island and popular vacation spot,False,True,False
+CAPRICCI,"Quick, informal musical pieces",False,True,False
+CAPRICCIO,It suggests a piece of music written in an impromptu style,False,True,False
+CAPRICE,"Sudden change in behavior, like a capriccio",False,True,False
+CAPRICES,Sudden changes in mood,False,True,True
+CAPRICIOUS,"Changeable, like a capricorn's mood",False,True,False
+CAPRICIOUSLY,"Adverbially, like a capricious fairy",False,True,False
+CAPRICIOUSNESS,"Moodiness, often due to a lack of consistency",False,True,False
+CAPRID,Type of goat-like mammal,False,True,False
+CAPRIS,Short pants,False,True,False
+CAPS,"Head coverings, briefly",False,True,True
+CAPSA,Port city in South Africa,False,True,False
+CAPSICUMS,"Type of vegetable, often in plural",False,True,True
+CAPSIZE,Flip a boat,False,True,False
+CAPSIZED,Ship in trouble,False,True,False
+CAPSIZES,Topples a boat,False,True,False
+CAPSTONE,Top stone in an arch,False,True,False
+CAPSULATED,Encased in a capsule,False,True,False
+CAPSULATION,"Sealed container, often in pills",False,True,False
+CAPSULE,"Small container, like those in space suits",False,True,False
+CAPSULED,Enclosed in a capsule,False,True,False
+CAPSULES,"Small sealed containers, often swallowed",False,True,True
+CAPSULING,Process of putting something in a capsule,False,True,False
+CAPSULIZE,To put in a capsule,False,True,False
+CAPSULIZED,Made into a capsule,False,True,False
+CAPSULIZING,To summarize in a capsule,False,True,False
+CAPTAIN,Ship's leader,False,True,False
+CAPTAINCY,Position of a captain,False,True,False
+CAPTAINED,Led a ship's crew,False,True,False
+CAPTAINESS,The quality of being a captain,False,True,False
+CAPTAINLY,Like a good captain,False,True,False
+CAPTAINS,Group of ship leaders,False,True,True
+CAPTANS,"Sailors, plural",False,True,True
+CAPTION,Title or legend under a picture,False,True,False
+CAPTIONED,Describing a media item with text below,False,True,False
+CAPTIONLESS,Lacking a caption,False,True,False
+CAPTIONS,Subtitles for the hearing impaired,False,True,False
+CAPTIOUS,Critical in an annoying way,False,True,False
+CAPTIOUSLY,In a manner prone to find faults,False,True,False
+CAPTIVANCE,The state of being captivating,False,True,False
+CAPTIVATE,To attract and hold [7],False,True,False
+CAPTIVATED,Verb form of being deeply attracted,False,True,False
+CAPTIVATELY,In what manner can a story completely hold one's attention?,False,True,False
+CAPTIVATES,Causes intense interest,False,True,False
+CAPTIVATING,Arousing strong interest,False,True,False
+CAPTIVATINGLY,Adverb form of captivating,False,True,False
+CAPTIVATION,State of being deeply attracted,False,True,False
+CAPTIVATIVE,Attractive enough to hold someone's attention,False,True,False
+CAPTIVATOR,Device that can capture and hold attention,False,True,False
+CAPTIVE,Prisoner,False,True,False
+CAPTIVED,Captivated,False,True,False
+CAPTIVES,Prisoners,False,True,False
+CAPTIVING,Attractive and engaging,False,True,False
+CAPTIVITY,State of being imprisoned,False,True,False
+CAPTRESS,A variant of 'captain',False,True,False
+CAPTURABLE,Something that can be taken or seized,False,True,False
+CAPTURE,To seize or take,False,True,False
+CAPTURED,Verb form of being caught,False,True,False
+CAPTURER,One who captures,False,True,False
+CAPTURERS,Devices that catch,False,True,True
+CAPTURES,verb form of what an photographer does to subjects,False,True,False
+CAPTURING,Action of seizing,False,True,False
+CAPUCHIN,Type of monkey,False,True,False
+CAPUCHINS,Type of monkeys,False,True,False
+CAPULET,Italian family in Shakespeare's Romeo and Juliet,False,True,False
+CAPYBARA,"The largest rodent, in a South American zoo",False,True,False
+CAPYBARAS,"The largest rodent, often kept as pets",False,True,False
+CAR,Four-wheeled motor vehicle,False,True,False
+CARA,Method or manner,False,True,False
+CARACAS,Capital of Venezuela,False,True,False
+CARACOLING,Type of circular dance,False,True,False
+CARAFE,Vase-like container for serving liquid,False,True,False
+CARAFES,Vessels for serving wine,False,True,True
+CARAMEL,Sweet treat made from sugar,False,True,False
+CARAMELAN,Sweetened caramel sauce,False,True,False
+CARAMELEN,Sweet candy with caramel,False,True,False
+CARAMELIN,Type of candy often in chocolate,False,True,False
+CARAMELIZED,Cooked sugar used in desserts,False,True,False
+CARAMELS,Sweets often found in vending machines,False,True,True
+CARATCH,Slang term for a cat,False,True,False
+CARAVAN,Long procession of wagons,False,True,False
+CARAVANEER,Trader on camel trains,False,True,False
+CARAVANER,One who travels in a caravan,False,True,False
+CARAVANIST,Person who travels with a caravan,False,True,False
+CARAVANNER,Person who travels in a caravan,False,True,False
+CARAVANNING,Type of camping involving multiple vehicles,False,True,False
+CARAVANS,Long journey transport,False,True,False
+CARAWAY,Seed used in rye bread,False,True,False
+CARAWAYS,Type of spice,False,True,False
+CARBOLIC,A type of soap,False,True,False
+CARBONATED,Soda-related,False,True,False
+CARBONATORS,Machines that make soda fizzy,False,True,False
+CARBONDALE,A town,False,True,False
+CARBONLESS,Without carbon copies,False,True,False
+CARBOY,Small barrel,False,True,False
+CARBROMAL,Slang term for a tranquilizer,False,True,False
+CARBUILDER,Maker of vehicles,False,True,False
+CARCASED,Past tense of a verb related to cutting meat,False,True,False
+CARCASSED,Slang term meaning killed,False,True,False
+CARCASSES,Plural of an animal's corpse,False,True,True
+CARCELS,Place of incarceration in plural,False,True,True
+CARD,Vivid illustration often in a book,False,True,False
+CARDAMOM,Type of aromatic seed pod used in spice mixes,False,True,False
+CARDAMOMS,Spices often used in baking,False,True,True
+CARDAMON,Spicy seed used in baking,False,True,False
+CARDAMONS,Aromatic seed pods used in baking and curry,False,True,True
+CARDAMUMS,Type of spice often used in baking,False,True,True
+CARDBOARD,Flimsy material often used for boxes,False,True,False
+CARDCASE,Enclosure for credit cards,False,True,False
+CARDCASES,Plural form of card case,False,True,True
+CARDED,Past participle of card,False,True,False
+CARDEL,Cardinal's title,False,True,False
+CARDERS,People who card wool,False,True,False
+CARDHOLDER,Holds a plastic identification,False,True,False
+CARDHOLDERS,Plural noun for people with card,False,True,True
+CARDHOUSE,Card game setup,False,True,False
+CARDIGAN,Type of sweater,False,True,False
+CARDIGANS,Type of sweater often worn with skirts,False,True,False
+CARDIN,Cardinal's title,False,True,False
+CARDINAL,Top-ranking church official,False,True,False
+CARDINALLY,From which point of view?,False,True,False
+CARDINALS,Red birds in a flock,False,True,True
+CARDIOPHOBE,One who fears the heart,False,True,False
+CARDLIKE,Resembling a card in shape,False,True,False
+CARDMAKER,One who makes playing cards,False,True,False
+CARDMAKING,Process of making playing cards,False,True,False
+CARDOONS,Plants sometimes used in Easter celebrations,False,True,True
+CARDPLAYER,Card game enthusiast,False,True,False
+CARDPLAYING,Card game activity,False,True,False
+CARDROOM,Room for card games,False,True,False
+CARDS,13-down: A pack of them used in games,False,True,False
+CARDSHARK,"Card game expert, colloquially",False,True,False
+CARE,Take heed,False,True,False
+CARECLOTH,Fabric for bed linens,False,True,False
+CARED,Concerned about,False,True,False
+CAREENERS,People who tilt their boats,False,True,True
+CAREER,Path of one's working life,False,True,False
+CAREERED,To run swiftly,False,True,False
+CAREERER,Runner in a race,False,True,False
+CAREERERS,Those who run for office,False,True,True
+CAREERING,Speedily moving,False,True,False
+CAREERINGLY,Adverb describing a car's erratic movement,False,True,False
+CAREERS,Paths of professional life,False,True,True
+CAREFREE,Not worried about a thing,False,True,False
+CAREFREENESS,State of being free from worry,False,True,False
+CAREFUL,"Watchful, cautious",False,True,False
+CAREFULL,Careful,False,True,False
+CAREFULLER,More careful,False,True,False
+CAREFULLEST,Most cautious,False,True,False
+CAREFULLY,With great attention,False,True,False
+CAREFULNESS,Carefulness,False,True,False
+CARELESS,Lacking attention,False,True,False
+CARELESSLY,How one might walk,False,True,False
+CARELESSNESS,State of not caring,False,True,False
+CARER,One who cares,False,True,False
+CARERS,Care providers,False,True,True
+CARES,Feeling concern,False,True,False
+CARESS,To touch gently,False,True,False
+CARESSABLE,Able to be caressed,False,True,False
+CARESSED,Past tense of a verb meaning to caress,False,True,False
+CARESSER,To touch with affection,False,True,False
+CARESSERS,Givers of tender touches,False,True,True
+CARESSES,Caresses in plural form,False,True,True
+CARESSING,Gentle touching,False,True,False
+CARESSINGLY,How a gentle touch might be described,False,True,False
+CARESSIVE,Describing a touch that's gentle and tender,False,True,False
+CARESSIVELY,"In a gentle, caressing manner",False,True,False
+CAREST,Concern and attention,False,True,False
+CARETAKEN,A caretaker's action,False,True,False
+CARETAKER,Person who maintains a building,False,True,False
+CARETAKERS,Those who watch over,False,True,True
+CARETAKES,Type of shoe for formal wear,False,True,False
+CARETAKING,Type of supervision,False,True,False
+CARETOOK,Person who watches over children,False,True,False
+CAREWORN,Worn from too much concern,False,True,False
+CAREY,Last name of a famous Boston Celtic player,False,True,False
+CARFARES,Form of transportation fees,False,True,False
+CARFLOAT,Vessel transporting cars,False,True,False
+CARFUL,Careful,False,True,False
+CARGO,"Freight carried by ship, truck, or plane",False,True,False
+CARGOES,"Plural form of cargo, goods transported by ship",False,True,True
+CARGOS,"Plural of cargo, goods transported",False,True,True
+CARGUED,Argued,False,True,False
+CARHOP,Short-lived fast-food order takers,False,True,False
+CARHOPS,Old term for counter attendants at drive-in restaurants,False,True,False
+CARHOUSE,Place where cars are stored,False,True,False
+CARIB,Caribbean island,False,True,False
+CARIBBEAN,Chain of islands,False,True,False
+CARIBBEANS,Chain of islands in the Atlantic,False,True,True
+CARIBBEE,A group of islands in the Atlantic Ocean,False,True,False
+CARIBED,A Caribbean island,False,True,False
+CARIBOU,"Reindeer, a type of large deer",False,True,False
+CARICATURAL,Exaggerated,False,True,False
+CARICATURE,"Comical exaggeration, often in drawings",False,True,False
+CARICATURED,Portrayed in a distorted comic style,False,True,False
+CARICATURES,comic drawings often exaggerating features,False,True,True
+CARICATURING,Verb form of creating comic exaggerations,False,True,False
+CARICATURIST,Artist who creates cartoons,False,True,False
+CARICATURISTS,Artists who create comic drawings,False,True,False
+CARICES,Type of affectionate touch,False,True,False
+CARIED,Past tense of carry,False,True,False
+CARILLONS,Ringing musical towers,False,True,True
+CARING,Showing concern and warmth,False,True,False
+CARIOCA,Type of Rio de Janeiro native,False,True,False
+CARIOCAS,Rio de Janeiro's nickname,False,True,False
+CARIOLING,Form of traditional Christmas singing,False,True,False
+CARISA,A variant spelling of CAROLINA,False,True,False
+CARITATIVE,Generous with money or goods,False,True,False
+CARITY,Kindness,False,True,False
+CARK,Type of storage vessel,False,True,False
+CARKING,Parking lot,False,True,False
+CARKINGLY,Extremely annoying or frustrating,False,True,False
+CARKS,Old term for a group of what?,False,True,True
+CARL,Character from Peppa Pig,False,True,False
+CARLESS,Without a car,False,True,False
+CARLET,Rare type of red fruit,False,True,False
+CARLI,Character from 'Glee'; also a name,False,True,False
+CARLIE,Character from Peanuts who's often cold,False,True,False
+CARLIN,Comedian's first name,False,True,False
+CARLISLE,"A city in Cumbria, England",False,True,False
+CARLIST,Old-school royalist,False,True,False
+CARLO,Character from a famous Italian novel,False,True,False
+CARLOAD,"A group of cars, often used in pricing",False,True,True
+CARLOADS,Many vehicles,False,True,True
+CARLOS,"Character name, often male",False,True,False
+CARLOT,Small citrus fruit,False,True,False
+CARLS,"Plural form of a name, often mistaken",False,True,True
+CARLYLESQUE,Style reminiscent of Thomas Carlyle,False,True,False
+CARMAKER,Manufacturer of vehicles,False,True,False
+CARMAKERS,Manufacturers of automobiles,False,True,False
+CARMAN,"Role in a Western, often played by Chuck",False,True,False
+CARMEL,Biblical mountain; type of hair,False,True,False
+CARMELA,"Female name, variant of Carmela",False,True,False
+CARMEN,"Female name, opera heroine",False,True,False
+CARMINETTE,A type of candy,False,True,False
+CARN,Flesh,False,True,False
+CARNAGE,Butchery on a battlefield,False,True,False
+CARNAGED,Slang term for a car accident,False,True,False
+CARNAGES,"Plural form of carnage, great destruction",False,True,True
+CARNAL,"Of the senses, especially sexual",False,True,False
+CARNALLY,Sexually,False,True,False
+CARNATION,"Flower, often given on Mother's Day",False,True,False
+CARNATIONS,Flower often arranged in bunches,False,True,False
+CARNEGIE,"U.S. industrialist, philanthropist",False,True,False
+CARNEL,"Rare name, often used in surnames",False,True,False
+CARNET,Small book for notes or tickets,False,True,False
+CARNETS,Small books of prepaid stamps or checks,False,True,False
+CARNEY,Hat maker,False,True,False
+CARNEYS,Comedic trio,False,True,False
+CARNIE,Amusement park worker,False,True,False
+CARNIES,Amusement park workers,False,True,True
+CARNIVAL,Festival of fun and games,False,True,False
+CARNIVALLIKE,Like a carnival in excitement,False,True,False
+CARNIVALS,Festival with parades and fun,False,True,False
+CARNIVORE,Eater of flesh,False,True,False
+CARNIVORES,"Meat-eaters, plural",False,True,True
+CARNIVOROUSLY,How a meat-eater behaves,False,True,False
+CARNS,Hill peaks in Ireland,False,True,False
+CARNY,Amusement park worker,False,True,False
+CARO,Valuable in affection,False,True,False
+CAROB,Sweet substitute for chocolate,False,True,False
+CAROL,To sing joyfully; a song,False,True,False
+CAROLE,Character name in a famous musical,False,True,False
+CAROLED,"Past tense of a verb meaning to coo, often in love",False,True,False
+CAROLER,One who sings carols,False,True,False
+CAROLERS,"Plural singers, often at Christmas",False,True,True
+CAROLIN,A name for a state or its residents,False,True,False
+CAROLINA,"Southern state, named after a queen",False,True,False
+CAROLINAS,Two U.S. states,False,True,False
+CAROLINE,Character name in Pride and Prejudice,False,True,False
+CAROLING,Type of singing at Christmas,False,True,False
+CAROLINIAN,A person from North or South Carolina,False,True,False
+CAROLINIANS,Residents of North or South Carolina,False,True,True
+CAROLLED,Past tense of to sing a carol,False,True,False
+CAROLLER,"One who carols, often in plural form",False,True,False
+CAROLLERS,Singers of carols,False,True,True
+CAROLLING,"Type of singing, often at Christmas",False,True,False
+CAROLS,Type of holiday singing,False,True,False
+CAROLUSES,"Plural of a songster, often sung at Christmas",False,True,True
+CAROLYN,"Character name, 7 letters",False,True,False
+CAROMEL,Candy made from caramel,False,True,False
+CAROMING,Type of ballroom move,False,True,False
+CAROMS,Pool game subs,False,True,True
+CAROT,Root vegetable,False,True,False
+CAROUSAL,"Festive gathering, often with food and drink",False,True,False
+CAROUSALS,Festival rides at a fair,False,True,False
+CAROUSE,"Feast, often with drinking",False,True,False
+CAROUSED,"Past tense of carouse, to drink and revel",False,True,False
+CAROUSEL,Amusement park ride with horses,False,True,False
+CAROUSELS,Amusement park rides,False,True,True
+CAROUSERS,People who take part in a carousel,False,True,True
+CAROUSES,Plural of a boisterous celebration,False,True,True
+CAROUSING,Noisy celebration,False,True,False
+CAROUSINGLY,How horses move in a merry fashion,False,True,False
+CARP,Common bony fish,False,True,False
+CARPED,Gave a loud complaint,False,True,False
+CARPENTER,Worker with wood,False,True,False
+CARPENTERED,Past tense of what verb means to work as a carpenter?,False,True,False
+CARPENTERS,Craftsmen who work with wood,False,True,True
+CARPENTRY,Woodworking,False,True,False
+CARPER,"Complainant, one who laments",False,True,False
+CARPERS,"Those who carp, often in groups",False,True,True
+CARPET,Floor covering,False,True,False
+CARPETBAG,A suitcase made of carpet,False,True,False
+CARPETBAGGED,"To take advantage of a situation, often in politics",False,True,False
+CARPETBAGGER,"A term for someone who moves into a new political scene, often from outside",False,True,False
+CARPETBAGGERS,Term for political outsiders,False,True,False
+CARPETBAGGERY,"The practice of political opportunists, often from outside, entering a region",False,True,False
+CARPETBAGGING,"The practice of moving in with relatives and mooching, often using a carpetbag",False,True,False
+CARPETBAGGISM,Term referring to opportunistic political behavior,False,True,False
+CARPETBAGS,"A term for luggage, often used in American history",False,True,True
+CARPETBEATER,Tool for dusting carpets,False,True,False
+CARPETED,Past tense of carpet,False,True,False
+CARPETING,Floor covering installation,False,True,False
+CARPETLAYER,Person who installs floor coverings,False,True,False
+CARPETLESS,Lacking a carpet,False,True,False
+CARPETMAKER,Maker of floor coverings,False,True,False
+CARPETMONGER,Seller of carpets,False,True,False
+CARPETS,Floor coverings,False,True,True
+CARPETWEED,A low-growing weed that spreads like a carpet,False,True,False
+CARPETWORK,Curtain-like textile craft,False,True,False
+CARPETWOVEN,A carpet that's handcrafted,False,True,False
+CARPING,Complaining in a petty way,False,True,False
+CARPINGLY,In a manner that's often petty and critical,False,True,False
+CARPINGS,Type of frequent complaints,False,True,True
+CARPOOL,Vehicle share,False,True,False
+CARPOOLS,Type of shared ride arrangement,False,True,False
+CARPORT,Sheltered parking for vehicles,False,True,False
+CARPORTS,Sheltered areas for parking cars,False,True,True
+CARPS,Type of fish,False,True,False
+CARR,Type of vehicle,False,True,False
+CARRAT,"Root vegetable, oddly spelled",False,True,False
+CARRAWAY,Type of seed used in rye bread,False,True,False
+CARRAWAYS,Type of seed often used in baking,False,True,True
+CARREL,"Small study area, often in a library",False,True,False
+CARRELL,A small study area,False,True,False
+CARRELS,Narrow study stalls,False,True,False
+CARRI,Type of vehicle,False,True,False
+CARRIABLE,Capable of being transported,False,True,False
+CARRIAGE,Type of vehicle for passengers,False,True,False
+CARRIAGEFUL,Full of passengers or cargo,False,True,False
+CARRIAGELESS,Without a vehicle,False,True,False
+CARRIAGES,Vehicles on rails,False,True,True
+CARRIAGEWAY,Road primarily for carriages,False,True,False
+CARRICK,Type of Irish bridge,False,True,False
+CARRIE,Main character in 'Carrie',False,True,False
+CARRIED,Past tense of carry,False,True,False
+CARRIER,Vehicle that transports mail,False,True,False
+CARRIERS,Type of aircraft and also those who deliver,False,True,True
+CARRIOLE,"Type of light, open carriage",False,True,False
+CARRION,Decay of dead animals,False,True,False
+CARRIZO,Type of hardy grass used in landscaping,False,True,False
+CARROLL,Author of 'Alice's Adventures in Wonderland',False,True,False
+CARROMING,"Game activity, often heard in tournaments",False,True,False
+CARROT,Root vegetable,False,True,False
+CARROTER,Tool for extracting juice from vegetables,False,True,False
+CARROTIER,One who specializes in growing carrots,False,True,False
+CARROTIEST,Superlative form of carrot,False,True,False
+CARROTIN,A carrot's smaller cousin,False,True,False
+CARROTING,Vegetable process,False,True,False
+CARROTS,Root vegetable,False,True,True
+CARROTY,Orange in color,False,True,False
+CARROUSEL,Amusement park ride,False,True,False
+CARROUSELS,Amusement park rides,False,True,True
+CARROW,Kind of sled,False,True,False
+CARRS,Type of vehicle often in a row,False,True,True
+CARRY,To transport or convey,False,True,False
+CARRYABLE,Adjective form of what you can hold,False,True,False
+CARRYALL,Vehicle that carries all,False,True,False
+CARRYALLS,Various types of carrying containers,False,True,True
+CARRYCOT,Kind of baby carrier,False,True,False
+CARRYED,Past tense of carry,False,True,False
+CARRYING,What you do with a load,False,True,False
+CARRYON,Continues one's journey,False,True,False
+CARRYOUT,Type of restaurant meal,False,True,False
+CARRYOUTS,Takeout meals,False,True,True
+CARRYOVER,What remains from one period into the next,False,True,False
+CARRYOVERS,What remains from one period into the next,False,True,True
+CARRYS,Verb for bearing,False,True,False
+CARRYTALE,An old-fashioned term for a story,False,True,False
+CARS,Four-wheeled vehicles,False,True,True
+CARSE,Low-lying land by a river,False,True,False
+CARSHOP,Place where cars are sold and serviced,False,True,False
+CARSHOPS,Plural of car shop,False,True,True
+CARSICK,Sickness due to car rides,False,True,False
+CARSICKNESS,Motion sickness experienced in cars,False,True,False
+CARSON,Author of the Glassmen series,False,True,False
+CART,Four-wheeled vehicle,False,True,False
+CARTABLE,"School supply, singular",False,True,False
+CARTAGE,Formerly used term for cargo,False,True,False
+CARTAGES,Ancient plural city-states,False,True,True
+CARTBOOT,Type of outdoor market,False,True,False
+CARTE,Card,False,True,False
+CARTED,Past tense of to cart,False,True,False
+CARTEL,Agreement among competitors,False,True,False
+CARTELIST,Old term for a political follower,False,True,False
+CARTELS,Agreements among competitors to fix prices,False,True,False
+CARTER,One who manages or rents out,False,True,False
+CARTERLY,Describing a style befitting a president,False,True,False
+CARTERS,Those who transport goods,False,True,False
+CARTFUL,"Careful, as one might be when handling a cartload of eggs",False,True,False
+CARTHAGINIAN,Ancient Punic person,False,True,False
+CARTIER,High-end jewelry and watchmaker,False,True,False
+CARTIEST,Most cartoony,False,True,False
+CARTING,Method of transporting goods,False,True,False
+CARTIST,Artist who creates cartoons,False,True,False
+CARTLOAD,A large quantity,False,True,False
+CARTLOADS,Many carts worth,False,True,True
+CARTMAKER,One who makes carts,False,True,False
+CARTMAKING,The craft of making carts,False,True,False
+CARTMAN,Cartoon character voiced by Trey Parker,False,True,False
+CARTOGRAPHER,Person who makes maps,False,True,False
+CARTOGRAPHERS,Those who draw maps,False,True,True
+CARTON,Container for drinks,False,True,False
+CARTONED,"Container for liquid, often in boxes",False,True,False
+CARTONER,"Container maker, in boxes",False,True,False
+CARTONFUL,A container filled,False,True,False
+CARTONS,"Packaging containers, often for milk",False,True,True
+CARTOON,Type of drawing often found in comics,False,True,False
+CARTOONED,Vernacular term for a way of illustrating,False,True,False
+CARTOONING,Process of creating cartoons,False,True,False
+CARTOONIST,Creator of comic strip figures,False,True,False
+CARTOONISTS,What do creators of comic strip characters do for a living?,False,True,True
+CARTOONS,Animated series in black and white or color,False,True,True
+CARTOPPER,Car cover,False,True,False
+CARTRIDGE,Container for ink or toner,False,True,False
+CARTS,Type of vehicle plural,False,True,True
+CARTWAY,Street for carts,False,True,False
+CARTWHEEL,A type of gymnastics move,False,True,False
+CARTWHEELER,Person who rides a cartwheel,False,True,False
+CARTWHEELS,Spokes of a toy,False,True,True
+CARTWHIP,Type of lash,False,True,False
+CARTWRIGHT,Maker of carts,False,True,False
+CARTY,Irish term for a cart driver,False,True,False
+CARVE,Carve your initials,False,True,False
+CARVED,Past tense of carven,False,True,False
+CARVEN,"Engraved or carved, often used in historical texts",False,True,False
+CARVER,"One who carves, often in wood",False,True,False
+CARVERS,Craftsmen of statues or figures,False,True,True
+CARVES,Creates indentations,False,True,False
+CARVING,Act of shaping wood,False,True,False
+CARVINGS,Ancient artwork often found on rock,False,True,True
+CARVIST,A person who carves,False,True,False
+CARWASH,Automotive cleaning service,False,True,False
+CARWASHES,Businesses cleaning autos,False,True,True
+CARYL,Name in a George Bernard Shaw play,False,True,False
+CASABA,"Type of melon, often yellow",False,True,False
+CASABAS,A type of tropical fruit,False,True,False
+CASABE,A type of crisp Mexican cookie,False,True,False
+CASABLANCA,City in Morocco; name in a famous film,False,True,False
+CASAL,Small Italian town,False,True,False
+CASANOVA,A lover from the 18th century,False,True,False
+CASAQUE,Long overcoat,False,True,False
+CASAQUES,Clothing items often worn in cold weather,False,True,True
+CASAS,Spanish plural for houses,False,True,True
+CASAVAS,Type of potato used in Filipino cuisine,False,True,False
+CASBAH,North African open marketplace,False,True,False
+CASCABEL,"Small bell, especially on a chili pepper",False,True,False
+CASCADE,Series of events,False,True,False
+CASCADED,Descends in stages,False,True,False
+CASCADES,Series of waterfalls,False,True,True
+CASCADIA,Name of a proposed state in N.W. America,False,True,False
+CASCADIAN,Person from British Columbia,False,True,False
+CASCADING,Describing styles that flow down,False,True,False
+CASCARA,Type of dried bark used in a mild laxative,False,True,False
+CASCARAS,Dried fruit skins used in brewing,False,True,True
+CASCARON,Shell of a hard-boiled egg,False,True,False
+CASCO,Type of vessel,False,True,False
+CASE,Container or instance,False,True,False
+CASEBOUND,Bound in a hard cover,False,True,False
+CASEBOX,Container often in offices,False,True,False
+CASED,Encased or wrapped,False,True,False
+CASEFUL,Careful,False,True,False
+CASEIC,First name of a character in a famous detective story,False,True,False
+CASEKEEPER,Person who stores cases,False,True,False
+CASELESS,Without a container or wrapper,False,True,False
+CASEMAKER,Maker of protective cases,False,True,False
+CASEMATES,Comrades sharing fortress quarters,False,True,False
+CASEMENT,Type of window that extends from hinges,False,True,False
+CASEMENTED,Enclosed with casements,False,True,False
+CASEOSE,A type of cheese,False,True,False
+CASER,One who casers,False,True,False
+CASES,Plural form of a container,False,True,True
+CASEWOOD,Type of wood used in making furniture,False,True,False
+CASEWORKER,Government helper,False,True,False
+CASEWORKERS,Government employees who assist with social issues,False,True,True
+CASEWORMS,Insects that make cases out of leaves,False,True,True
+CASEY,Character from a baseball rhyme,False,True,False
+CASH,Forms of currency,False,True,False
+CASHABLE,Bankable,False,True,False
+CASHBOX,Vault for money,False,True,False
+CASHBOXES,Vaults or strongboxes for cash,False,True,True
+CASHBOY,Retail assistant,False,True,False
+CASHDRAWER,Cashier's box,False,True,False
+CASHED,Verbed form of cash,False,True,False
+CASHEEN,Small fish often fried,False,True,False
+CASHER,Cashier at a supermarket,False,True,False
+CASHERS,Cashiers in plural form,False,True,True
+CASHES,Plural of money,False,True,True
+CASHEW,Tasty nut often in chocolate,False,True,False
+CASHEWS,Tasty nuts often in mixed snacks,False,True,False
+CASHGIRL,Retail employee at the checkout,False,True,False
+CASHIER,Store employee who handles money,False,True,False
+CASHIERED,"Removed from a position, as in a formal manner",False,True,False
+CASHIERS,Cash handlers in a store,False,True,False
+CASHING,Payment in cash,False,True,False
+CASHKEEPER,Vault worker,False,True,False
+CASHLESS,Without money in transactions,False,True,False
+CASHMERE,Fancy wool-like fabric,False,True,False
+CASHMERES,Soft wool-like fabrics,False,True,True
+CASHMERETTE,Self-service coin-operated cash register,False,True,False
+CASHMIRIAN,Native of Kashmir,False,True,False
+CASIMERE,Faux fur material,False,True,False
+CASINET,A misspelled casino,False,True,False
+CASING,"Outer covering, like a tube",False,True,False
+CASINGS,Burgers' outer layer,False,True,False
+CASINO,A place for gambling,False,True,False
+CASINOS,Gaming venues,False,True,True
+CASIRI,Reverse of a common name,False,True,False
+CASITA,Small Mexican dwelling,False,True,False
+CASK,Barrel used for storing wine,False,True,False
+CASKED,Tunned and aged,False,True,False
+CASKET,Small receptacle for remains,False,True,False
+CASKETS,Funeral receptacles,False,True,True
+CASKS,Barrel-like containers,False,True,True
+CASLON,Font family named after a 17th-century English brewer,False,True,False
+CASPAR,"Biblical name, four letters",False,True,False
+CASPER,"Ghostly character, often in bed",False,True,False
+CASPIAN,Largest lake entirely in Asia,False,True,False
+CASQUE,Ancient helmet,False,True,False
+CASQUES,"Headgear, often plural",False,True,True
+CASQUET,"Headwear, often with a visor",False,True,False
+CASQUETTE,"Type of soft, brimless hat",False,True,False
+CASS,Short form of a name,False,True,False
+CASSADA,"Type of sweet, flat cake",False,True,False
+CASSANDRA,Mythological figure who could see future but was disbelieved,False,True,False
+CASSANDRAS,Female plural of Cassandra,False,True,True
+CASSEROLE,"Baked dish, often with a lid",False,True,False
+CASSEROLED,Cooked in a baking dish,False,True,False
+CASSEROLES,Dishes often baked in a casserole dish,False,True,True
+CASSEROLING,Baking casserole dishes,False,True,False
+CASSETTE,Small tape storage device,False,True,False
+CASSETTES,Old portable storage,False,True,True
+CASSHE,Clamp or vise,False,True,False
+CASSIAS,Type of flower,False,True,False
+CASSIE,"Female name, bird's leg",False,True,False
+CASSINETTE,Small hand mirror,False,True,False
+CASSINOS,Gambling venues,False,True,True
+CASSIOPE,Legendary queen with a swaying gait,False,True,False
+CASSIOPEIA,Mythological queen with a seat in the sky,False,True,False
+CASSIUS,"Roman general, friend of Brutus",False,True,False
+CASSOCK,Long garment worn by clergy,False,True,False
+CASSOCKS,Long robes worn by clergy,False,True,True
+CASSONS,A type of flatbread,False,True,False
+CASSOON,"City in Kerala, India",False,True,False
+CASSY,Character in a South African play,False,True,False
+CAST,"Verb: To throw, often used in past tense as 'cast'",False,True,False
+CASTABLE,Capable of being molded,False,True,False
+CASTANE,Type of tree nut,False,True,False
+CASTANET,Small percussion instrument in pairs,False,True,False
+CASTANETS,Noisy hand-held percussion,False,True,False
+CASTANO,Brown,False,True,False
+CASTAWAY,Person shipwrecked and stranded,False,True,False
+CASTAWAYS,Passengers on a life raft,False,True,False
+CASTE,Social hierarchy in some societies,False,True,False
+CASTED,"Past tense of 'cast', in a cinematic context",False,True,False
+CASTELESS,Without social class,False,True,False
+CASTELLANO,Spanish,False,True,False
+CASTER,"Small wheel attached, often in plural",False,True,False
+CASTERLESS,Without casters,False,True,False
+CASTERS,Small wheels on office chairs,False,True,False
+CASTES,Social classes in certain societies,False,True,True
+CASTETH,Auxiliary verb form,False,True,True
+CASTIGATE,To severely criticize or punish,False,True,False
+CASTIGATED,Past participle of a verb meaning to severely criticize,False,True,False
+CASTIGATES,Verb for severely criticizing,False,True,False
+CASTIGATING,Verb form of criticism,False,True,False
+CASTIGATIONS,Formal rebukes in plural,False,True,True
+CASTIGATOR,Instrument of punishment,False,True,False
+CASTILE,Spanish kingdom and region,False,True,False
+CASTILIAN,Language of central Spain,False,True,False
+CASTILLO,Type of large fortified building,False,True,False
+CASTLE,"Fortified building, abbr. in fairy tales",False,True,False
+CASTLED,Past tense of castle,False,True,False
+CASTLELIKE,Turreted and battlemented,False,True,False
+CASTLES,Kind of fortress,False,True,False
+CASTLET,Small fortress,False,True,False
+CASTLEWARD,Toward a castle,False,True,False
+CASTLEWARDS,In the direction of a castle,False,True,False
+CASTLEWISE,Arranged like a castle,False,True,False
+CASTOFF,What a sock loses in the wash,False,True,False
+CASTOFFS,Yarn leftovers,False,True,True
+CASTORS,Small wheels on furniture legs,False,True,False
+CASTRATED,A neutered male,False,True,False
+CASTRATOR,One who castrates,False,True,False
+CASTRO,Former Cuban leader,False,True,False
+CASTS,Plays,False,True,False
+CASUAL,Wearing slacks and a polo,False,True,False
+CASUALIST,One who believes in being casual,False,True,False
+CASUALLY,"Informally, as in wearing jeans to a wedding",False,True,False
+CASUALNESS,State of being relaxed and informal,False,True,False
+CASUALS,Formal wear's opposite in a team context,False,True,True
+CASUALTIES,Injuries and deaths,False,True,True
+CASUALTY,Person injured or killed in combat,False,True,False
+CAT,Kitty,False,True,False
+CATACLYSMATIC,Describing a sudden and extremely destructive event,False,True,False
+CATACOMBS,"Subterranean passageways, often used as burial places",False,True,False
+CATAGORIES,Classification terms,False,True,True
+CATALAN,Language spoken in Catalonia,False,True,False
+CATALANGANES,Philippine region inhabitants,False,True,False
+CATALANIST,Proponent of Catalan language or culture,False,True,False
+CATALINA,Island in California,False,True,False
+CATALOES,Sells goods in a certain Australian sport,False,True,False
+CATALOG,Catalog: directory or list,False,True,False
+CATALOGER,Person who creates catalogs,False,True,False
+CATALOGERS,People who create catalogs,False,True,False
+CATALOGIST,Person who creates catalogs,False,True,False
+CATALOGS,"List of items, often plural",False,True,True
+CATALOGUE,Comprehensive list,False,True,False
+CATALOGUED,Recorded in a catalog,False,True,False
+CATALOGUER,One who makes catalogs,False,True,False
+CATALOGUES,List of items,False,True,True
+CATALOGUIST,Person who creates catalogs,False,True,False
+CATALONIAN,Person from Catalonia,False,True,False
+CATALOON,A region in Spain,False,True,False
+CATAMARANS,Sailing vessels with multiple hulls,False,True,True
+CATAPULTING,"Rapid acceleration, like a medieval weapon",False,True,False
+CATASTROPHE,Great disaster,False,True,False
+CATASTROPHES,Series of disastrous events,False,True,True
+CATASTROPHIC,Terribly disastrous,False,True,False
+CATASTROPHICAL,Describing a disaster,False,True,False
+CATAWBA,A river and wine region in North Carolina,False,True,False
+CATAWBAS,A Native American tribe,False,True,False
+CATCALL,"Short, sharp insult",False,True,False
+CATCALLED,Cat's meow,False,True,False
+CATCALLER,Someone who makes catcalls,False,True,False
+CATCALLING,Action often eliciting a meow,False,True,False
+CATCALLS,Cheering by whistling like a cat,False,True,True
+CATCH,Verb: To grab or intercept,False,True,False
+CATCHABLE,Capable of being caught,False,True,False
+CATCHALL,A versatile receptacle,False,True,False
+CATCHALLS,Small bags in a desk organizer,False,True,True
+CATCHCRY,Phrase repeated by crowd,False,True,False
+CATCHED,Past tense of catch,False,True,False
+CATCHER,Baseball position that catches pitched balls,False,True,False
+CATCHERS,Positions in baseball,False,True,True
+CATCHES,What a verb becomes when describing multiple instances of catching,False,True,True
+CATCHFLIES,Butterflies that are easy to grab,False,True,False
+CATCHFLY,Insect often used in fly fishing,False,True,False
+CATCHIE,A small stream,False,True,False
+CATCHIER,More appealing,False,True,False
+CATCHIEST,Most catchy song,False,True,False
+CATCHINESS,"Charisma's shorter cousin, often in a song",False,True,False
+CATCHING,Verbing entity,False,True,False
+CATCHINGLY,"With an 'ly', this describes something that catches your eye",False,True,False
+CATCHLAND,A place where one might frequently try to nab a ball,False,True,False
+CATCHLIGHT,Type of lighting often seen in portraits,False,True,False
+CATCHLINE,Brief tagline beneath a comic strip,False,True,False
+CATCHPENNIES,Small change often used for tips,False,True,True
+CATCHPHRASE,Common expression often memorized,False,True,False
+CATCHPOLE,Law enforcement officer,False,True,False
+CATCHPOLED,To arrest or take hold of suddenly,False,True,False
+CATCHUP,Sauce that complements a main dish,False,True,False
+CATCHUPS,Ketchup cousins,False,True,True
+CATCHWATER,A place to store rainwater,False,True,False
+CATCHWORD,Word used as a clue in crosswords,False,True,False
+CATCHWORDS,Terms often used in examinations,False,True,False
+CATCHY,Easy to remember and appealing,False,True,False
+CATCLAW,Hook-like structure on a cat's paw,False,True,False
+CATDOM,Cat's domain,False,True,False
+CATE,Short form of a female name,False,True,False
+CATECHISTS,Teachers of religion,False,True,False
+CATECHIZER,One who instructs in basic Christian doctrine,False,True,False
+CATEGORIC,Definite in opinion,False,True,False
+CATEGORICAL,Describing something that applies without exception,False,True,False
+CATEGORICALLY,Adverb form of a strict classification,False,True,False
+CATEGORIES,Grouping system,False,True,False
+CATEGORISE,To place into categories,False,True,False
+CATEGORISED,Past tense of categorise,False,True,False
+CATEGORISING,Organizing into categories,False,True,False
+CATEGORIZE,To sort into classes,False,True,False
+CATEGORIZED,Placed into a specific group,False,True,False
+CATEGORIZER,One who sorts items into groups,False,True,False
+CATEGORIZERS,Those who put things into groups,False,True,False
+CATEGORIZES,Sorts into groups,False,True,False
+CATEGORIZING,Process of sorting into groups,False,True,False
+CATEGORY,Grouping term,False,True,False
+CATENAS,Chains in plural,False,True,True
+CATENATED,Joined like links of a chain,False,True,False
+CATER,To provide food and service,False,True,False
+CATERCORNER,Diagonally across,False,True,False
+CATERCORNERED,Arranged diagonally across from each other,False,True,False
+CATERCORNERWAYS,Informal term for diagonal,False,True,False
+CATERED,Provided meals,False,True,False
+CATERER,One who serves food at parties,False,True,False
+CATERERS,Food service professionals,False,True,True
+CATERESS,Female servant at a formal event,False,True,False
+CATERESSES,Female caterers,False,True,True
+CATERING,Type of business serving food,False,True,False
+CATERINGLY,"Adverbially, how one might provide meals",False,True,False
+CATERPILLARLIKE,Like a caterpillar,False,True,False
+CATERS,Serves a group,False,True,False
+CATERWAULED,To cry out loudly in a shrill voice,False,True,False
+CATERWAULING,"The act of loud, unpleasant crying or howling",False,True,False
+CATERY,A place where feasts are hosted,False,True,False
+CATES,Plural form of cat,False,True,True
+CATFACE,Type of flower resembling a cat's face,False,True,False
+CATFACED,Describing a face resembling that of a cat,False,True,False
+CATFIGHT,Intense contest between two cats,False,True,False
+CATFISH,Internet personality,False,True,False
+CATFISHES,"Aquatic creatures, plural",False,True,True
+CATHARINE,"Female name, variant of Catherine",False,True,False
+CATHAY,Former name for China,False,True,False
+CATHEDRAL,Christian church with a resident bishop,False,True,False
+CATHEDRALED,Large church with a distinctive tower,False,True,False
+CATHEDRALLIKE,Like a cathedral in scale,False,True,False
+CATHEDRALS,"Large, important churches",False,True,True
+CATHEDRAS,Plural of a grand church with a tall tower,False,True,True
+CATHERINE,Historical name,False,True,False
+CATHERN,Name in a medieval romance,False,True,False
+CATHOLIC,Christian denomination,False,True,False
+CATHOLICAL,Relating to the Catholic Church,False,True,False
+CATHOLICALLY,"Religiously, in a manner of the Catholic Church",False,True,False
+CATHOLICISE,To make Catholic,False,True,False
+CATHOLICISED,Converted to Catholicism,False,True,False
+CATHOLICISER,To make Catholic [verb form],False,True,False
+CATHOLICISING,Making something Catholic,False,True,False
+CATHOLICISM,Christianity,False,True,False
+CATHOLICIST,One who adheres to Catholicism,False,True,False
+CATHOLICIZED,Made more Catholic,False,True,False
+CATHOLICLY,"Religiously, in the manner of the Catholic Church",False,True,False
+CATHOLICNESS,Degree of being Catholic,False,True,False
+CATHOLICS,Group of people in a church,False,True,True
+CATHOUSE,A cat's dwelling,False,True,False
+CATHOUSES,Shelter for cats,False,True,True
+CATHRIN,Character name in a classic novel,False,True,False
+CATHRYN,"Name, variant of Catherine",False,True,False
+CATHY,Name in a novel by Jane Austen,False,True,False
+CATING,Act of a cat,False,True,False
+CATLAP,Type of surface for a cat to scratch,False,True,False
+CATLIKE,Like a cat,False,True,False
+CATLIN,"Artist and explorer, often in portraits",False,True,False
+CATLINGS,Plural form of kitten,False,True,True
+CATLINS,New Zealand town,False,True,False
+CATMINT,Herb in the mint family,False,True,False
+CATMINTS,Type of mint attractive to cats,False,True,False
+CATNAP,"Short nap, like a cat's",False,True,False
+CATNAPER,"A short nap, especially one taken by a cat",False,True,False
+CATNAPERS,"Those who take brief naps, especially cats",False,True,False
+CATNAPPED,Briefly took someone's cat,False,True,False
+CATNAPPER,One who sneaks in to steal a cat,False,True,False
+CATNAPPING,"A brief nap, especially by a cat",False,True,False
+CATNAPS,"Naps, like a cat",False,True,False
+CATNEP,Substance preferred by cats,False,True,False
+CATNIP,Herb attracting felines,False,True,False
+CATNIPS,Substances that may tempt a feline,False,True,False
+CATOCTIN,Boulder state park in Maryland,False,True,False
+CATPIPE,A type of pipe used in cat litter boxes,False,True,False
+CATPROOF,Mouse-resistant,False,True,False
+CATS,Four-legged feline pets,False,True,True
+CATSKILL,Resort region in New York,False,True,False
+CATSKIN,Feline protective layer,False,True,False
+CATSLIDE,"Sudden shift, like a cat's",False,True,False
+CATSOS,"An anagram of 'SOCATS', a term for a group of cats",False,True,True
+CATSTEP,A cat's step,False,True,False
+CATSTICK,Toy resembling a fishing rod for cats,False,True,False
+CATSUP,Ketchup's fancier cousin,False,True,False
+CATSUPS,Ketchup in its plural form,False,True,True
+CATTABU,A game involving a cat and a ball,False,True,False
+CATTAIL,Type of marsh plant,False,True,False
+CATTAILS,Plants by the marsh with feathery flower spikes,False,True,False
+CATTED,Past tense of a cat action,False,True,False
+CATTER,Sells or provides tickets,False,True,False
+CATTERIES,"Habitats for storing goods, often in plural",False,True,True
+CATTERY,Place where felines are housed,False,True,False
+CATTIE,Pet in a hat,False,True,False
+CATTIER,A comparative form of cat,False,True,False
+CATTIES,A playful term for a group of cats,False,True,True
+CATTIEST,Most cat-like,False,True,False
+CATTINESS,Quality of a cat's behavior,False,True,False
+CATTING,"Verbing of 'cat', a playful action",False,True,False
+CATTISH,Like a cat,False,True,False
+CATTISHLY,Adverbially describing behavior like a cat,False,True,False
+CATTISHNESS,Quality of behaving like a cat,False,True,False
+CATTLE,Livestock plural,False,True,True
+CATTLEFOLD,Place where cattle are kept,False,True,False
+CATTLEHIDE,Type of leather made from cows,False,True,False
+CATTLELESS,Without livestock,False,True,False
+CATTLEMAN,Farmer who tends cattle,False,True,False
+CATTLEMEN,Cowherds,False,True,False
+CATTY,Kitty's short form,False,True,False
+CATTYCORNER,Diagonally,False,True,False
+CATTYCORNERED,Diagonally,False,True,False
+CATTYMAN,Costume hero with a feline flair,False,True,False
+CATVINE,Type of vine,False,True,False
+CATWALK,Runway for models,False,True,False
+CATWALKS,Runways for models,False,True,True
+CATWISE,Like a cat,False,True,False
+CAUBEEN,A type of potato variety,False,True,False
+CAUCASIAN,Of or relating to a major human racial group,False,True,False
+CAUCASIANS,People from the Caucasus region,False,True,True
+CAUCASUS,Mountain range in Asia and Europe,False,True,False
+CAUCUS,"A meeting, especially one of a political group",False,True,False
+CAUCUSES,Gatherings where party officials select candidates,False,True,False
+CAUCUSING,Type of social media interaction,False,True,False
+CAUCUSSED,"Past tense of caucusing, a meeting",False,True,False
+CAUCUSSES,Meetings of a group,False,True,True
+CAUDLE,A historical warming drink,False,True,False
+CAUGHT,Past tense of catch,False,True,False
+CAUK,British bird ending in 'uk',False,True,False
+CAUL,"Ancient dish, often jellylike",False,True,False
+CAULD,Stewed in a large pot,False,True,False
+CAULDRON,Large pot used in witchcraft,False,True,False
+CAULDRONS,Large vessels in witchcraft,False,True,True
+CAULDS,Plural of a vessel for boiling,False,True,True
+CAULI,"Type of vegetable, often used in soup",False,True,False
+CAULIFLOWER,Vegetable with a white head,False,True,False
+CAULIFLOWERS,Vegetable often served steamed in winter,False,True,True
+CAULK,Sealant for gaps,False,True,False
+CAULKED,Past tense of caulk - to seal with caulk,False,True,False
+CAULKERS,Workers who apply sealant,False,True,False
+CAULKS,Seals gaps with a waterproof material,False,True,True
+CAULS,Ancient vessels made of animal stomachs,False,True,True
+CAUM,"State of mind, perhaps calm",False,True,False
+CAUP,Bar where patrons might order a caugh,False,True,False
+CAUSABLE,Capable of being caused,False,True,False
+CAUSALLY,In a causative manner,False,True,False
+CAUSALS,Social gatherings,False,True,False
+CAUSATIVELY,Adverb form of a verb meaning to bring about,False,True,False
+CAUSE,Reason,False,True,False
+CAUSED,Past tense of 'cause'; led to,False,True,False
+CAUSEFUL,Careful,False,True,False
+CAUSELESS,Without a reason,False,True,False
+CAUSELESSLY,"Adverbially, without a reason",False,True,False
+CAUSELESSNESS,State of having no reason,False,True,False
+CAUSER,One who brings about an effect,False,True,False
+CAUSERIES,Short essays or reflections,False,True,True
+CAUSES,Triggers; plural of cause,False,True,True
+CAUSEUSE,"To make something happen, repeated",False,True,False
+CAUSEWAY,Man-made path over water,False,True,False
+CAUSEWAYS,Man-made pathways over water,False,True,False
+CAUSEY,A small bridge over a path,False,True,False
+CAUSING,Verb form implying the reason behind an effect,False,True,False
+CAUSTICALLY,In a highly burning or irritating manner,False,True,False
+CAUSTICLY,In an extremely harshly critical manner,False,True,False
+CAUSTICNESS,"Severity of what, often spoken of acidic or bitter remarks?",False,True,False
+CAUTELOUS,Careful,False,True,False
+CAUTELOUSLY,"Carefully, with caution",False,True,False
+CAUTION,Precaution,False,True,False
+CAUTIONARY,"Advising against something, often with a tale",False,True,False
+CAUTIONER,Official who issues warnings,False,True,False
+CAUTIONERS,"Watchmen, police officers",False,True,True
+CAUTIONING,Verb form of caution,False,True,False
+CAUTIONS,Plural warning,False,True,True
+CAUTIOUS,"Wary, adjective",False,True,False
+CAUTIOUSLY,Carefully,False,True,False
+CAUTIOUSNESS,State of being careful,False,True,False
+CAVA,Spanish sparkling wine,False,True,False
+CAVAL,A four-wheeled carriage drawn by horses,False,True,False
+CAVALCADE,"Type of procession, often with horses",False,True,False
+CAVALCADED,Rode in a grand procession,False,True,False
+CAVALCADING,Type of procession on horseback,False,True,False
+CAVALIER,Kingly in manner; 8 letters,False,True,False
+CAVALIERED,"Impatient, dismissive manner",False,True,False
+CAVALIERES,"Female version of cavalier, riders on horseback",False,True,True
+CAVALIERISH,Arrogantly bold,False,True,False
+CAVALIERLY,In a manner befitting a cavalier,False,True,False
+CAVALIERNESS,"Courage and bearing, in a singular form",False,True,False
+CAVALIERS,Male members of a cavalry,False,True,True
+CAVALLAS,Small tropical fish often in aquariums,False,True,True
+CAVALLY,Equine stall,False,True,False
+CAVALRY,Military unit on horseback,False,True,False
+CAVALRYMAN,Rider in a military unit,False,True,False
+CAVALRYMEN,Members of a mounted military unit,False,True,True
+CAVE,Hollow in rock; often used as a home,False,True,False
+CAVEATED,Signed with conditions,False,True,False
+CAVED,Underground space collapsed,False,True,False
+CAVEFISH,Fish adapted to living in caves,False,True,False
+CAVEFISHES,Underwater dwellers often found in caves,False,True,True
+CAVEKEEPER,Guard of a subterranean realm,False,True,False
+CAVEL,Small cave or cavern,False,True,False
+CAVELIKE,Like a cave,False,True,False
+CAVEMAN,Ancient human living in caves,False,True,False
+CAVEMEN,Stone Age inhabitants,False,True,False
+CAVENDISH,A noble English family,False,True,False
+CAVER,Habitat of a bat,False,True,False
+CAVERN,Subterranean chamber,False,True,False
+CAVERNED,Past tense of to carve into a cave,False,True,False
+CAVERNLIKE,Like a cavern,False,True,False
+CAVERNOUS,Full of cavities like a cave,False,True,False
+CAVERNS,"Hollows in rock, plural",False,True,True
+CAVERS,Hobbyists who explore caves,False,True,True
+CAVES,"Hollows in rock, often plural",False,True,True
+CAVEY,Describing a small cave,False,True,False
+CAVIAR,Type of fish eggs used as a delicacy,False,True,False
+CAVIARE,"Type of fish eggs, often served at formal dinners",False,True,False
+CAVIARS,Delicacies derived from fish eggs,False,True,True
+CAVIE,Small rabbit,False,True,False
+CAVIES,Small burrowing animals,False,True,True
+CAVIL,To find trivial faults,False,True,False
+CAVILED,To find fault,False,True,False
+CAVILER,One who finds fault with trifles,False,True,False
+CAVILERS,Spectators at a sporting event,False,True,False
+CAVILINGLY,Adverbially nitpicking,False,True,False
+CAVILLED,Verb: Took exception to,False,True,False
+CAVILLER,One who picks faults,False,True,False
+CAVILLERS,People who find fault with minor details,False,True,True
+CAVILLING,Nagging about minor faults,False,True,False
+CAVILLINGLY,"Adverbially, finding fault",False,True,False
+CAVILLINGNESS,The tendency to find faults or quibbles,False,True,False
+CAVILLOUS,Picky in finding faults,False,True,False
+CAVILS,Grumbles about,False,True,False
+CAVIN,A type of cave,False,True,False
+CAVING,"Underground activity, often recreational",False,True,False
+CAVINGS,Caves in plural,False,True,True
+CAVISH,To object or complain [Rare],False,True,False
+CAVITIES,Holes in teeth,False,True,True
+CAVITY,Hole in a tooth,False,True,False
+CAVORT,To playfully gallop,False,True,False
+CAVORTED,Danced around playfully,False,True,False
+CAVORTING,Boisterous play or frolicking,False,True,False
+CAVORTS,Dances around playfully,False,True,False
+CAW,"Bird sound, often associated with crows",False,True,False
+CAWED,Past tense of a bird's cry,False,True,False
+CAWING,"Bird sound, often heard at night",False,True,False
+CAWK,Bird's harsh cry,False,True,False
+CAWKER,Pseudonym of a famous British author,False,True,False
+CAWKY,Stubborn or irritable,False,True,False
+CAWL,Welsh stew,False,True,False
+CAWNEY,Small cottage; roofed over shed,False,True,False
+CAWNIE,A type of owl,False,True,False
+CAWNY,A term for a type of Irish stew,False,True,False
+CAXTON,Printer who printed the first English book in England,False,True,False
+CAY,Small tropical island,False,True,False
+CAYENNE,Hot pepper,False,True,False
+CAYENNED,Pasted with hot pepper,False,True,False
+CAYENNES,Type of spicy pepper,False,True,False
+CAYMAN,Island nation in the Caribbean,False,True,False
+CAYMANS,Reptiles of the Caribbean,False,True,True
+CAYOS,Group of small tropical islands,False,True,True
+CAYS,Group of tropical islands,False,True,False
+CAYUGA,One of the Great Lakes,False,True,False
+CAYUSE,An old-fashioned motorcycle,False,True,False
+CAZIQUE,Title of a Native American chief,False,True,False
+CCESSER,To stop,False,True,False
+CDG,International airport code,False,True,False
+CEASE,Stop,False,True,False
+CEASED,Past tense of stop,False,True,False
+CEASELESS,Without stopping,False,True,False
+CEASELESSLY,Without stopping,False,True,False
+CEASELESSNESS,State of never stopping,False,True,False
+CEASES,"Stops, plural",False,True,True
+CEASING,Stopping,False,True,False
+CEBINE,A type of monkey,False,True,False
+CEBUR,A type of Filipino pork dish,False,True,False
+CECIL,"Name, often used in place of less formal terms",False,True,False
+CECILE,"French name, 6 letters",False,True,False
+CECILIA,Female name,False,True,False
+CECILY,Character from 'Kitty Kilroy',False,True,False
+CEDAR,Type of wood used in aromatic chests,False,True,False
+CEDARBIRD,Small North American bird,False,True,False
+CEDARED,Treed with cedar,False,True,False
+CEDARN,Type of wood used in construction,False,True,False
+CEDARS,Resinous trees,False,True,True
+CEDARWARE,Type of woodware often used for kitchen utensils,False,True,False
+CEDARY,Room scent,False,True,False
+CEDE,Yields,False,True,False
+CEDED,Gave up,False,True,False
+CEDER,Type of tree used in making aromatic wood,False,True,False
+CEDERS,Evergreen trees,False,True,False
+CEDES,Yields,False,True,False
+CEDING,Giving up,False,True,False
+CEDRAT,A type of citrus fruit,False,True,False
+CEDRIC,"Name, possibly of a knight",False,True,False
+CEDULE,Short notice or schedule,False,True,False
+CEE,Letter often used in diagrams,False,True,False
+CEES,Quartet of C's,False,True,False
+CEIL,Support structure at the top of a room,False,True,False
+CEILED,Past tense of ceil [archaic],False,True,False
+CEILER,Support structure above,False,True,False
+CEILERS,Those who put up a ceiling,False,True,False
+CEILING,The upper limit,False,True,False
+CEILINGED,Having a ceiling,False,True,False
+CEILINGS,Roof-like structures within a building,False,True,True
+CEILINGWARDS,Towards the ceiling,False,True,False
+CEILS,Plural form of ceiling,False,True,True
+CELADON,Type of green-glazed porcelain,False,True,False
+CELANDINE,Flower whose name rhymes with 'harmonium',False,True,False
+CELE,First three letters of 'celebrate',False,True,False
+CELEB,"Famous person, briefly",False,True,False
+CELEBES,Island east of Java,False,True,False
+CELEBRANT,One who joins in a celebration,False,True,False
+CELEBRANTS,Those joining in a festive occasion,False,True,True
+CELEBRATE,Observe a special occasion,False,True,False
+CELEBRATED,Famous or widely recognized,False,True,False
+CELEBRATEDLY,How one might do something with great fanfare,False,True,False
+CELEBRATEDNESS,The state of being widely recognized,False,True,False
+CELEBRATER,Celebrity impersonator,False,True,False
+CELEBRATES,Observed a birthday,False,True,False
+CELEBRATING,Marking a special occasion,False,True,False
+CELEBRATION,Festive gathering,False,True,False
+CELEBRATIONS,Festive events,False,True,True
+CELEBRATIVE,Describing someone who loves parties,False,True,False
+CELEBRATOR,One who celebrates,False,True,False
+CELEBRATORS,Those who throw parties,False,True,True
+CELEBRATORY,Describing a party,False,True,False
+CELEBRIOUS,Famous and widely known,False,True,False
+CELEBRITIES,Famous people,False,True,True
+CELEBRITY,"Famous person, often in the media",False,True,False
+CELEBS,Celebrity short forms,False,True,True
+CELERIES,Vegetable stalks,False,True,True
+CELERY,Vegetable often eaten raw in salads,False,True,False
+CELESTE,Type of keyboard instrument,False,True,False
+CELIA,"Female name, perhaps best known as a character in Shakespeare's play",False,True,False
+CELIBACY,State of being unmarried and abstaining from sex,False,True,False
+CELIBATE,Single and abstaining from sex,False,True,False
+CELIBATES,Those leading a single life,False,True,True
+CELLA,Small room beneath a temple,False,True,False
+CELLAGER,Wine keeper,False,True,False
+CELLAR,Storage space below ground,False,True,False
+CELLARED,Stored in a cellar,False,True,False
+CELLARING,Storing wine,False,True,False
+CELLARLESS,Without a cellar,False,True,False
+CELLARMAN,Keeper of the wine cellar,False,True,False
+CELLARMEN,Those who tend to the wine cellar,False,True,False
+CELLARS,Subterranean storage spaces,False,True,False
+CELLARWAY,Passage running under a house,False,True,False
+CELLARWOMAN,Female character in Alice's Adventures in Wonderland,False,True,False
+CELLBLOCK,Prison area,False,True,False
+CELLBLOCKS,Jail sections,False,True,True
+CELLI,String quartet section,False,True,False
+CELLING,Ceiling in reverse,False,True,False
+CELLIST,String player,False,True,False
+CELLISTS,Musicians who play string instruments,False,True,True
+CELLMATE,Shared cellmate in prison,False,True,False
+CELLMATES,Roommates in a jail setting,False,True,False
+CELLO,Bowed string instrument,False,True,False
+CELLOIST,Player of the large violin,False,True,False
+CELLOPHANE,Transparent film,False,True,False
+CELLOS,Stringed instruments in an orchestra,False,True,True
+CELLUCOTTON,Absorbent material often used in first aid,False,True,False
+CELLULOSED,Paper's main component,False,True,False
+CELT,Ancient Irish people,False,True,False
+CELTIC,Ancient tribe,False,True,False
+CELTICALLY,How an ancient tribe might have spoken,False,True,False
+CELTOPHIL,Lover of Celtic music,False,True,False
+CELTS,Ancient people of Europe,False,True,False
+CELURE,A variant of 'closure',False,True,False
+CEMBALIST,Pianist,False,True,False
+CEMENT,Building material,False,True,False
+CEMENTED,Past tense of cement,False,True,False
+CEMENTERS,Those who put cement to work,False,True,False
+CEMENTIN,A less common variant of cement,False,True,False
+CEMENTING,Action of making something permanent,False,True,False
+CEMENTLESS,Without a binding material,False,True,False
+CEMENTMAKER,Producer of concrete,False,True,False
+CEMENTS,Glues bricks together,False,True,False
+CEMETARIES,"Places of burial, often plural",False,True,True
+CEMETARY,Place of burial,False,True,False
+CEMETERIAL,Relating to a cemetery,False,True,False
+CEMETERIES,Places of rest in plural form,False,True,True
+CEMETERY,Place of burials,False,True,False
+CEN,Middle,False,True,False
+CENSE,To declare a tax,False,True,False
+CENSED,"Spelled incorrectly, it's a past tense verb",False,True,False
+CENSERS,Ancient vessels for burning incense,False,True,False
+CENSING,Feeling or perceiving,False,True,False
+CENSIVE,Perceptive,False,True,False
+CENSOR,Supervisor of content,False,True,False
+CENSORABLE,Subject to censorship,False,True,False
+CENSORED,"7 letters, a term used in editing",False,True,False
+CENSORING,Process of editing content,False,True,False
+CENSORIOUS,Tending to find faults; critical,False,True,False
+CENSORIOUSLY,With a tendency to censor,False,True,False
+CENSORS,Devices that block or filter,False,True,False
+CENSORSHIP,Suppression of certain words,False,True,False
+CENSURE,Punish by criticizing,False,True,False
+CENSURED,Marked for official disapproval,False,True,False
+CENSURELESS,Without restriction in criticism,False,True,False
+CENSURER,Person who edits content,False,True,False
+CENSURERS,Those who edit,False,True,False
+CENSURES,Puts a spoke in the wheel,False,True,False
+CENSURESHIP,"Restriction of what can be said, published, or done",False,True,False
+CENSURING,Official disapproval,False,True,False
+CENSUS,Periodic population count,False,True,False
+CENSUSED,Past tense of census,False,True,False
+CENSUSES,Periodic population counts,False,True,True
+CENSUSING,"Counting process, often yearly",False,True,False
+CENT,Coin worth one hundredth of a dollar,False,True,False
+CENTAUR,Mythological creature with a human head and horse body,False,True,False
+CENTAURIES,Periods of time,False,True,False
+CENTAURS,Mythological hybrid beings with a horse's body and a human's torso,False,True,True
+CENTENARIAN,Person who has lived to be 100,False,True,False
+CENTENARIANS,Group reaching a century in age,False,True,True
+CENTENARY,A hundredth anniversary,False,True,False
+CENTENNIAL,Occurring every 100 years,False,True,False
+CENTENNIALS,Occasions celebrated every 100 years,False,True,True
+CENTER,Middle point,False,True,False
+CENTERABLE,Capable of being positioned in the middle,False,True,False
+CENTERED,In the middle,False,True,False
+CENTEREDLY,Adverb form of centered,False,True,False
+CENTEREDNESS,State of being centrally located,False,True,False
+CENTERER,One who centers,False,True,False
+CENTERFOLD,Magazine spread,False,True,False
+CENTERFOLDS,Model featured in magazines,False,True,False
+CENTERING,Process of aligning in the center,False,True,False
+CENTERMOST,At the exact center,False,True,False
+CENTERPIECE,Focal point of a room,False,True,False
+CENTERPIECES,Decorative items at the center of a room,False,True,True
+CENTERS,Place of business,False,True,True
+CENTERWARD,Toward the center,False,True,False
+CENTERWISE,In the middle direction,False,True,False
+CENTRAL,In the middle,False,True,False
+CENTRALIA,Pennsylvania coal-mining town now a symbol of what's underground,False,True,False
+CENTRALIST,One who believes in centralized authority,False,True,False
+CENTRALISTS,Political group focusing on central authority,False,True,True
+CENTRALITY,Importance of being central,False,True,False
+CENTRALIZE,To make central,False,True,False
+CENTRALIZED,Type of organization where power is concentrated at the top,False,True,False
+CENTRALIZERS,Who make centralization policies,False,True,True
+CENTRALLY,With a central focus,False,True,False
+CENTRALNESS,State of being in the center,False,True,False
+CENTRALS,Railway stations,False,True,True
+CENTRE,Middle point,False,True,False
+CENTRED,To place in the middle,False,True,False
+CENTREF,In the middle,False,True,False
+CENTREFOLD,Newspaper section in the middle,False,True,False
+CENTRELESS,Without a center,False,True,False
+CENTREMOST,At the center and farthest from edges,False,True,False
+CENTREPIECE,Middle showpiece,False,True,False
+CENTRER,To place in the center,False,True,False
+CENTRES,Places of focus,False,True,True
+CENTREV,Capital of Burkina Faso,False,True,False
+CENTRIST,Political moderate,False,True,False
+CENTRISTS,Political middle ground adherents,False,True,True
+CENTRY,A term for a period of time,False,True,False
+CENTS,U.S. currency,False,True,False
+CENTURIED,Lasting for a century,False,True,False
+CENTURIES,Periods of 100 years,False,True,True
+CENTURIONS,Soldiers in a Roman army unit,False,True,True
+CENTURY,Period of 100 years,False,True,False
+CEORLS,Reversed form of a rank in corporate hierarchy,False,True,False
+CEPE,Type of Spanish hat,False,True,False
+CERAMIC,Type of material often used in pottery,False,True,False
+CERAMISTS,Potters and tile-makers,False,True,True
+CERE,Grain used in making bread,False,True,False
+CEREAL,Breakfast food,False,True,False
+CEREALS,Grain-based breakfast foods,False,True,True
+CEREBRATE,To observe a holiday,False,True,False
+CEREMONIAL,Describing a formal religious service,False,True,False
+CEREMONIALLY,Formally,False,True,False
+CEREMONIALS,"Plural form of ceremonial, formal rituals or practices",False,True,True
+CEREMONIES,"Formal events, often plural",False,True,True
+CEREMONIOUS,Oft seen in formal invitations,False,True,False
+CEREMONIOUSLY,"Formally, in a ceremonious manner",False,True,False
+CEREMONY,"Formal event, like a wedding",False,True,False
+CERER,Roman goddess of crops and harvest,False,True,False
+CEREZA,Small red fruit often found in a Christmas song,False,True,False
+CERILLA,A type of wax candle,False,True,False
+CERISE,A type of sweet cherry,False,True,False
+CERISES,"Red berries, often served in a white sauce",False,True,True
+CERTAIN,Definite,False,True,False
+CERTAINER,Type of vessel,False,True,False
+CERTAINEST,Most certain,False,True,False
+CERTAINLY,Definitely,False,True,False
+CERTAINNESS,Definiteness,False,True,False
+CERTAINTIES,What one might list after saying 'I am certain of these...',False,True,True
+CERTAINTY,State of being sure,False,True,False
+CERTES,An old form of 'certain',False,True,False
+CERTIE,Simplified form of 'certificate',False,True,False
+CERTIFIABLY,Adverb form of certainty,False,True,False
+CERTIFICATE,Document proving identity or membership,False,True,False
+CERTIFICATED,Educated and given a certificate,False,True,False
+CERTIFICATES,Documents showing proof,False,True,True
+CERTIFIED,Officially approved,False,True,False
+CERTIFIER,One who verifies,False,True,False
+CERTIFIERS,"Plural form of certifier, one who verifies",False,True,True
+CERTIFIES,Verbs related to proving something with authority,False,True,False
+CERTIFY,Vouch for the authenticity,False,True,False
+CERTIFYING,Verifying with official sanction,False,True,False
+CERTITUDE,Degree of certainty,False,True,False
+CERULE,Color like the sky,False,True,False
+CERYL,"Name, 6 letters",False,True,False
+CESARE,"Roman name, first name of Julius Caesar's son",False,True,False
+CESSATION,The end of something,False,True,False
+CESSATIONS,"The end of something, plural form",False,True,True
+CESSED,Past tense of cease,False,True,False
+CESSER,To stop,False,True,False
+CESSES,Plural form of a seating arrangement,False,True,True
+CESSING,Ending,False,True,False
+CESSION,Transfer of power,False,True,False
+CESSIONS,"Transfer of rights, often in plural",False,True,True
+CESSOR,A type of motor vehicle,False,True,False
+CESSPITS,Old-fashioned term for a sewage receptacle,False,True,False
+CESSPOOL,"Waste receptacle, colloquially",False,True,False
+CEVICHE,Peruvian seafood dish,False,True,False
+CEVICHES,Peruvian dish often with raw fish,False,True,True
+CEYLON,Former name of Sri Lanka,False,True,False
+CEYLONESE,Former name of a country's people,False,True,False
+CHA,Initials of a classic Chinese tea,False,True,False
+CHABER,Type of Scottish ale,False,True,False
+CHACE,To pursue with great eagerness,False,True,False
+CHACK,"A verb meaning to make a short, sharp sound",False,True,False
+CHACKER,A humorous internet meme,False,True,False
+CHACKLE,To laugh in a chuckling way,False,True,False
+CHACKLED,Variegated with patches of different colors,False,True,False
+CHACKLING,The sound of a laughing turkey,False,True,False
+CHACOLI,Brand of chocolate drink,False,True,False
+CHAD,Poll station paper fragment,False,True,False
+CHADARS,A type of Indian silk fabric,False,True,False
+CHADELLE,"Rare variant of 'chocolate', often used humorously",False,True,False
+CHADORS,Veil worn by some Muslim women,False,True,False
+CHADS,Data point in a poll,False,True,False
+CHAFE,Cause friction,False,True,False
+CHAFED,Tenderized by rubbing,False,True,False
+CHAFERY,Feeling irritated,False,True,False
+CHAFES,Causes irritation,False,True,False
+CHAFF,Crop residue left after harvesting,False,True,False
+CHAFFED,Tenderly caressed,False,True,False
+CHAFFER,"To negotiate, especially about price",False,True,False
+CHAFFERED,"Past tense of barter or negotiate, often in a market",False,True,False
+CHAFFERER,"Antique dealer, colloquially",False,True,False
+CHAFFERERS,Antique dealers,False,True,True
+CHAFFERING,"Type of negotiation, often over price",False,True,False
+CHAFFERS,"A type of small, often eccentric, independent shop",False,True,False
+CHAFFERY,"Type of witty, sharp criticism",False,True,False
+CHAFFIER,A steward at a banquet,False,True,False
+CHAFFIEST,Most irritable,False,True,False
+CHAFFINCH,Small bird often found in parks,False,True,False
+CHAFFINCHES,Small birds often seen in gardens,False,True,True
+CHAFFINESS,Irritation that might make you snap,False,True,False
+CHAFFINGLY,Sharp in a way that grates,False,True,False
+CHAFFLESS,"Without chaff, a wheat-related state",False,True,False
+CHAFFLIKE,"Like horse feed, slightly",False,True,False
+CHAFFMAN,Seller of dried plant material,False,True,False
+CHAFFS,Scatters like wind,False,True,False
+CHAFFWEED,A type of wild grass often considered a weed,False,True,False
+CHAFFY,Covered with small rough pieces,False,True,False
+CHAFING,Type of friction that causes discomfort,False,True,False
+CHAGAL,Artist who painted 'The Kiss',False,True,False
+CHAGRIN,Feel of disappointment,False,True,False
+CHAGRINED,Feeling slightly annoyed,False,True,False
+CHAGRINING,Causing annoyance and slight anger,False,True,False
+CHAGRINNED,Feeling slight annoyance or vexation,False,True,False
+CHAGRINNING,Causing annoyance and disappointment,False,True,False
+CHAGRINS,Set of minor vexations,False,True,True
+CHAI,Spiced Indian tea,False,True,False
+CHAIN,A series of connected links,False,True,False
+CHAINBEARER,Rider's helper on a bike,False,True,False
+CHAINE,Chain,False,True,False
+CHAINED,Bound with a chain,False,True,False
+CHAINING,Method of binding,False,True,False
+CHAINLESS,Bike type with no chain,False,True,False
+CHAINLIKE,Describing something with a chain-like structure,False,True,False
+CHAINMAKER,One who fashions chains,False,True,False
+CHAINMAKING,Process of making chains,False,True,False
+CHAINMAN,Official in a gallows,False,True,False
+CHAINMEN,Railway workers who secure chains,False,True,False
+CHAINON,Link in a chain,False,True,False
+CHAINS,Fastenings in a gridiron puzzle,False,True,False
+CHAINSMAN,A link in a chain of command,False,True,False
+CHAINSMEN,Alternative term for close friends,False,True,True
+CHAINWORK,Type of detailed needlework,False,True,False
+CHAIR,"Furniture staple, often in a meeting",False,True,False
+CHAIRBORNE,Relating to someone seated in a chair,False,True,False
+CHAIRED,Past tense of chaired,False,True,False
+CHAIRER,One who presides,False,True,False
+CHAIRING,Action of presiding over a meeting,False,True,False
+CHAIRLADIES,Furniture for multiple ladies,False,True,True
+CHAIRLADY,Female chairperson,False,True,False
+CHAIRLESS,Denoting a state of having no chair,False,True,False
+CHAIRLIFT,Ride up a mountain on this,False,True,False
+CHAIRMAKER,One who makes chairs,False,True,False
+CHAIRMAKING,Furniture crafting,False,True,False
+CHAIRMAN,Head of a meeting or organization,False,True,False
+CHAIRMANED,Past tense of to chair,False,True,False
+CHAIRMANING,Act of presiding over a meeting,False,True,False
+CHAIRMANNED,Served as chairperson,False,True,False
+CHAIRMANNING,Heading a meeting,False,True,False
+CHAIRMANS,Chairman plural,False,True,True
+CHAIRMANSHIP,Position of leadership in a meeting,False,True,False
+CHAIRMANSHIPS,"Positions of leadership, plural",False,True,True
+CHAIRMEN,Group of leaders,False,True,True
+CHAIRMENDER,One who mends chairs,False,True,False
+CHAIRMENDING,Formal meeting with a chairperson,False,True,False
+CHAIRPERSON,Someone presiding over a meeting,False,True,False
+CHAIRPERSONS,"Group of leaders, often in plural",False,True,True
+CHAIRS,Furniture plural,False,True,True
+CHAIRWARMER,Person warming a seat,False,True,False
+CHAIRWAY,Pathway to a clubhouse's seating area,False,True,False
+CHAIRWOMAN,Female chairperson,False,True,False
+CHAIRWOMEN,Position title for a female chairperson,False,True,True
+CHAIS,Furniture for drinks,False,True,False
+CHAISE,Furniture piece for one,False,True,False
+CHAISES,Furniture plural,False,True,True
+CHAIT,A Scottish term for a state of agitation,False,True,False
+CHAKA,Yell used in soccer,False,True,False
+CHALET,Swiss mountain cabin,False,True,False
+CHALETS,Swiss mountain cottages,False,True,False
+CHALICE,圣杯，也指一种细颈酒杯（8）,False,True,False
+CHALICES,Receptacles used in religious ceremonies,False,True,True
+CHALK,Soft rock used for writing,False,True,False
+CHALKBOARD,Blackboard alternative,False,True,False
+CHALKBOARDS,Large writing surfaces in classrooms,False,True,True
+CHALKCUTTER,Tool for cutting chalk,False,True,False
+CHALKED,Left a mark with a white粉笔,False,True,False
+CHALKER,One who makes or supplies chalk,False,True,False
+CHALKIER,Softer than chalk,False,True,False
+CHALKIEST,Whitest in the chalk family,False,True,False
+CHALKING,Act of writing with chalk,False,True,False
+CHALKLIKE,Like chalk in appearance,False,True,False
+CHALKLINE,Temporary straight line drawn on a ground,False,True,False
+CHALKS,Writes on blackboards,False,True,True
+CHALKWORKER,One who works with chalk,False,True,False
+CHALKY,"Slightly alkaline, like some chalk",False,True,False
+CHALLAH,Jewish bread,False,True,False
+CHALLENGABLE,Capable of being challenged,False,True,False
+CHALLENGE,Test or trial,False,True,False
+CHALLENGEABLE,可被挑战的（7）,False,True,False
+CHALLENGED,Feeling tested or tried,False,True,False
+CHALLENGEE,Recipient of a challenge,False,True,False
+CHALLENGEFUL,Describing a task that is challenging,False,True,False
+CHALLENGERS,Group often seen in space suits,False,True,True
+CHALLENGES,"Tests, often difficult",False,True,True
+CHALLENGING,Difficult task or competition,False,True,False
+CHALLENGINGLY,"Adverbially, it makes tasks tough",False,True,False
+CHALLIE,Character from a Disney movie,False,True,False
+CHALLOT,Small variety of potato,False,True,False
+CHALLOTE,A type of bulbous vegetable,False,True,False
+CHALLY,Type of small enclosed railway car,False,True,False
+CHALOT,Small variety of round garlic,False,True,False
+CHAMAELEON,Lizard known for changing color,False,True,False
+CHAMAR,To praise or compliment,False,True,False
+CHAMBER,Room in a building,False,True,False
+CHAMBERFELLOW,Colleague in a student hall,False,True,False
+CHAMBERLAIN,Title of a senior minister,False,True,False
+CHAMBERLAINS,Offices in a palace,False,True,True
+CHAMBERLETED,Formalized version of a meeting,False,True,False
+CHAMBERLETTED,Rented room in a larger house,False,True,False
+CHAMBERMAID,Room attendant in a hotel,False,True,False
+CHAMBERMAIDS,Housekeeping staff,False,True,True
+CHAMBERS,Units in a building,False,True,False
+CHAMBERWOMAN,Female attendant in a royal chamber,False,True,False
+CHAMBRAY,Type of cotton fabric often used in shirts,False,True,False
+CHAMELEON,Reptile that can change skin color,False,True,False
+CHAMELEONIC,Like a chameleon in its ability to change,False,True,False
+CHAMELEONLIKE,Like a chameleon in its ability to change,False,True,False
+CHAMELEONS,Reptiles known for color-changing skin,False,True,False
+CHAMISAL,Small New Mexican town,False,True,False
+CHAMISO,Type of shrub used in landscaping,False,True,False
+CHAMLET,Small version of a character,False,True,False
+CHAMM,Mammal's soft inner layer,False,True,False
+CHAMMA,A type of Indian sweet,False,True,False
+CHAMMIED,Treated with wax,False,True,False
+CHAMMY,Leather-like material,False,True,False
+CHAMOIS,Type of soft leather,False,True,False
+CHAMOMILE,Common herbal tea,False,True,False
+CHAMORRO,Native people of Guam,False,True,False
+CHAMP,Strong competitor,False,True,False
+CHAMPAGNE,Sparkling wine from a specific region,False,True,False
+CHAMPAGNELESS,Without sparkling wine,False,True,False
+CHAMPAGNES,Sparkling wines from France,False,True,True
+CHAMPAIGN,Sparkling wine from France,False,True,False
+CHAMPE,First four letters of champion,False,True,False
+CHAMPED,Past tense of to defeat in a competition,False,True,False
+CHAMPERS,Fancy term for drinks,False,True,False
+CHAMPING,Enthusiastic eating,False,True,False
+CHAMPION,Sports star or contest winner,False,True,False
+CHAMPIONED,Defended a cause,False,True,False
+CHAMPIONESS,Female victor,False,True,False
+CHAMPIONING,Advocating a cause,False,True,False
+CHAMPIONLESS,Without a champion,False,True,False
+CHAMPIONLIKE,Like a top athlete,False,True,False
+CHAMPIONS,Sports winners,False,True,True
+CHAMPIONSHIP,Sports event with a title,False,True,False
+CHAMPIONSHIPS,Sports event plurals,False,True,True
+CHAMPS,"Sports abbrev., often top performers",False,True,True
+CHAMPY,Film character with a perpetual smile,False,True,False
+CHAN,"Water passage, often with locks",False,True,False
+CHANCE,Opportunity,False,True,False
+CHANCEABLE,Capable of happening,False,True,False
+CHANCEABLY,Adverb form of chance,False,True,False
+CHANCED,Briefly encountered,False,True,False
+CHANCEFUL,Subject to luck or accident,False,True,False
+CHANCEFULLY,Occasionally,False,True,False
+CHANCELED,Cancelled,False,True,False
+CHANCELESS,Without any opportunity,False,True,False
+CHANCELLED,Canceled,False,True,False
+CHANCELLOR,University title or government position,False,True,False
+CHANCELLORESS,Position of top female official in many organizations,False,True,False
+CHANCELLORSHIP,University position,False,True,False
+CHANCELLORSHIPS,Positions of authority,False,True,True
+CHANCELS,Part of a church,False,True,False
+CHANCER,One who gambles or takes risks,False,True,False
+CHANCES,Possible outcomes,False,True,True
+CHANCEWISE,"Randomly, in a chance manner",False,True,False
+CHANCEY,Frequent gambler,False,True,False
+CHANCIEST,Slang for the riskiest option,False,True,False
+CHANCILY,In an unpredictable manner,False,True,False
+CHANCINESS,Quality of being unpredictable,False,True,False
+CHANCING,Risk-taking,False,True,False
+CHANCY,Risk-taken,False,True,False
+CHANDELIER,Type of lighting fixture,False,True,False
+CHANDELIERS,"Hanging light fixtures, often in plural",False,True,False
+CHANDELLES,Ancient lighting fixtures,False,True,True
+CHANDLER,"Bart's dad, in TV",False,True,False
+CHANDLERS,Producers of candles,False,True,False
+CHANELED,Directed through a specific path,False,True,False
+CHANELING,Psychic practice or spiritualist meeting,False,True,False
+CHANELLED,Past participle of a verb meaning to direct,False,True,False
+CHANG,Chinese currency,False,True,False
+CHANGABLE,Subject to change,False,True,False
+CHANGE,To alter or make different,False,True,False
+CHANGEABILITY,Quality of being easily altered,False,True,False
+CHANGEABLE,"Adaptable, in a state of flux",False,True,False
+CHANGEABLY,Adverb form of changable,False,True,False
+CHANGEABOUT,A term for a complete reversal or about-face,False,True,False
+CHANGED,Past tense of change,False,True,False
+CHANGEFUL,"Fickle, like weather",False,True,False
+CHANGEFULNESS,Quality of being changeable,False,True,False
+CHANGELESS,Unchanging,False,True,False
+CHANGELESSLY,Adverb form of unchanging,False,True,False
+CHANGELING,"In folklore, a child swapped at birth",False,True,False
+CHANGEMAKER,Person who brings about change,False,True,False
+CHANGEOVERS,Public transport stops,False,True,False
+CHANGEPOCKET,Where you keep money for small purchases,False,True,False
+CHANGER,"One who changes things, like a mechanic's box",False,True,False
+CHANGERS,Those who alter,False,True,False
+CHANGES,Verbs related to alterations,False,True,False
+CHANGING,Verb for the process of alteration,False,True,False
+CHANGOS,A type of fried seafood dish,False,True,False
+CHANGS,A type of storage unit,False,True,False
+CHANK,Sound of a block hitting the ground,False,True,False
+CHANNEL,Waterway or passageway,False,True,False
+CHANNELED,Directed a current,False,True,False
+CHANNELER,One who channels,False,True,False
+CHANNELING,Directing energy,False,True,False
+CHANNELLED,Past participle of channel,False,True,False
+CHANNELS,Waterways network,False,True,True
+CHANNER,To fish with a line and hook,False,True,False
+CHANT,Type of vocalization in a religious context,False,True,False
+CHANTABLE,Capable of being chanted,False,True,False
+CHANTAGE,"Coercion using threats, often whispered",False,True,False
+CHANTECLER,The rooster from a certain famous fable,False,True,False
+CHANTED,"Past tense of chanting, in a chorus",False,True,False
+CHANTER,Kind of mushroom,False,True,False
+CHANTERELLE,Type of flavorful mushroom,False,True,False
+CHANTERS,Group of singers in a cathedral,False,True,False
+CHANTEUSE,"Female singer, often in a show",False,True,False
+CHANTEYS,Old sea shanties,False,True,True
+CHANTICLEERS,"A type of rooster, often personified",False,True,True
+CHANTIES,Plural of a type of sweet,False,True,True
+CHANTILLY,Creamy dessert topping,False,True,False
+CHANTING,Group vocalization,False,True,False
+CHANTINGLY,How one might intone a prayer,False,True,False
+CHANTOR,One who leads a chant,False,True,False
+CHANTRESS,Female singer in a choir,False,True,False
+CHANTRIES,Type of storage often used in libraries,False,True,False
+CHANTS,Choral singing,False,True,True
+CHANUKAH,"Festival of Lights, eight-day Jewish holiday",False,True,False
+CHAO,A type of Chinese dumpling,False,True,False
+CHAOS,State of complete disorder,False,True,False
+CHAOTIC,In a state of complete disorder,False,True,False
+CHAOTICAL,Disorderly and lacking a clear structure,False,True,False
+CHAOTICALLY,Adverb form of chaos,False,True,False
+CHAOTICNESS,State of being in a state of disorder,False,True,False
+CHAP,A brief chat,False,True,False
+CHAPATI,Indian flatbread,False,True,False
+CHAPATIS,Indian flatbread,False,True,True
+CHAPATTI,Indian flatbread,False,True,False
+CHAPATTIES,Indian flatbread,False,True,True
+CHAPATTIS,Indian flatbread,False,True,True
+CHAPATTY,Indian flatbread,False,True,False
+CHAPBOOK,Type of early printed pamphlet,False,True,False
+CHAPBOOKS,Printed literature sold by traveling peddlers,False,True,True
+CHAPE,Type of historical garment,False,True,False
+CHAPEAUS,Headwear plural,False,True,True
+CHAPEAUX,"Headwear, plural",False,True,True
+CHAPED,"Weathered or cracked, as skin",False,True,False
+CHAPEL,Small religious building,False,True,False
+CHAPELED,Housed in a church,False,True,False
+CHAPELGOER,Churchgoer,False,True,False
+CHAPELGOING,Church attendance,False,True,False
+CHAPELING,Small church or chapel,False,True,False
+CHAPELMAN,Church caretaker and small-time cleric,False,True,False
+CHAPELS,Small places of worship,False,True,True
+CHAPERON,Headwear for a chaperone,False,True,False
+CHAPERONE,"Begins with 'ch', escorts at formal events",False,True,False
+CHAPERONED,"Past participle of chaperone, escorted",False,True,False
+CHAPERONING,Act of escorting a young woman,False,True,False
+CHAPERONS,Heads of a specific type of hat,False,True,True
+CHAPIN,Short form of a name,False,True,False
+CHAPITERS,Sections of a book,False,True,False
+CHAPLAIN,Church official; religious advisor,False,True,False
+CHAPLAINS,Religious leaders in institutions,False,True,True
+CHAPLET,"Small circular wreath, often used decoratively",False,True,False
+CHAPLIN,"Comedy icon, surname",False,True,False
+CHAPMAN,"A seller of goods, often in a specific craft",False,True,False
+CHAPMEN,"Old term for what, in a group of four",False,True,False
+CHAPPED,"Dry, cracked skin",False,True,False
+CHAPPER,To talk a great deal [4],False,True,False
+CHAPPIE,Film character with a robot dog,False,True,False
+CHAPPIES,Plural form of chap,False,True,True
+CHAPPIN,Slang term for a share,False,True,False
+CHAPPY,Slightly sore or irritated,False,True,False
+CHAPSTICK,Small tube of lip balm,False,True,False
+CHAPT,Briefly,False,True,False
+CHAPTER,Section of a book,False,True,False
+CHAPTERS,Book sections,False,True,True
+CHAQUETA,"Short coat, in Spanish",False,True,False
+CHAR,One who gives a character,False,True,False
+CHARABANCS,Old-fashioned bus,False,True,True
+CHARAC,First name of a fictional superhero,False,True,False
+CHARACINS,"Type of fish, often in tropical aquariums",False,True,False
+CHARACTER,"Theater term, often has multiple roles",False,True,False
+CHARACTERED,Described in detail,False,True,False
+CHARACTERFUL,Having distinct personality,False,True,False
+CHARACTERING,Describing with distinctive traits,False,True,False
+CHARACTERISABLE,形容词，可描述的（7）,False,True,False
+CHARACTERISE,To describe in distinctive qualities,False,True,False
+CHARACTERISED,Described in detail,False,True,False
+CHARACTERISING,Describing in detail,False,True,False
+CHARACTERISTIC,Descriptive feature,False,True,False
+CHARACTERISTICS,traits or qualities,False,True,False
+CHARACTERIZABLE,Capable of being described with specific traits,False,True,False
+CHARACTERIZE,To describe in detail,False,True,False
+CHARACTERIZED,Verb form of a descriptor,False,True,False
+CHARACTERIZES,Verb form of a descriptor,False,True,False
+CHARACTERIZING,Verb for describing someone's traits,False,True,False
+CHARACTERLESS,Lacking distinct personality,False,True,False
+CHARACTERS,Actors in a play,False,True,True
+CHARACTERY,Stage presence or personality,False,True,False
+CHARADE,Dance involving a series of clues,False,True,False
+CHARADES,Formal party game,False,True,False
+CHARBROIL,Grilling method leaving distinctive marks,False,True,False
+CHARBROILED,Grilled with char,False,True,False
+CHARBROILING,Grilling method giving food a charred surface,False,True,False
+CHARBROILS,Grills meat,False,True,False
+CHARCO,Black residue from burning wood,False,True,False
+CHARCOAL,"Barbecue fuel, briefly",False,True,False
+CHARCOALED,"Verbally described, burnt wood",False,True,False
+CHARCOALS,Ages-old cooking ingredient,False,True,True
+CHARCOALY,Dark like charcoal,False,True,False
+CHARD,Type of leafy green vegetable,False,True,False
+CHARDOCK,Small British town near Chesterfield,False,True,False
+CHARDS,Vegetable cut into small pieces,False,True,True
+CHARE,Share of work,False,True,False
+CHARED,Worn out by hard work,False,True,False
+CHARELY,With care,False,True,False
+CHARET,Error in a script,False,True,False
+CHARGABLE,可收费的（8个字母）,False,True,False
+CHARGE,A demand for payment,False,True,False
+CHARGEABLE,Priced or capable of being billed,False,True,False
+CHARGEABLY,Adverbially for a cost,False,True,False
+CHARGED,Electrified,False,True,False
+CHARGEE,Person responsible for charging,False,True,False
+CHARGEFUL,"Costly, but used in a positive way",False,True,False
+CHARGELESS,Free of cost,False,True,False
+CHARGEMAN,Former title of a British police officer,False,True,False
+CHARGERS,Plugs and sockets,False,True,False
+CHARGES,Legal claims,False,True,True
+CHARIER,More feeble,False,True,False
+CHARIEST,Most eager to ride in a chariot,False,True,False
+CHARINESS,Stinginess,False,True,False
+CHARIOT,Ancient wheeled vehicle pulled by horses,False,True,False
+CHARIOTED,"Past participle of chariot, driven",False,True,False
+CHARIOTEER,Driver of a chariot,False,True,False
+CHARIOTING,Form of transportation in a race,False,True,False
+CHARIOTS,Ancient war vehicles,False,True,True
+CHARISMA,Charismatic quality,False,True,False
+CHARISMAS,Season of goodwill and gift-giving,False,True,False
+CHARISMATIC,Describing a leader with magnetic appeal,False,True,False
+CHARISMS,Gifts of the Holy Spirit,False,True,True
+CHARISSA,"Name, 7 letters",False,True,False
+CHARITABLE,Showing willingness to help others,False,True,False
+CHARITABLENESS,Quality of being kind and generous,False,True,False
+CHARITABLY,With a heart full of kindness,False,True,False
+CHARITIES,Forms of benevolence,False,True,True
+CHARITY,Kindness or goodwill,False,True,False
+CHARITYLESS,Lacking benevolence,False,True,False
+CHARK,Type of bear,False,True,False
+CHARLADIES,A variant term for ladies,False,True,False
+CHARLADY,Housekeeper in a British setting,False,True,False
+CHARLATAN,Quack pretending to be a healer,False,True,False
+CHARLATANRY,Deception through false claims,False,True,False
+CHARLATANS,"Scam artists, plural",False,True,True
+CHARLEMAGNE,"Medieval French king, in history and trivia",False,True,False
+CHARLENE,Name of a former Monarch,False,True,False
+CHARLES,"Name, 7 letters",False,True,False
+CHARLESTON,Southern U.S. dance,False,True,False
+CHARLESTONS,Southern U.S. dance steps,False,True,True
+CHARLESWORTH,"Name, 10 letters",False,True,False
+CHARLET,Rare variant of Charles,False,True,False
+CHARLEY,Slang term for a friend,False,True,False
+CHARLEYS,Slang term for a group of friends,False,True,True
+CHARLIE,Tên nhân vật trong bộ phim Charlie and the Chocolate Factory（查理和巧克力工厂）,False,True,False
+CHARLIES,Slang term for a group of friends,False,True,True
+CHARLOCKS,A type of lock with a characteristic clicking sound,False,True,False
+CHARLOTTE,Name of a city in North Carolina,False,True,False
+CHARLOTTESVILLE,Virginia university town,False,True,False
+CHARM,Magic or allure,False,True,False
+CHARMED,Enchanted,False,True,False
+CHARMEDLY,How a spell might affect someone,False,True,False
+CHARMER,One who enchants,False,True,False
+CHARMERS,Group that enchants,False,True,True
+CHARMFUL,Aesthetically pleasing,False,True,False
+CHARMFULLY,In an enchanting manner,False,True,False
+CHARMFULNESS,Quality of being charming,False,True,False
+CHARMING,Attractive in a subtle way,False,True,False
+CHARMINGLY,In an attractive manner,False,True,False
+CHARMINGNESS,The quality of being charming,False,True,False
+CHARMLESS,Lacking charm,False,True,False
+CHARMWISE,In a charming manner,False,True,False
+CHAROSES,"Passover dish made of apples, nuts, and wine",False,True,False
+CHAROSET,Jewish holiday fruit salad,False,True,False
+CHARPOY,Rope mattress,False,True,False
+CHARQUE,Dried meat,False,True,False
+CHARQUED,Dried and shriveled,False,True,False
+CHARR,Type of fish often grilled,False,True,False
+CHARRED,Verb for the state of being burnt,False,True,False
+CHARRIER,Type of wheeled transport,False,True,False
+CHARRIEST,Most expressive in acting,False,True,False
+CHARRING,Process of cooking meat over an open flame,False,True,False
+CHARRO,Mexican cowboy,False,True,False
+CHARRS,Type of fish often grilled,False,True,True
+CHARRY,Red cherry,False,True,False
