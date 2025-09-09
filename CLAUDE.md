@@ -32,8 +32,9 @@ Galactic Crossword is a full-stack web application that allows users to solve da
 cd backend
 npm install                    # Install dependencies
 npm run dev                   # Start development server with nodemon
-npm run build                 # Build TypeScript to JavaScript
+npm run build                 # Build TypeScript to JavaScript (outputs to dist/)
 npm start                     # Run production build
+npx tsc --noEmit              # Type check without building
 ```
 
 ### Frontend Development
@@ -43,7 +44,8 @@ npm install                   # Install dependencies
 npm run dev                   # Start Next.js development server with Turbopack
 npm run build                 # Build for production with Turbopack
 npm start                     # Run production build
-npm run lint                  # Run ESLint (configured but minimal rules)
+npm run lint                  # Run ESLint with Next.js config (flat config)
+npx tsc --noEmit              # Type check without building
 ```
 
 ### Database Setup
@@ -106,10 +108,12 @@ NEXT_PUBLIC_API_URL=http://localhost:5000/api
 - **Models**: User, DailyPuzzle, UserProgress, Achievement, UserAchievement, Suggestion (Prisma schema)
 - **Routes**: `/api/auth`, `/api/puzzle`, `/api/leaderboard`, `/api/achievement`, `/api/suggestion`
 - **Services**: 
-  - `puzzle/` - Multiple crossword generation systems including hybridGenerator, strictCrosswordGenerator, improvedCrosswordGenerator, constraintCrosswordGenerator, and others
-  - `puzzle/cronService.ts` - Daily puzzle scheduling
-  - `puzzle/gridValidator.ts` - Grid validation utilities
-  - `achievement/achievementService.ts` - Achievement logic
+  - `puzzle/` - Multiple crossword generation algorithms:
+    - `strictCrosswordGenerator.ts` - Primary generator used by cron and scripts
+    - `hybridGenerator.ts`, `improvedCrosswordGenerator.ts`, `constraintCrosswordGenerator.ts` - Alternative algorithms
+    - `cronService.ts` - Daily puzzle scheduling with node-cron
+    - `gridValidator.ts` - Grid validation utilities  
+  - `achievement/achievementService.ts` - Achievement logic and point calculation
   - `auth/passport.ts` - Passport.js authentication configuration
 - **Middleware**: Authentication, rate limiting, error handling
 - **Database**: Prisma client configuration in `lib/prisma.ts`
@@ -148,19 +152,13 @@ NEXT_PUBLIC_API_URL=http://localhost:5000/api
 
 ## Testing
 
-### Backend Testing
-```bash
-cd backend
-# Add test framework and run tests
-npm test
-```
+**Note**: No testing framework is currently configured in this project. The npm test commands will fail with "Error: no test specified".
 
-### Frontend Testing
-```bash
-cd frontend
-# Add test framework and run tests
-npm test
-```
+### Adding Tests (Future)
+To add testing support:
+- **Backend**: Consider Jest, Vitest, or Mocha for unit/integration tests
+- **Frontend**: Next.js has built-in support for Jest and Testing Library
+- **Database**: Consider using in-memory SQLite for test isolation
 
 ## Deployment Considerations
 
@@ -179,14 +177,23 @@ npm test
 
 ## Development Guidelines
 
-- Follow TypeScript strict mode
+### TypeScript Configuration
+- **Backend**: Uses non-strict mode (`strict: false`) for flexibility during development
+- **Frontend**: Uses strict mode (`strict: true`) following Next.js best practices
+- Both projects support ES2020+ features and have source maps enabled
+
+### Code Quality
 - Use meaningful commit messages
 - Implement proper error handling
-- Validate all user inputs
+- Validate all user inputs  
 - Use environment variables for sensitive data
 - Follow RESTful API conventions
 - Maintain responsive design principles
-- Test on multiple devices and browsers
+
+### Build Process
+- Backend compiles TypeScript to `dist/` directory with declaration files
+- Frontend uses Turbopack for faster development and production builds
+- Run type checking with `npx tsc --noEmit` in either project directory
 
 ## Database Schema
 
@@ -216,11 +223,14 @@ npm test
 
 ### Common Issues
 1. **Database Connection**: Check SQLite file permissions and DATABASE_URL
-2. **CORS Errors**: Verify frontend URL in backend CORS configuration
+2. **CORS Errors**: Verify frontend URL in backend CORS configuration  
 3. **Authentication**: Ensure JWT secrets match between sessions
 4. **Build Errors**: Check TypeScript configuration and imports
 5. **Prisma Issues**: Run `npx prisma generate` after schema changes
 6. **Turbopack Issues**: Fall back to regular Next.js dev server if needed
+7. **Type Errors**: Backend uses non-strict TypeScript; frontend requires strict typing
+8. **Path Issues**: Ensure you're in the correct directory (backend/ or frontend/) when running commands
+9. **Puzzle Generation**: Use `./regenerate-puzzle.sh` script in backend directory for manual puzzle creation
 
 ## Key File Locations
 
@@ -238,10 +248,12 @@ backend/
 │   │   └── suggestion.ts           # User suggestion management
 │   ├── services/
 │   │   ├── puzzle/                 # Puzzle generation services
-│   │   │   ├── hybridGenerator.ts  # Main puzzle generator
-│   │   │   ├── cronService.ts      # Daily puzzle scheduler
-│   │   │   ├── gridValidator.ts    # Grid validation utilities
-│   │   │   └── [other generators]  # Multiple specialized generators (strict, improved, constraint-based, etc.)
+│   │   │   ├── strictCrosswordGenerator.ts  # Primary puzzle generator (used by cron)
+│   │   │   ├── hybridGenerator.ts           # Alternative hybrid algorithm
+│   │   │   ├── improvedCrosswordGenerator.ts    # Enhanced constraint-based generator  
+│   │   │   ├── constraintCrosswordGenerator.ts  # Advanced constraint solver
+│   │   │   ├── cronService.ts               # Daily puzzle scheduler
+│   │   │   └── gridValidator.ts             # Grid validation utilities
 │   │   ├── achievement/            # Achievement system
 │   │   └── auth/                   # Authentication services
 │   ├── middleware/auth.ts          # JWT authentication middleware
@@ -273,3 +285,4 @@ frontend/
 │   └── types/index.ts            # TypeScript type definitions
 └── .env.local                     # Frontend environment variables
 ```
+- Always descriptive variable names
