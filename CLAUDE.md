@@ -68,6 +68,15 @@ npx prisma migrate dev       # Create and apply migration (if using migrations)
 npx prisma db seed           # Run seed script (if configured)
 ```
 
+### Puzzle Generation
+```bash
+cd backend
+./regenerate-puzzle.sh                    # Generate today's puzzle
+./regenerate-puzzle.sh 2024-09-09         # Generate puzzle for specific date
+./regenerate-puzzle.sh 2024-09-09 --force # Force regenerate even if exists
+./regenerate-puzzle.sh --help             # Show help and usage
+```
+
 ## Environment Variables
 
 ### Backend (.env)
@@ -81,7 +90,10 @@ GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 SESSION_SECRET=your-session-secret
 PUZZLE_SECRET=your-puzzle-generation-secret
+AUTO_SOLVE_COOLDOWN_HOURS=12
 ```
+
+Note: The .env.example file shows MONGODB_URI, but the actual Prisma schema uses SQLite. Ensure DATABASE_URL points to SQLite when using the current schema.
 
 ### Frontend (.env.local)
 ```
@@ -91,13 +103,14 @@ NEXT_PUBLIC_API_URL=http://localhost:5000/api
 ## Architecture Overview
 
 ### Backend Architecture
-- **Models**: User, DailyPuzzle, UserProgress, Achievement, UserAchievement (Prisma schema)
-- **Routes**: `/api/auth`, `/api/puzzle`, `/api/leaderboard`, `/api/achievement`
+- **Models**: User, DailyPuzzle, UserProgress, Achievement, UserAchievement, Suggestion (Prisma schema)
+- **Routes**: `/api/auth`, `/api/puzzle`, `/api/leaderboard`, `/api/achievement`, `/api/suggestion`
 - **Services**: 
-  - `puzzle/hybridGenerator.ts` - Main crossword generation system
-  - `puzzle/fastGenerator.ts`, `standardGenerator.ts`, `properGenerator.ts` - Specialized generators
+  - `puzzle/` - Multiple crossword generation systems including hybridGenerator, strictCrosswordGenerator, improvedCrosswordGenerator, constraintCrosswordGenerator, and others
   - `puzzle/cronService.ts` - Daily puzzle scheduling
+  - `puzzle/gridValidator.ts` - Grid validation utilities
   - `achievement/achievementService.ts` - Achievement logic
+  - `auth/passport.ts` - Passport.js authentication configuration
 - **Middleware**: Authentication, rate limiting, error handling
 - **Database**: Prisma client configuration in `lib/prisma.ts`
 
@@ -152,7 +165,7 @@ npm test
 ## Deployment Considerations
 
 ### Backend Deployment
-- Requires MongoDB instance
+- Requires SQLite database (or migrate to another database system)
 - Set production environment variables
 - Enable HTTPS in production
 - Configure proper CORS origins
@@ -183,17 +196,21 @@ npm test
 - `user_progress` - Individual solving progress with JSON answers
 - `achievements` - Available achievements with condition data
 - `user_achievements` - Earned achievements with metadata
+- `suggestions` - User suggestions for puzzle improvements
 
 ### Key Relationships
 - User → UserProgress (one-to-many)
 - User → UserAchievement (one-to-many)
+- User → Suggestion (one-to-many)
 - DailyPuzzle → UserProgress (one-to-many via puzzleDate)
+- DailyPuzzle → Suggestion (one-to-many)
 - Achievement → UserAchievement (one-to-many)
 
 ### Important Fields
 - All models use `cuid()` for primary keys
-- JSON stored as strings: gridData, cluesData, answersData, conditionData
+- JSON stored as strings: gridData, cluesData, answersData, conditionData, metadataData
 - Unique constraints: email, puzzleDate, userId+puzzleDate, userId+achievementId
+- Suggestion model includes status field for tracking suggestion lifecycle (pending, reviewed, implemented, rejected)
 
 ## Troubleshooting
 
@@ -217,13 +234,16 @@ backend/
 │   │   ├── auth.ts                 # Authentication endpoints
 │   │   ├── puzzle.ts               # Puzzle CRUD operations
 │   │   ├── leaderboard.ts          # Leaderboard data
-│   │   └── achievement.ts          # Achievement management
+│   │   ├── achievement.ts          # Achievement management
+│   │   └── suggestion.ts           # User suggestion management
 │   ├── services/
 │   │   ├── puzzle/                 # Puzzle generation services
 │   │   │   ├── hybridGenerator.ts  # Main puzzle generator
 │   │   │   ├── cronService.ts      # Daily puzzle scheduler
-│   │   │   └── [other generators]  # Specialized generators
-│   │   └── achievement/            # Achievement system
+│   │   │   ├── gridValidator.ts    # Grid validation utilities
+│   │   │   └── [other generators]  # Multiple specialized generators (strict, improved, constraint-based, etc.)
+│   │   ├── achievement/            # Achievement system
+│   │   └── auth/                   # Authentication services
 │   ├── middleware/auth.ts          # JWT authentication middleware
 │   └── utils/jwt.ts               # JWT utilities
 ├── prisma/

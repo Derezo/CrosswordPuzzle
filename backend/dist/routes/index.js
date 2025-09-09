@@ -8,11 +8,13 @@ const auth_1 = __importDefault(require("./auth"));
 const puzzle_1 = __importDefault(require("./puzzle"));
 const leaderboard_1 = __importDefault(require("./leaderboard"));
 const achievement_1 = __importDefault(require("./achievement"));
+const suggestion_1 = __importDefault(require("./suggestion"));
 const router = (0, express_1.Router)();
 // Mount route modules
 router.use('/auth', auth_1.default);
 router.use('/puzzle', puzzle_1.default);
 router.use('/leaderboard', leaderboard_1.default);
 router.use('/achievement', achievement_1.default);
+router.use('/suggestion', suggestion_1.default);
 exports.default = router;
 //# sourceMappingURL=index.js.map

@@ -10,8 +10,8 @@ export declare class PuzzleCronService {
     getPuzzleForDate(date: string): Promise<{
         id: string;
         createdAt: Date;
-        date: string;
         gridData: string;
+        date: string;
         cluesData: string;
         rows: number;
         cols: number;
@@ -19,8 +19,8 @@ export declare class PuzzleCronService {
     getTodaysPuzzle(): Promise<{
         id: string;
         createdAt: Date;
-        date: string;
         gridData: string;
+        date: string;
         cluesData: string;
         rows: number;
         cols: number;
