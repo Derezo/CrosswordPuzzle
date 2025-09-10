@@ -47,6 +47,10 @@ const MIN_WORD_LENGTH = 3;
 const MAX_WORD_LENGTH = 15;
 const TARGET_BLACK_PERCENTAGE = 15; // Aim for ~15% black squares
 
+// Fallback grid settings
+const FALLBACK_GRID_SIZE = 10;
+const FALLBACK_MAX_WORD_LENGTH = 10;
+
 export class StrictCrosswordGenerator {
   private dictionary: DictionaryEntry[] = [];
   private wordsByLength: Map<number, DictionaryEntry[]> = new Map();
@@ -56,6 +60,8 @@ export class StrictCrosswordGenerator {
   private usedWords: Set<string> = new Set();
   private rng: () => number;
   private categoryFilter: string | null = null;
+  private currentGridSize: number = GRID_SIZE;
+  private currentMaxWordLength: number = MAX_WORD_LENGTH;
 
   constructor(seed: string, categoryFilter?: string) {
     const hash = crypto.createHash("sha256").update(seed).digest();
@@ -86,20 +92,26 @@ export class StrictCrosswordGenerator {
       .filter((record: any) => {
         const word = record.word?.toUpperCase();
         let matchesCategory = true;
-        
+
         // If category filter is provided, check if word belongs to that category
         if (this.categoryFilter && record.categories) {
-          const categories = record.categories.toLowerCase().split(',').map((cat: string) => cat.trim());
-          matchesCategory = categories.includes(this.categoryFilter.toLowerCase());
+          const categories = record.categories
+            .toLowerCase()
+            .split(",")
+            .map((cat: string) => cat.trim());
+          matchesCategory = categories.includes(
+            this.categoryFilter.toLowerCase(),
+          );
         }
-        
+
         return (
           word &&
           word.length >= MIN_WORD_LENGTH &&
-          word.length <= MAX_WORD_LENGTH &&
+          word.length <= this.currentMaxWordLength &&
           /^[A-Z]+$/.test(word) &&
           record.clue &&
-          record.obscure !== "True" && record.obscure !== true && // Exclude obscure words
+          record.obscure !== "True" &&
+          record.obscure !== true && // Exclude obscure words
           matchesCategory // Include category filter
         );
       })
@@ -143,14 +155,16 @@ export class StrictCrosswordGenerator {
       });
     }
 
-    console.log(`📚 Loaded ${this.dictionary.length} words${this.categoryFilter ? ` for category: ${this.categoryFilter}` : ''}`);
+    console.log(
+      `📚 Loaded ${this.dictionary.length} words${this.categoryFilter ? ` for category: ${this.categoryFilter}` : ""}`,
+    );
   }
 
   private initializeGrid(): void {
-    this.grid = Array(GRID_SIZE)
+    this.grid = Array(this.currentGridSize)
       .fill(null)
       .map(() =>
-        Array(GRID_SIZE)
+        Array(this.currentGridSize)
           .fill(null)
           .map(() => ({
             letter: "",
@@ -170,9 +184,9 @@ export class StrictCrosswordGenerator {
   ): { valid: boolean; intersections: Array<{ row: number; col: number }> } {
     // Check bounds
     if (row < 0 || col < 0) return { valid: false, intersections: [] };
-    if (direction === "across" && col + word.length > GRID_SIZE)
+    if (direction === "across" && col + word.length > this.currentGridSize)
       return { valid: false, intersections: [] };
-    if (direction === "down" && row + word.length > GRID_SIZE)
+    if (direction === "down" && row + word.length > this.currentGridSize)
       return { valid: false, intersections: [] };
 
     const intersections: Array<{ row: number; col: number }> = [];
@@ -206,7 +220,7 @@ export class StrictCrosswordGenerator {
       }
       // Check after
       if (
-        col + word.length < GRID_SIZE &&
+        col + word.length < this.currentGridSize &&
         !this.grid[row][col + word.length].isBlocked &&
         this.grid[row][col + word.length].letter
       ) {
@@ -223,7 +237,7 @@ export class StrictCrosswordGenerator {
       }
       // Check after
       if (
-        row + word.length < GRID_SIZE &&
+        row + word.length < this.currentGridSize &&
         !this.grid[row + word.length][col].isBlocked &&
         this.grid[row + word.length][col].letter
       ) {
@@ -264,7 +278,7 @@ export class StrictCrosswordGenerator {
         this.grid[row][col - 1].isBlocked = true;
       }
       if (
-        col + entry.word.length < GRID_SIZE &&
+        col + entry.word.length < this.currentGridSize &&
         !this.grid[row][col + entry.word.length].letter
       ) {
         this.grid[row][col + entry.word.length].isBlocked = true;
@@ -274,7 +288,7 @@ export class StrictCrosswordGenerator {
         this.grid[row - 1][col].isBlocked = true;
       }
       if (
-        row + entry.word.length < GRID_SIZE &&
+        row + entry.word.length < this.currentGridSize &&
         !this.grid[row + entry.word.length][col].letter
       ) {
         this.grid[row + entry.word.length][col].isBlocked = true;
@@ -327,8 +341,8 @@ export class StrictCrosswordGenerator {
       score: number;
     }> = [];
 
-    for (let r = 0; r < GRID_SIZE; r++) {
-      for (let c = 0; c < GRID_SIZE; c++) {
+    for (let r = 0; r < this.currentGridSize; r++) {
+      for (let c = 0; c < this.currentGridSize; c++) {
         for (const direction of ["across", "down"] as const) {
           const result = this.canPlaceWord(entry.word, r, c, direction);
           if (result.valid) {
@@ -338,7 +352,8 @@ export class StrictCrosswordGenerator {
             // Prefer central positions for first words
             if (this.placedWords.length < 5) {
               const centerDist =
-                Math.abs(r - GRID_SIZE / 2) + Math.abs(c - GRID_SIZE / 2);
+                Math.abs(r - this.currentGridSize / 2) +
+                Math.abs(c - this.currentGridSize / 2);
               score -= centerDist;
             }
 
@@ -393,7 +408,7 @@ export class StrictCrosswordGenerator {
 
         // Find end
         while (
-          endR < GRID_SIZE - 1 &&
+          endR < this.currentGridSize - 1 &&
           !tempGrid[endR + 1][c].isBlocked &&
           tempGrid[endR + 1][c].letter
         ) {
@@ -432,7 +447,7 @@ export class StrictCrosswordGenerator {
 
         // Find end
         while (
-          endC < GRID_SIZE - 1 &&
+          endC < this.currentGridSize - 1 &&
           !tempGrid[r][endC + 1].isBlocked &&
           tempGrid[r][endC + 1].letter
         ) {
@@ -456,7 +471,7 @@ export class StrictCrosswordGenerator {
     return false;
   }
 
-  private buildPuzzle(): boolean {
+  private buildPuzzle(targetWords: number = 35): boolean {
     // Start with a seed word in the center
     const seedWords =
       this.wordsByLength.get(7) ||
@@ -468,15 +483,16 @@ export class StrictCrosswordGenerator {
     // Place first word
     const firstWord =
       seedWords[Math.floor(this.rng() * Math.min(50, seedWords.length))];
-    const centerRow = Math.floor(GRID_SIZE / 2);
-    const startCol = Math.floor((GRID_SIZE - firstWord.word.length) / 2);
+    const centerRow = Math.floor(this.currentGridSize / 2);
+    const startCol = Math.floor(
+      (this.currentGridSize - firstWord.word.length) / 2,
+    );
 
     this.placeWord(firstWord, centerRow, startCol, "across", []);
 
     // Iteratively add crossing words
     let consecutiveFailures = 0;
-    const maxConsecutiveFailures = 50;
-    const targetWords = 30;
+    const maxConsecutiveFailures = 175;
 
     while (
       this.placedWords.length < targetWords &&
@@ -528,10 +544,10 @@ export class StrictCrosswordGenerator {
 
   private finalizeBlackSquares(): void {
     // Add symmetric black squares where appropriate
-    const center = Math.floor(GRID_SIZE / 2);
+    const center = Math.floor(this.currentGridSize / 2);
 
-    for (let r = 0; r < GRID_SIZE; r++) {
-      for (let c = 0; c < GRID_SIZE; c++) {
+    for (let r = 0; r < this.currentGridSize; r++) {
+      for (let c = 0; c < this.currentGridSize; c++) {
         if (!this.grid[r][c].letter && !this.grid[r][c].isBlocked) {
           // Check if this should be black
           let adjacentLetters = 0;
@@ -545,7 +561,12 @@ export class StrictCrosswordGenerator {
           for (const [dr, dc] of directions) {
             const nr = r + dr;
             const nc = c + dc;
-            if (nr >= 0 && nr < GRID_SIZE && nc >= 0 && nc < GRID_SIZE) {
+            if (
+              nr >= 0 &&
+              nr < this.currentGridSize &&
+              nc >= 0 &&
+              nc < this.currentGridSize
+            ) {
               if (this.grid[nr][nc].letter) adjacentLetters++;
             }
           }
@@ -555,8 +576,8 @@ export class StrictCrosswordGenerator {
             this.grid[r][c].isBlocked = true;
 
             // Add symmetric black square
-            const symR = GRID_SIZE - 1 - r;
-            const symC = GRID_SIZE - 1 - c;
+            const symR = this.currentGridSize - 1 - r;
+            const symC = this.currentGridSize - 1 - c;
             if (!this.grid[symR][symC].letter) {
               this.grid[symR][symC].isBlocked = true;
             }
@@ -569,8 +590,8 @@ export class StrictCrosswordGenerator {
   private assignNumbers(): void {
     let number = 1;
 
-    for (let r = 0; r < GRID_SIZE; r++) {
-      for (let c = 0; c < GRID_SIZE; c++) {
+    for (let r = 0; r < this.currentGridSize; r++) {
+      for (let c = 0; c < this.currentGridSize; c++) {
         if (this.grid[r][c].isBlocked || !this.grid[r][c].letter) continue;
 
         let needsNumber = false;
@@ -580,7 +601,7 @@ export class StrictCrosswordGenerator {
           (c === 0 ||
             this.grid[r][c - 1].isBlocked ||
             !this.grid[r][c - 1].letter) &&
-          c < GRID_SIZE - 1 &&
+          c < this.currentGridSize - 1 &&
           !this.grid[r][c + 1].isBlocked &&
           this.grid[r][c + 1].letter
         ) {
@@ -592,7 +613,7 @@ export class StrictCrosswordGenerator {
           (r === 0 ||
             this.grid[r - 1][c].isBlocked ||
             !this.grid[r - 1][c].letter) &&
-          r < GRID_SIZE - 1 &&
+          r < this.currentGridSize - 1 &&
           !this.grid[r + 1][c].isBlocked &&
           this.grid[r + 1][c].letter
         ) {
@@ -612,13 +633,13 @@ export class StrictCrosswordGenerator {
 
     // Find all words in the grid and match with placed words
     // Horizontal words
-    for (let r = 0; r < GRID_SIZE; r++) {
+    for (let r = 0; r < this.currentGridSize; r++) {
       let word = "";
       let startCol = -1;
 
-      for (let c = 0; c <= GRID_SIZE; c++) {
+      for (let c = 0; c <= this.currentGridSize; c++) {
         const isEnd =
-          c === GRID_SIZE ||
+          c === this.currentGridSize ||
           this.grid[r][c].isBlocked ||
           !this.grid[r][c].letter;
 
@@ -659,13 +680,13 @@ export class StrictCrosswordGenerator {
     }
 
     // Vertical words
-    for (let c = 0; c < GRID_SIZE; c++) {
+    for (let c = 0; c < this.currentGridSize; c++) {
       let word = "";
       let startRow = -1;
 
-      for (let r = 0; r <= GRID_SIZE; r++) {
+      for (let r = 0; r <= this.currentGridSize; r++) {
         const isEnd =
-          r === GRID_SIZE ||
+          r === this.currentGridSize ||
           this.grid[r][c].isBlocked ||
           !this.grid[r][c].letter;
 
@@ -716,12 +737,12 @@ export class StrictCrosswordGenerator {
 
   private validatePuzzle(): boolean {
     // Check all horizontal sequences
-    for (let r = 0; r < GRID_SIZE; r++) {
+    for (let r = 0; r < this.currentGridSize; r++) {
       let word = "";
 
-      for (let c = 0; c <= GRID_SIZE; c++) {
+      for (let c = 0; c <= this.currentGridSize; c++) {
         const isEnd =
-          c === GRID_SIZE ||
+          c === this.currentGridSize ||
           this.grid[r][c].isBlocked ||
           !this.grid[r][c].letter;
 
@@ -737,12 +758,12 @@ export class StrictCrosswordGenerator {
     }
 
     // Check all vertical sequences
-    for (let c = 0; c < GRID_SIZE; c++) {
+    for (let c = 0; c < this.currentGridSize; c++) {
       let word = "";
 
-      for (let r = 0; r <= GRID_SIZE; r++) {
+      for (let r = 0; r <= this.currentGridSize; r++) {
         const isEnd =
-          r === GRID_SIZE ||
+          r === this.currentGridSize ||
           this.grid[r][c].isBlocked ||
           !this.grid[r][c].letter;
 
@@ -761,12 +782,33 @@ export class StrictCrosswordGenerator {
   }
 
   public generate(): GeneratedPuzzle {
-    const maxAttempts = 100;
+    return this.generateWithAdaptiveStrategy();
+  }
 
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+  private generateWithAdaptiveStrategy(): GeneratedPuzzle {
+    const maxTotalAttempts = 500;
+    let targetWords = 35; // Start with 35 words
+    const minWords = 5; // Minimum word count
+
+    // First phase: Normal grid size (15x15)
+    console.log(
+      `🎯 Starting puzzle generation with ${targetWords} target words on ${this.currentGridSize}x${this.currentGridSize} grid`,
+    );
+
+    for (let attempt = 0; attempt < maxTotalAttempts; attempt++) {
+      // Reduce target word count every 100 attempts
+      if (attempt > 0 && attempt % 30 === 0) {
+        if (targetWords > minWords) {
+          targetWords = Math.max(minWords, targetWords - 5);
+          console.log(
+            `📉 Reducing target word count to ${targetWords} after ${attempt} attempts`,
+          );
+        }
+      }
+
       this.initializeGrid();
 
-      if (this.buildPuzzle()) {
+      if (this.buildPuzzle(targetWords)) {
         this.finalizeBlackSquares();
 
         if (this.validatePuzzle()) {
@@ -782,24 +824,84 @@ export class StrictCrosswordGenerator {
             ).length;
 
             console.log(
-              `✅ Valid puzzle generated (attempt ${attempt + 1}): ${acrossCount} across, ${downCount} down`,
+              `✅ Valid puzzle generated (attempt ${attempt + 1}): ${acrossCount} across, ${downCount} down, ${targetWords} target words on ${this.currentGridSize}x${this.currentGridSize} grid`,
             );
 
             return {
               grid: this.grid,
               clues,
-              size: { rows: GRID_SIZE, cols: GRID_SIZE },
+              size: { rows: this.currentGridSize, cols: this.currentGridSize },
             };
           }
         }
       }
     }
 
-    throw new Error("Failed to generate valid puzzle after maximum attempts");
+    // Second phase: Fallback to smaller grid (10x10) with max 10-char words
+    console.log(
+      `🔄 Failed with ${this.currentGridSize}x${this.currentGridSize} grid. Trying fallback: ${FALLBACK_GRID_SIZE}x${FALLBACK_GRID_SIZE} grid with max ${FALLBACK_MAX_WORD_LENGTH}-char words`,
+    );
+
+    this.currentGridSize = FALLBACK_GRID_SIZE;
+    this.currentMaxWordLength = FALLBACK_MAX_WORD_LENGTH;
+    targetWords = Math.max(20, minWords); // Reset to more reasonable target for smaller grid
+
+    // Rebuild dictionary with smaller word length constraint
+    this.loadDictionary();
+
+    for (let attempt = 0; attempt < maxTotalAttempts; attempt++) {
+      // Reduce target word count every 100 attempts
+      if (attempt > 0 && attempt % 30 === 0) {
+        if (targetWords > minWords) {
+          targetWords -= 2;
+          console.log(
+            `📉 Reducing target word count to ${targetWords} after ${attempt} fallback attempts`,
+          );
+        }
+      }
+
+      this.initializeGrid();
+
+      if (this.buildPuzzle(targetWords)) {
+        this.finalizeBlackSquares();
+
+        if (this.validatePuzzle()) {
+          this.assignNumbers();
+          const clues = this.generateClues();
+
+          if (clues.length >= 15) {
+            // Lower threshold for smaller grid
+            const acrossCount = clues.filter(
+              (c) => c.direction === "across",
+            ).length;
+            const downCount = clues.filter(
+              (c) => c.direction === "down",
+            ).length;
+
+            console.log(
+              `✅ Valid fallback puzzle generated (attempt ${attempt + 1}): ${acrossCount} across, ${downCount} down, ${targetWords} target words on ${this.currentGridSize}x${this.currentGridSize} grid`,
+            );
+
+            return {
+              grid: this.grid,
+              clues,
+              size: { rows: this.currentGridSize, cols: this.currentGridSize },
+            };
+          }
+        }
+      }
+    }
+
+    throw new Error(
+      "Failed to generate valid puzzle after maximum attempts with both normal and fallback strategies",
+    );
   }
 }
 
-export function generateStrictPuzzle(date: string, categoryFilter?: string): GeneratedPuzzle {
+export function generateStrictPuzzle(
+  date: string,
+  categoryFilter?: string,
+): GeneratedPuzzle {
   const generator = new StrictCrosswordGenerator(date + time(), categoryFilter);
   return generator.generate();
 }

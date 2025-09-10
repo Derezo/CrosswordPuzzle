@@ -89,6 +89,19 @@ app.get('/api/health', (req: express.Request, res: express.Response) => {
   res.json({ status: 'OK', message: 'Galactic Crossword API is running' });
 });
 
+// Development Easter Egg endpoint (for testing network requests)
+if (process.env.NODE_ENV === 'development') {
+  app.post('/api/dev/easter-egg-achievement', (req: express.Request, res: express.Response) => {
+    console.log('🎉 DEV EASTER EGG: Backend received easter egg request!', req.body);
+    res.json({ 
+      success: true, 
+      message: 'Easter egg achievement triggered!',
+      timestamp: new Date().toISOString(),
+      achievementId: req.body?.achievementId
+    });
+  });
+}
+
 // Database connection
 const connectDB = async (): Promise<boolean> => {
   try {

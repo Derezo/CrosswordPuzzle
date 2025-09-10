@@ -287,6 +287,17 @@ export default function PuzzlePage() {
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [puzzleType, setPuzzleType] = useState<'daily' | 'category'>('daily');
   const [currentPuzzleDate, setCurrentPuzzleDate] = useState<string | null>(null);
+  const [fireworks, setFireworks] = useState<Array<{
+    id: string;
+    x: number;
+    y: number;
+    color: string;
+    delay: number;
+  }>>([]);
+  
+  // Easter egg for development mode only
+  const [keySequence, setKeySequence] = useState<string[]>([]);
+  const [isDevMode] = useState(() => process.env.NODE_ENV === 'development');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -329,6 +340,42 @@ export default function PuzzlePage() {
       if (interval) clearInterval(interval);
     };
   }, [puzzle, progress]);
+
+  // Easter egg keyboard listener - development mode only
+  useEffect(() => {
+    if (!isDevMode) return;
+
+    const handleKeyPress = (event: KeyboardEvent) => {
+      // Only listen for 'A' key presses (ignore if user is typing in inputs)
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      if (event.key.toLowerCase() === 'a') {
+        setKeySequence(prev => {
+          const newSequence = [...prev, 'A'].slice(-3); // Keep only last 3 keys
+          
+          // Check if we have AAA
+          if (newSequence.length === 3 && newSequence.every(key => key === 'A')) {
+            console.log('🎉 DEV EASTER EGG: A-A-A sequence detected!');
+            console.log('🎉 DEV EASTER EGG: About to call triggerRandomAchievement()');
+            triggerRandomAchievement().catch(error => {
+              console.error('❌ DEV EASTER EGG: Error in triggerRandomAchievement:', error);
+            });
+            return []; // Reset sequence after triggering
+          }
+          
+          return newSequence;
+        });
+      } else {
+        // Reset sequence on any other key
+        setKeySequence([]);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyPress);
+    return () => document.removeEventListener('keydown', handleKeyPress);
+  }, [isDevMode]);
 
   const formatTime = (totalSeconds: number) => {
     const hours = Math.floor(totalSeconds / 3600);
@@ -817,6 +864,8 @@ export default function PuzzlePage() {
       if (result.newAchievements && result.newAchievements.length > 0) {
         setNewAchievements(result.newAchievements);
         setShowAchievements(true);
+        // Trigger fireworks celebration
+        setTimeout(() => createFireworks(), 500);
       }
 
       console.log("Validation complete:", {
@@ -835,9 +884,138 @@ export default function PuzzlePage() {
     return !!(puzzle && currentGridData.length > 0);
   };
 
+  const createFireworks = () => {
+    const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57', '#ff9ff3', '#54a0ff'];
+    const newFireworks = Array.from({ length: 12 }, (_, i) => ({
+      id: `firework-${Date.now()}-${i}`,
+      x: Math.random() * 100,
+      y: 20 + Math.random() * 40,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      delay: Math.random() * 2000,
+    }));
+    
+    setFireworks(newFireworks);
+    
+    // Clear fireworks after animation
+    setTimeout(() => {
+      setFireworks([]);
+    }, 4000);
+  };
+
+  // Dev Easter Egg: Trigger random achievement
+  const triggerRandomAchievement = async () => {
+    console.log('🔥 DEV EASTER EGG: triggerRandomAchievement() called!');
+    console.log('🔥 DEV EASTER EGG: isDevMode:', isDevMode);
+    console.log('🔥 DEV EASTER EGG: puzzle exists:', !!puzzle);
+    
+    if (!isDevMode) {
+      console.log('❌ DEV EASTER EGG: Exiting early - not in dev mode');
+      return;
+    }
+    
+    // Allow easter egg even if puzzle isn't loaded yet - it's just for fun!
+    if (!puzzle) {
+      console.log('⚠️ DEV EASTER EGG: No puzzle loaded, but proceeding anyway for dev testing');
+    }
+
+    console.log('🎉 DEV EASTER EGG: A-A-A sequence detected!');
+    
+    try {
+      // For development, we'll create a mock achievement that triggers the visual effects
+      // but also make an API call to simulate real achievement unlocking
+      
+      // Create a mock random achievement for immediate display
+      const devAchievements = [
+        {
+          id: 'dev-test-1',
+          achievement: {
+            id: 'dev-test',
+            name: '🎮 Developer Mode',
+            description: 'You found the secret developer achievement! A+A+A = Success!',
+            icon: '🐛',
+            points: 100,
+          },
+          earnedAt: new Date(),
+          metadataData: null
+        },
+        {
+          id: 'dev-test-2', 
+          achievement: {
+            id: 'dev-konami',
+            name: '🕹️ Code Whisperer',
+            description: 'Your keyboard skills have unlocked cosmic secrets of development!',
+            icon: '⌨️',
+            points: 150,
+          },
+          earnedAt: new Date(),
+          metadataData: null
+        },
+        {
+          id: 'dev-test-3',
+          achievement: {
+            id: 'dev-easter',
+            name: '🥚 Easter Egg Hunter',
+            description: 'You discovered a hidden development treasure! Keep exploring!',
+            icon: '🔍',
+            points: 75,
+          },
+          earnedAt: new Date(),
+          metadataData: null
+        }
+      ];
+
+      const randomAchievement = devAchievements[Math.floor(Math.random() * devAchievements.length)];
+      
+      console.log('🎉 DEV EASTER EGG: Triggered random achievement!', randomAchievement);
+      
+      // Simulate an API call to show network activity in dev tools
+      try {
+        console.log('🌐 DEV EASTER EGG: Making simulated API call...');
+        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        const url = `${API_BASE_URL}/dev/easter-egg-achievement`;
+        const token = localStorage.getItem('token');
+        
+        console.log('🌐 DEV EASTER EGG: API_BASE_URL:', API_BASE_URL);
+        console.log('🌐 DEV EASTER EGG: Full URL:', url);
+        console.log('🌐 DEV EASTER EGG: Token exists:', !!token);
+        console.log('🌐 DEV EASTER EGG: Achievement ID:', randomAchievement.achievement.id);
+        
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ achievementId: randomAchievement.achievement.id })
+        });
+        
+        console.log('🌐 DEV EASTER EGG: Response status:', response.status);
+        console.log('🌐 DEV EASTER EGG: Response ok:', response.ok);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('🌐 DEV EASTER EGG: Response data:', data);
+        } else {
+          console.log('💡 DEV EASTER EGG: API call failed with status:', response.status);
+        }
+      } catch (error) {
+        console.error('💡 DEV EASTER EGG: API call error:', error);
+      }
+      
+      // Show the achievement modal regardless of API result
+      setNewAchievements([randomAchievement]);
+      setShowAchievements(true);
+      setTimeout(() => createFireworks(), 500);
+      
+    } catch (error) {
+      console.error('❌ DEV EASTER EGG: Error triggering achievement', error);
+    }
+  };
+
   const handleCloseAchievements = () => {
     setShowAchievements(false);
     setNewAchievements([]);
+    setFireworks([]);
   };
 
   const handleCellEdit = () => {
@@ -1202,39 +1380,95 @@ export default function PuzzlePage() {
 
       {/* Achievement Modal */}
       {showAchievements && newAchievements.length > 0 && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 text-white p-8 rounded-lg max-w-md w-full text-center animate-pulse">
-            <h2 className="text-2xl font-bold mb-4">
-              🏆 New Achievement{newAchievements.length > 1 ? "s" : ""}{" "}
-              Unlocked!
-            </h2>
-            <div className="space-y-4">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
+          {/* Fireworks Container */}
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            {fireworks.map((firework) => (
+              <div
+                key={firework.id}
+                className="absolute animate-firework"
+                style={{
+                  left: `${firework.x}%`,
+                  top: `${firework.y}%`,
+                  animationDelay: `${firework.delay}ms`,
+                  '--firework-color': firework.color,
+                } as React.CSSProperties}
+              >
+                <div className="firework-burst"></div>
+              </div>
+            ))}
+          </div>
+
+          {/* Modal Content */}
+          <div className="relative bg-gradient-to-br from-yellow-400 via-orange-500 to-red-500 text-white p-8 rounded-2xl max-w-lg w-full text-center shadow-2xl transform animate-achievementSlideIn">
+            {/* Celebration Header */}
+            <div className="mb-6">
+              <div className="text-7xl mb-4 animate-bounce">🎉</div>
+              <h1 className="text-4xl font-bold mb-2 text-white drop-shadow-lg">
+                INCREDIBLE!
+              </h1>
+              <h2 className="text-xl font-semibold text-yellow-100">
+                {newAchievements.length === 1 
+                  ? "New Achievement Unlocked!" 
+                  : `${newAchievements.length} Achievements Unlocked!`}
+              </h2>
+            </div>
+
+            {/* Achievement Cards */}
+            <div className="space-y-4 mb-8">
               {newAchievements.map((userAchievement, index) => (
                 <div
                   key={index}
-                  className="bg-white bg-opacity-20 rounded-lg p-4"
+                  className="bg-white/20 backdrop-blur-sm rounded-xl p-6 border border-white/30 shadow-lg transform hover:scale-105 transition-all duration-300 animate-achievementCardSlide"
+                  style={{ animationDelay: `${index * 0.2}s` }}
                 >
-                  <div className="text-3xl mb-2">
+                  {/* Achievement Icon */}
+                  <div className="text-6xl mb-3 animate-pulse">
                     {userAchievement.achievement.icon}
                   </div>
-                  <div className="font-bold text-lg">
+                  
+                  {/* Achievement Name */}
+                  <h3 className="text-2xl font-bold text-white mb-2 drop-shadow">
                     {userAchievement.achievement.name}
-                  </div>
-                  <div className="text-sm opacity-90">
+                  </h3>
+                  
+                  {/* Achievement Description */}
+                  <p className="text-white/90 text-base leading-relaxed mb-3">
                     {userAchievement.achievement.description}
-                  </div>
-                  <div className="text-yellow-300 font-bold mt-2">
-                    +{userAchievement.achievement.points} points
+                  </p>
+                  
+                  {/* Points Award */}
+                  <div className="flex items-center justify-center gap-2 bg-yellow-400/30 rounded-full px-4 py-2 border border-yellow-300/50">
+                    <span className="text-2xl">✨</span>
+                    <span className="text-yellow-100 font-bold text-lg">
+                      +{userAchievement.achievement.points} points
+                    </span>
+                    <span className="text-2xl">✨</span>
                   </div>
                 </div>
               ))}
             </div>
+
+            {/* Celebration Message */}
+            <div className="mb-6 p-4 bg-white/10 rounded-lg border border-white/20">
+              <p className="text-white font-medium">
+                🚀 You're crushing it! Keep solving to unlock more cosmic achievements!
+              </p>
+            </div>
+
+            {/* Continue Button */}
             <button
               onClick={handleCloseAchievements}
-              className="mt-6 px-6 py-2 bg-white text-purple-600 rounded-lg font-medium hover:bg-gray-100 transition-colors"
+              className="px-8 py-4 bg-white text-orange-600 rounded-xl font-bold text-lg hover:bg-gray-100 transition-all duration-300 transform hover:scale-105 shadow-lg"
             >
-              Continue
+              ⭐ Amazing! Continue Solving ⭐
             </button>
+
+            {/* Decorative Elements */}
+            <div className="absolute -top-2 -left-2 text-4xl animate-spin-slow">⭐</div>
+            <div className="absolute -top-2 -right-2 text-3xl animate-bounce delay-300">🎊</div>
+            <div className="absolute -bottom-2 -left-2 text-3xl animate-pulse delay-500">🏆</div>
+            <div className="absolute -bottom-2 -right-2 text-4xl animate-spin-slow delay-700">✨</div>
           </div>
         </div>
       )}
@@ -1269,6 +1503,17 @@ export default function PuzzlePage() {
             }
           }}
         />
+      )}
+
+      {/* Dev Mode Easter Egg Indicator */}
+      {isDevMode && keySequence.length > 0 && (
+        <div className="fixed bottom-4 right-4 z-40 bg-green-600/20 border border-green-500/50 rounded-lg px-3 py-2 backdrop-blur-sm">
+          <div className="flex items-center gap-2 text-green-300 text-sm">
+            <span>🐛</span>
+            <span>Dev Easter Egg: {keySequence.map((key, i) => key).join('-')}</span>
+            <span className="text-xs opacity-70">({3 - keySequence.length} more A's)</span>
+          </div>
+        </div>
       )}
 
       {/* Energy Orbs Animation */}

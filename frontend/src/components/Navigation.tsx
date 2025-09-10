@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import React, { useState, useRef, useEffect } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import { puzzleAPI } from '@/lib/api';
-import clsx from 'clsx';
+import React, { useState, useRef, useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { puzzleAPI } from "@/lib/api";
+import clsx from "clsx";
 
 interface RecentPuzzle {
   puzzleDate: string;
@@ -21,9 +21,24 @@ export const Navigation: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const navItems = [
-    { href: '/theme-globe', label: 'Theme Globe', icon: '🌌', gradient: 'from-pink-500 to-purple-500' },
-    { href: '/leaderboard', label: 'Leaderboard', icon: '🏆', gradient: 'from-yellow-500 to-orange-500' },
-    { href: '/achievements', label: 'Achievements', icon: '⭐', gradient: 'from-green-500 to-blue-500' },
+    {
+      href: "/theme-globe",
+      label: "Theme Globe",
+      icon: "🌌",
+      gradient: "from-pink-500 to-purple-500",
+    },
+    {
+      href: "/leaderboard",
+      label: "Leaderboard",
+      icon: "🏆",
+      gradient: "from-yellow-500 to-orange-500",
+    },
+    {
+      href: "/achievements",
+      label: "Achievements",
+      icon: "⭐",
+      gradient: "from-green-500 to-blue-500",
+    },
   ];
 
   const handleLogout = () => {
@@ -33,22 +48,26 @@ export const Navigation: React.FC = () => {
   // Fetch recent puzzles when dropdown is opened
   useEffect(() => {
     if (showPuzzleDropdown) {
-      puzzleAPI.getRecentCategoryPuzzles()
-        .then(data => setRecentPuzzles(data.recentPuzzles))
-        .catch(err => console.error('Failed to fetch recent puzzles:', err));
+      puzzleAPI
+        .getRecentCategoryPuzzles()
+        .then((data) => setRecentPuzzles(data.recentPuzzles))
+        .catch((err) => console.error("Failed to fetch recent puzzles:", err));
     }
   }, [showPuzzleDropdown]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setShowPuzzleDropdown(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   return (
@@ -57,8 +76,13 @@ export const Navigation: React.FC = () => {
         <div className="flex items-center justify-between h-12">
           {/* Logo */}
           <div className="flex items-center">
-            <Link href="/puzzle" className="flex items-center gap-2 group transition-all duration-300">
-              <div className="text-2xl cosmic-float transition-transform duration-300">🌌</div>
+            <Link
+              href="/puzzle"
+              className="flex items-center gap-2 group transition-all duration-300"
+            >
+              <div className="text-2xl cosmic-float transition-transform duration-300">
+                🌌
+              </div>
               <div className="flex flex-col">
                 <span className="font-bold text-lg nebula-text transition-transform duration-300">
                   Galactic Crossword
@@ -78,30 +102,35 @@ export const Navigation: React.FC = () => {
                 <button
                   onClick={() => setShowPuzzleDropdown(!showPuzzleDropdown)}
                   className={clsx(
-                    'px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-300 relative group overflow-hidden flex items-center gap-1.5',
+                    "px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-300 relative group overflow-hidden flex items-center gap-1.5",
                     {
-                      'text-white font-semibold': pathname === '/puzzle' || showPuzzleDropdown,
-                      'text-gray-300 hover:text-white': pathname !== '/puzzle' && !showPuzzleDropdown,
-                    }
+                      "text-white font-semibold":
+                        pathname === "/puzzle" || showPuzzleDropdown,
+                      "text-gray-300 hover:text-white":
+                        pathname !== "/puzzle" && !showPuzzleDropdown,
+                    },
                   )}
                   style={{
-                    background: (pathname === '/puzzle' || showPuzzleDropdown)
-                      ? `linear-gradient(135deg, var(--cosmic-purple), var(--galaxy-blue))`
-                      : 'transparent'
+                    background:
+                      pathname === "/puzzle" || showPuzzleDropdown
+                        ? `linear-gradient(135deg, var(--cosmic-purple), var(--galaxy-blue))`
+                        : "transparent",
                   }}
                 >
                   {/* Hover effect background */}
                   <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300 rounded-lg" />
-                  
+
                   {/* Active glow effect */}
-                  {(pathname === '/puzzle' || showPuzzleDropdown) && (
+                  {(pathname === "/puzzle" || showPuzzleDropdown) && (
                     <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-blue-500/20 animate-pulse rounded-lg" />
                   )}
-                  
+
                   <span className="relative flex items-center gap-1.5">
                     <span className="text-base">🧩</span>
                     <span className="hidden lg:inline">Today's Puzzles</span>
-                    <span className="text-xs">{showPuzzleDropdown ? '▲' : '▼'}</span>
+                    <span className="text-xs">
+                      {showPuzzleDropdown ? "▲" : "▼"}
+                    </span>
                   </span>
                 </button>
 
@@ -120,12 +149,14 @@ export const Navigation: React.FC = () => {
                           <span>Daily Puzzle</span>
                         </div>
                       </Link>
-                      
+
                       {/* Recent Category Puzzles */}
                       {recentPuzzles.length > 0 && (
                         <>
                           <div className="border-t border-purple-500/20 my-1"></div>
-                          <div className="px-4 py-1 text-xs text-purple-300 font-semibold">Recent Category Puzzles</div>
+                          <div className="px-4 py-1 text-xs text-purple-300 font-semibold">
+                            Recent Category Puzzles
+                          </div>
                           {recentPuzzles.map((puzzle, index) => (
                             <Link
                               key={puzzle.puzzleDate}
@@ -136,21 +167,26 @@ export const Navigation: React.FC = () => {
                               <div className="flex items-center justify-between gap-2">
                                 <div className="flex items-center gap-2">
                                   <span className="text-base">🎯</span>
-                                  <span className="truncate">{puzzle.categoryName}</span>
+                                  <span className="truncate">
+                                    {puzzle.categoryName}
+                                  </span>
                                 </div>
-                                <span className="text-xs text-purple-300">{puzzle.wordCount} words</span>
+                                <span className="text-xs text-purple-300">
+                                  {puzzle.wordCount} words
+                                </span>
                               </div>
                             </Link>
                           ))}
                         </>
                       )}
-                      
+
                       {/* No recent puzzles message */}
                       {recentPuzzles.length === 0 && (
                         <>
                           <div className="border-t border-purple-500/20 my-1"></div>
                           <div className="px-4 py-2 text-xs text-gray-400">
-                            No recent category puzzles. Generate one from the Theme Globe!
+                            No recent category puzzles. Generate one from the
+                            Theme Globe!
                           </div>
                         </>
                       )}
@@ -165,28 +201,29 @@ export const Navigation: React.FC = () => {
                   key={item.href}
                   href={item.href}
                   className={clsx(
-                    'px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-300 relative group overflow-hidden',
+                    "px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-300 relative group overflow-hidden",
                     {
-                      'text-white font-semibold': pathname === item.href,
-                      'text-gray-300 hover:text-white': pathname !== item.href,
-                    }
+                      "text-white font-semibold": pathname === item.href,
+                      "text-gray-300 hover:text-white": pathname !== item.href,
+                    },
                   )}
                   style={{
-                    background: pathname === item.href 
-                      ? `linear-gradient(135deg, var(--cosmic-purple), var(--galaxy-blue))`
-                      : 'transparent'
+                    background:
+                      pathname === item.href
+                        ? `linear-gradient(135deg, var(--cosmic-purple), var(--galaxy-blue))`
+                        : "transparent",
                   }}
                 >
                   {/* Hover effect background */}
-                  <div 
+                  <div
                     className={`absolute inset-0 bg-gradient-to-r ${item.gradient} opacity-0 group-hover:opacity-20 transition-opacity duration-300 rounded-lg`}
                   />
-                  
+
                   {/* Active glow effect */}
                   {pathname === item.href && (
                     <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-blue-500/20 animate-pulse rounded-lg" />
                   )}
-                  
+
                   <span className="relative flex items-center gap-1.5">
                     <span className="text-base">{item.icon}</span>
                     <span className="hidden lg:inline">{item.label}</span>
@@ -200,37 +237,32 @@ export const Navigation: React.FC = () => {
           <div className="flex items-center gap-2">
             {user && (
               <div className="flex items-center gap-2">
-                {/* User greeting - hidden on small screens */}
-                <div className="hidden xl:block text-xs">
-                  <span className="text-purple-200">Welcome,</span>{' '}
-                  <span className="font-semibold text-white">{user.firstName}</span>
-                </div>
-                
                 {/* Points display */}
                 <div className="flex items-center gap-1.5 cosmic-card px-2.5 py-1.5 border-yellow-500/30">
                   <div className="text-lg">⭐</div>
                   <div className="flex flex-col">
-                    <span className="font-bold text-yellow-400 text-sm leading-none">{user.points}</span>
-                    <span className="text-xs text-purple-200 -mt-0.5 hidden sm:block">points</span>
+                    <span className="font-bold text-yellow-400 text-sm leading-none">
+                      {user.points}
+                    </span>
+                    <span className="text-xs text-purple-200 -mt-0.5 hidden sm:block">
+                      points
+                    </span>
                   </div>
                 </div>
-                
+
                 {/* Profile and Logout buttons */}
                 <Link
                   href="/profile"
-                  className={clsx(
-                    'stellar-button text-xs px-2.5 py-1.5',
-                    {
-                      'bg-purple-600 text-white': pathname === '/profile',
-                    }
-                  )}
+                  className={clsx("stellar-button text-xs px-2.5 py-1.5", {
+                    "bg-purple-600 text-white": pathname === "/profile",
+                  })}
                 >
                   <span className="flex items-center gap-1.5">
                     <span>👤</span>
                     <span className="hidden md:inline">Profile</span>
                   </span>
                 </Link>
-                
+
                 <button
                   onClick={handleLogout}
                   className="stellar-button text-xs px-2.5 py-1.5"
@@ -253,25 +285,30 @@ export const Navigation: React.FC = () => {
               <button
                 onClick={() => setShowPuzzleDropdown(!showPuzzleDropdown)}
                 className={clsx(
-                  'w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 relative overflow-hidden flex items-center justify-between',
+                  "w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 relative overflow-hidden flex items-center justify-between",
                   {
-                    'text-white font-semibold': pathname === '/puzzle' || showPuzzleDropdown,
-                    'text-gray-300 hover:text-white': pathname !== '/puzzle' && !showPuzzleDropdown,
-                  }
+                    "text-white font-semibold":
+                      pathname === "/puzzle" || showPuzzleDropdown,
+                    "text-gray-300 hover:text-white":
+                      pathname !== "/puzzle" && !showPuzzleDropdown,
+                  },
                 )}
                 style={{
-                  background: (pathname === '/puzzle' || showPuzzleDropdown)
-                    ? `linear-gradient(135deg, var(--cosmic-purple), var(--galaxy-blue))`
-                    : 'rgba(124, 58, 237, 0.1)'
+                  background:
+                    pathname === "/puzzle" || showPuzzleDropdown
+                      ? `linear-gradient(135deg, var(--cosmic-purple), var(--galaxy-blue))`
+                      : "rgba(124, 58, 237, 0.1)",
                 }}
               >
                 <span className="flex items-center gap-2.5">
                   <span className="text-lg">🧩</span>
                   <span>Today's Puzzles</span>
                 </span>
-                <span className="text-xs">{showPuzzleDropdown ? '▲' : '▼'}</span>
+                <span className="text-xs">
+                  {showPuzzleDropdown ? "▲" : "▼"}
+                </span>
               </button>
-              
+
               {/* Mobile Dropdown Content */}
               {showPuzzleDropdown && (
                 <div className="mt-1 ml-4 space-y-1">
@@ -285,10 +322,12 @@ export const Navigation: React.FC = () => {
                       <span>Daily Puzzle</span>
                     </div>
                   </Link>
-                  
+
                   {recentPuzzles.length > 0 && (
                     <>
-                      <div className="px-3 py-1 text-xs text-purple-300 font-semibold">Recent Category Puzzles</div>
+                      <div className="px-3 py-1 text-xs text-purple-300 font-semibold">
+                        Recent Category Puzzles
+                      </div>
                       {recentPuzzles.map((puzzle) => (
                         <Link
                           key={puzzle.puzzleDate}
@@ -299,9 +338,13 @@ export const Navigation: React.FC = () => {
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2">
                               <span>🎯</span>
-                              <span className="truncate">{puzzle.categoryName}</span>
+                              <span className="truncate">
+                                {puzzle.categoryName}
+                              </span>
                             </div>
-                            <span className="text-xs text-purple-300">{puzzle.wordCount}w</span>
+                            <span className="text-xs text-purple-300">
+                              {puzzle.wordCount}w
+                            </span>
                           </div>
                         </Link>
                       ))}
@@ -317,16 +360,17 @@ export const Navigation: React.FC = () => {
                 key={item.href}
                 href={item.href}
                 className={clsx(
-                  'block px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 relative overflow-hidden',
+                  "block px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 relative overflow-hidden",
                   {
-                    'text-white font-semibold': pathname === item.href,
-                    'text-gray-300 hover:text-white': pathname !== item.href,
-                  }
+                    "text-white font-semibold": pathname === item.href,
+                    "text-gray-300 hover:text-white": pathname !== item.href,
+                  },
                 )}
                 style={{
-                  background: pathname === item.href 
-                    ? `linear-gradient(135deg, var(--cosmic-purple), var(--galaxy-blue))`
-                    : 'rgba(124, 58, 237, 0.1)'
+                  background:
+                    pathname === item.href
+                      ? `linear-gradient(135deg, var(--cosmic-purple), var(--galaxy-blue))`
+                      : "rgba(124, 58, 237, 0.1)",
                 }}
               >
                 <span className="flex items-center gap-2.5">
