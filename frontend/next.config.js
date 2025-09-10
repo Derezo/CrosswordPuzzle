@@ -3,21 +3,10 @@ const nextConfig = {
   // Enable standalone output for Docker
   output: 'standalone',
   
-  // Experimental features
-  experimental: {
-    // Enable Turbopack for faster builds
-    turbo: {
-      rules: {
-        '*.svg': {
-          loaders: ['@svgr/webpack'],
-          as: '*.js',
-        },
-      },
-    },
+  // Turbopack configuration
+  turbopack: {
+    root: __dirname,
   },
-  
-  // Performance optimizations
-  swcMinify: true,
   
   // Compression
   compress: true,

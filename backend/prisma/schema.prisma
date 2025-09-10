@@ -11,20 +11,22 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String?
-  googleId  String?  @unique
-  firstName String
-  lastName  String
-  points    Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                   String   @id @default(cuid())
+  email                String   @unique
+  password             String?
+  googleId             String?  @unique
+  firstName            String
+  lastName             String
+  points               Int      @default(0)
+  favoriteCategoryId   String?  // User's preferred puzzle category
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   // Relations
-  progresses     UserProgress[]
-  achievements   UserAchievement[]
-  suggestions    Suggestion[]
+  progresses       UserProgress[]
+  achievements     UserAchievement[]
+  suggestions      Suggestion[]
+  favoriteCategory PuzzleCategory? @relation(fields: [favoriteCategoryId], references: [id])
 
   @@map("users")
 }
@@ -121,4 +123,20 @@ model Suggestion {
   puzzle DailyPuzzle @relation(fields: [puzzleId], references: [id], onDelete: Cascade)
 
   @@map("suggestions")
+}
+
+model PuzzleCategory {
+  id              String   @id @default(cuid())
+  name            String   @unique
+  description     String?
+  wordCount       Int      @default(0)  // Number of words in this category
+  favoritesCount  Int      @default(0)  // Number of users who favorited this category
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  usersWhoFavorited User[] // Users who have this as their favorite category
+
+  @@map("puzzle_categories")
 }

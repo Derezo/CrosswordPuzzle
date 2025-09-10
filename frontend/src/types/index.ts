@@ -4,6 +4,8 @@ export interface User {
   firstName: string;
   lastName: string;
   points: number;
+  favoriteCategoryId?: string;
+  favoriteCategory?: PuzzleCategory;
 }
 
 export interface PuzzleCell {
@@ -82,4 +84,28 @@ export interface ValidationResult {
   newAchievements?: UserAchievement[];
   solvedClues: { [clueNumber: string]: string }; // For UI display only
   validatedGrid: any[][];  // The validated grid data
+}
+
+export interface PuzzleCategory {
+  id: string;
+  name: string;
+  description?: string;
+  wordCount: number;
+  favoritesCount: number;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface CategoryStats {
+  totalCategories: number;
+  totalWords: number;
+  totalFavorites: number;
+  topCategory?: {
+    name: string;
+    wordCount: number;
+  };
+  mostPopular?: {
+    name: string;
+    favoritesCount: number;
+  };
 }

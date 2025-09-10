@@ -12,6 +12,8 @@ export const Navigation: React.FC = () => {
 
   const navItems = [
     { href: '/puzzle', label: "Today's Puzzle", icon: '🧩', gradient: 'from-purple-500 to-blue-500' },
+    { href: '/categories', label: 'Categories', icon: '📚', gradient: 'from-indigo-500 to-purple-500' },
+    { href: '/theme-globe', label: 'Theme Globe', icon: '🌌', gradient: 'from-pink-500 to-purple-500' },
     { href: '/leaderboard', label: 'Leaderboard', icon: '🏆', gradient: 'from-yellow-500 to-orange-500' },
     { href: '/achievements', label: 'Achievements', icon: '⭐', gradient: 'from-green-500 to-blue-500' },
   ];
@@ -97,7 +99,22 @@ export const Navigation: React.FC = () => {
                   </div>
                 </div>
                 
-                {/* Logout button */}
+                {/* Profile and Logout buttons */}
+                <Link
+                  href="/profile"
+                  className={clsx(
+                    'stellar-button text-sm px-4 py-2 mr-2',
+                    {
+                      'bg-purple-600 text-white': pathname === '/profile',
+                    }
+                  )}
+                >
+                  <span className="flex items-center gap-2">
+                    <span>👤</span>
+                    <span className="hidden sm:inline">Profile</span>
+                  </span>
+                </Link>
+                
                 <button
                   onClick={handleLogout}
                   className="stellar-button text-sm px-4 py-2"

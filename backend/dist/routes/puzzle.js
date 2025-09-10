@@ -25,27 +25,23 @@ router.get('/today', auth_1.authenticateToken, async (req, res) => {
         if (!puzzle) {
             return res.status(404).json({ error: 'No puzzle available for today' });
         }
-        // Get user's progress for today's puzzle
-        let progress = await prisma_1.prisma.userProgress.findUnique({
+        // Get or create user's progress for today's puzzle using upsert to avoid race conditions
+        const progress = await prisma_1.prisma.userProgress.upsert({
             where: {
                 userId_puzzleDate: {
                     userId: user.id,
                     puzzleDate: today
                 }
+            },
+            update: {}, // Don't update anything if it already exists
+            create: {
+                userId: user.id,
+                puzzleDate: today,
+                answersData: '{}',
+                completedClues: '[]',
+                isCompleted: false
             }
         });
-        if (!progress) {
-            // Create new progress entry
-            progress = await prisma_1.prisma.userProgress.create({
-                data: {
-                    userId: user.id,
-                    puzzleDate: today,
-                    answersData: '{}',
-                    completedClues: '[]',
-                    isCompleted: false
-                }
-            });
-        }
         // Parse puzzle data
         const gridData = JSON.parse(puzzle.gridData);
         const cluesData = JSON.parse(puzzle.cluesData);
@@ -102,27 +98,24 @@ router.post('/validate', auth_1.authenticateToken, async (req, res) => {
         if (!puzzle) {
             return res.status(404).json({ error: 'Puzzle not found' });
         }
-        // Get or create user progress
-        let progress = await prisma_1.prisma.userProgress.findUnique({
+        // Get or create user progress using upsert to avoid race conditions
+        let progress = await prisma_1.prisma.userProgress.upsert({
             where: {
                 userId_puzzleDate: {
                     userId: user.id,
                     puzzleDate
                 }
+            },
+            update: {}, // Don't update anything if it already exists
+            create: {
+                userId: user.id,
+                puzzleDate,
+                answersData: '{}',
+                gridData: null,
+                completedClues: '[]',
+                isCompleted: false
             }
         });
-        if (!progress) {
-            progress = await prisma_1.prisma.userProgress.create({
-                data: {
-                    userId: user.id,
-                    puzzleDate,
-                    answersData: '{}',
-                    gridData: null,
-                    completedClues: '[]',
-                    isCompleted: false
-                }
-            });
-        }
         // Parse puzzle clues and current progress
         const cluesData = JSON.parse(puzzle.cluesData);
         const currentAnswers = JSON.parse(progress.answersData);
@@ -206,27 +199,24 @@ router.post('/validate-grid', auth_1.authenticateToken, async (req, res) => {
         if (!puzzle) {
             return res.status(404).json({ error: 'Puzzle not found' });
         }
-        // Get or create user progress
-        let progress = await prisma_1.prisma.userProgress.findUnique({
+        // Get or create user progress using upsert to avoid race conditions
+        let progress = await prisma_1.prisma.userProgress.upsert({
             where: {
                 userId_puzzleDate: {
                     userId: user.id,
                     puzzleDate
                 }
+            },
+            update: {}, // Don't update anything if it already exists
+            create: {
+                userId: user.id,
+                puzzleDate,
+                answersData: '{}',
+                gridData: null,
+                completedClues: '[]',
+                isCompleted: false
             }
         });
-        if (!progress) {
-            progress = await prisma_1.prisma.userProgress.create({
-                data: {
-                    userId: user.id,
-                    puzzleDate,
-                    answersData: '{}',
-                    gridData: null,
-                    completedClues: '[]',
-                    isCompleted: false
-                }
-            });
-        }
         // Parse puzzle data
         const cluesData = JSON.parse(puzzle.cluesData);
         const solutionGrid = JSON.parse(puzzle.gridData);
@@ -360,27 +350,24 @@ router.post('/auto-solve', auth_1.authenticateToken, async (req, res) => {
                 canAutoSolveAt: new Date(puzzleCreatedAt.getTime() + (cooldownHours * 60 * 60 * 1000)).toISOString()
             });
         }
-        // Get or create user progress
-        let progress = await prisma_1.prisma.userProgress.findUnique({
+        // Get or create user progress using upsert to avoid race conditions
+        let progress = await prisma_1.prisma.userProgress.upsert({
             where: {
                 userId_puzzleDate: {
                     userId: user.id,
                     puzzleDate
                 }
+            },
+            update: {}, // Don't update anything if it already exists
+            create: {
+                userId: user.id,
+                puzzleDate,
+                answersData: '{}',
+                gridData: null,
+                completedClues: '[]',
+                isCompleted: false
             }
         });
-        if (!progress) {
-            progress = await prisma_1.prisma.userProgress.create({
-                data: {
-                    userId: user.id,
-                    puzzleDate,
-                    answersData: '{}',
-                    gridData: null,
-                    completedClues: '[]',
-                    isCompleted: false
-                }
-            });
-        }
         // Parse puzzle data
         const cluesData = JSON.parse(puzzle.cluesData);
         const solutionGrid = JSON.parse(puzzle.gridData);

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { AuthResponse, DailyPuzzle, UserProgress, ValidationResult, Achievement, LeaderboardEntry } from '@/types';
+import { AuthResponse, DailyPuzzle, UserProgress, ValidationResult, Achievement, LeaderboardEntry, PuzzleCategory, CategoryStats } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -166,6 +166,46 @@ export const suggestionAPI = {
     offset?: number;
   }) => {
     const response = await api.get('/suggestion/all', { params });
+    return response.data;
+  },
+};
+
+// Categories API
+export const categoriesAPI = {
+  getCategories: async (params?: {
+    sortBy?: 'wordCount' | 'favoritesCount' | 'name';
+    order?: 'asc' | 'desc';
+    limit?: number;
+    search?: string;
+    activeOnly?: boolean;
+  }): Promise<{ data: PuzzleCategory[]; total: number }> => {
+    const response = await api.get('/categories', { params });
+    return response.data;
+  },
+
+  getPopularCategories: async (limit: number = 10): Promise<{ data: PuzzleCategory[] }> => {
+    const response = await api.get('/categories/popular', { params: { limit } });
+    return response.data;
+  },
+
+  getCategoryStats: async (): Promise<{ data: CategoryStats }> => {
+    const response = await api.get('/categories/stats');
+    return response.data;
+  },
+
+  toggleFavoriteCategory: async (categoryId: string): Promise<{
+    isFavorite: boolean;
+    categoryId: string | null;
+    message: string;
+  }> => {
+    const response = await api.put(`/categories/${categoryId}/favorite`);
+    return response.data;
+  },
+
+  getUserFavoriteCategory: async (): Promise<{
+    data: { favoriteCategory: PuzzleCategory | null };
+  }> => {
+    const response = await api.get('/categories/user/favorite');
     return response.data;
   },
 };

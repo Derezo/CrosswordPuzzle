@@ -33,10 +33,10 @@ export declare class AchievementService {
             points: number;
             createdAt: Date;
             description: string;
+            isActive: boolean;
             conditionType: string;
             conditionData: string;
             icon: string;
-            isActive: boolean;
         };
     } & {
         id: string;
@@ -52,10 +52,10 @@ export declare class AchievementService {
         points: number;
         createdAt: Date;
         description: string;
+        isActive: boolean;
         conditionType: string;
         conditionData: string;
         icon: string;
-        isActive: boolean;
     }[]>;
 }
 declare const _default: AchievementService;
