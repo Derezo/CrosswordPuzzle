@@ -26,6 +26,7 @@ const ThemeGlobeWrapper = dynamic(
 export default function ThemeGlobePage() {
   const [selectedCategory, setSelectedCategory] =
     useState<PuzzleCategory | null>(null);
+  const [selectedCategories, setSelectedCategories] = useState<PuzzleCategory[]>([]);
   const [showList, setShowList] = useState(false);
   const [globeKey, setGlobeKey] = useState(0); // Key to force re-mount
   const [generatingPuzzle, setGeneratingPuzzle] = useState(false);
@@ -37,6 +38,20 @@ export default function ThemeGlobePage() {
     setSelectedCategory(category);
   };
 
+  const handleAddCategory = (category: PuzzleCategory) => {
+    if (selectedCategories.length >= 5) return;
+    if (selectedCategories.some(cat => cat.id === category.id)) return;
+    
+    setSelectedCategories(prev => [...prev, category]);
+  };
+
+  const handleRemoveCategory = (categoryId: string) => {
+    setSelectedCategories(prev => prev.filter(cat => cat.id !== categoryId));
+  };
+
+  const totalWordCount = selectedCategories.reduce((sum, cat) => sum + cat.wordCount, 0);
+  const canGenerate = totalWordCount >= 300 && selectedCategories.length > 0;
+
   const handleCloseErrorDialog = () => {
     setGeneratingPuzzle(false);
     setGenerationProgress(0);
@@ -45,7 +60,7 @@ export default function ThemeGlobePage() {
   };
 
   const handleGeneratePuzzle = async () => {
-    if (!selectedCategory) return;
+    if (!canGenerate) return;
 
     try {
       setGeneratingPuzzle(true);
@@ -65,11 +80,14 @@ export default function ThemeGlobePage() {
       }
 
       // Use Server-Sent Events to stream progress
+      // For now, we'll use the first selected category (TODO: update backend to handle multiple categories)
+      const categoryName = selectedCategories[0]?.name || 'Mixed';
       // EventSource doesn't support custom headers, so we'll pass the token as a query param
-      const streamUrl = `${process.env.NEXT_PUBLIC_API_URL}/puzzle/generate-category-stream/${encodeURIComponent(selectedCategory.name)}?token=${encodeURIComponent(token)}`;
+      const streamUrl = `${process.env.NEXT_PUBLIC_API_URL}/puzzle/generate-category-stream/${encodeURIComponent(categoryName)}?token=${encodeURIComponent(token)}`;
       console.log("🔗 Connecting to SSE:", streamUrl);
       console.log("🔗 API URL:", process.env.NEXT_PUBLIC_API_URL);
-      console.log("🔗 Selected category:", selectedCategory.name);
+      console.log("🔗 Selected categories:", selectedCategories.map(c => c.name));
+      console.log("🔗 Primary category:", categoryName);
 
       const eventSource = new EventSource(streamUrl);
 
@@ -164,10 +182,9 @@ export default function ThemeGlobePage() {
     try {
       setGenerationStage("Initializing standard generation...");
 
-      // Use the regular API as fallback
-      const data = await puzzleAPI.generateCategoryPuzzle(
-        selectedCategory!.name,
-      );
+      // Use the regular API as fallback (for now, use first category)
+      const categoryName = selectedCategories[0]?.name || 'Mixed';
+      const data = await puzzleAPI.generateCategoryPuzzle(categoryName);
 
       if (data.success) {
         setGenerationStage("Puzzle generated successfully!");
@@ -323,27 +340,111 @@ export default function ThemeGlobePage() {
 
                 <div className="pt-3 border-t border-purple-500/30 space-y-3">
                   <button
-                    onClick={handleGeneratePuzzle}
-                    disabled={generatingPuzzle}
-                    className="w-full py-2 px-4 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium transition-all duration-200 flex items-center justify-center gap-2"
+                    onClick={() => handleAddCategory(selectedCategory)}
+                    disabled={selectedCategories.length >= 5 || selectedCategories.some(cat => cat.id === selectedCategory.id)}
+                    className="w-full py-2 px-4 rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium transition-all duration-200 flex items-center justify-center gap-2"
                   >
-                    {generatingPuzzle ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        Generating...
-                      </>
+                    {selectedCategories.some(cat => cat.id === selectedCategory.id) ? (
+                      <>✅ Already Selected</>
+                    ) : selectedCategories.length >= 5 ? (
+                      <>🚫 Max 5 Categories</>
                     ) : (
-                      <>🧩 Generate Category Puzzle</>
+                      <>➕ Select Category</>
                     )}
                   </button>
                   <p className="text-xs text-gray-400">
-                    Click the category in the globe to add/remove from
-                    favorites, or generate a puzzle using only words from this
-                    category.
+                    Click to add this category to your selection for multi-category puzzle generation.
                   </p>
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Selected Categories Widget */}
+        {selectedCategories.length > 0 && (
+          <div className="fixed bottom-24 right-6 z-20 max-w-sm">
+            <div className="bg-black/90 backdrop-blur-sm rounded-xl p-4 text-white border border-purple-500/30 animate-in slide-in-from-bottom-2 duration-300">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-bold text-purple-300">
+                  Selected Categories
+                </h3>
+                <div className="text-sm text-gray-300">
+                  {selectedCategories.length}/5
+                </div>
+              </div>
+
+              <div className="space-y-2 mb-4 max-h-40 overflow-y-auto">
+                {selectedCategories.map((category) => (
+                  <div
+                    key={category.id}
+                    className="flex items-center justify-between bg-purple-900/30 rounded-lg p-2 group hover:bg-purple-900/50 transition-colors"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-white truncate">
+                        {category.name}
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        {category.wordCount.toLocaleString()} words
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleRemoveCategory(category.id)}
+                      className="ml-2 p-1 text-gray-400 hover:text-red-400 hover:bg-red-900/20 rounded transition-colors opacity-0 group-hover:opacity-100"
+                      title="Remove category"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="pt-3 border-t border-purple-500/30">
+                <div className="flex items-center justify-between text-sm mb-2">
+                  <span className="text-gray-300">Total Words:</span>
+                  <span className={`font-bold ${totalWordCount >= 300 ? 'text-green-400' : 'text-yellow-400'}`}>
+                    {totalWordCount.toLocaleString()}
+                  </span>
+                </div>
+                {totalWordCount < 300 && (
+                  <div className="text-xs text-yellow-400 mb-2">
+                    ⚠️ Need at least 300 words to generate puzzle
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Floating Generate Button */}
+        {selectedCategories.length > 0 && (
+          <div className="fixed bottom-6 left-6 z-20">
+            <button
+              onClick={handleGeneratePuzzle}
+              disabled={!canGenerate || generatingPuzzle}
+              className={`py-3 px-6 rounded-xl font-bold text-white transition-all duration-200 flex items-center gap-3 shadow-2xl ${
+                canGenerate && !generatingPuzzle
+                  ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 hover:scale-105 transform animate-pulse'
+                  : 'bg-gray-600 cursor-not-allowed'
+              }`}
+              style={{ 
+                opacity: canGenerate && !generatingPuzzle ? 1 : 0.2
+              }}
+            >
+              {generatingPuzzle ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  Generating...
+                </>
+              ) : (
+                <>
+                  🧩 Generate Multi-Category Puzzle
+                  <div className="bg-white/20 rounded-full px-2 py-1 text-xs">
+                    {selectedCategories.length}
+                  </div>
+                </>
+              )}
+            </button>
           </div>
         )}
 
@@ -359,9 +460,17 @@ export default function ThemeGlobePage() {
                     <h2 className="text-2xl font-bold text-red-400 mb-2">
                       Oops! Cosmic Malfunction
                     </h2>
-                    <p className="text-purple-300 text-lg font-medium">
-                      {selectedCategory?.name} Theme
-                    </p>
+                    <div className="text-purple-300 text-lg font-medium">
+                      {selectedCategories.length === 1 
+                        ? `${selectedCategories[0].name} Theme`
+                        : `Multi-Category Theme (${selectedCategories.length})`
+                      }
+                    </div>
+                    {selectedCategories.length > 1 && (
+                      <div className="text-sm text-gray-400 mt-1">
+                        {selectedCategories.map(c => c.name).join(', ')}
+                      </div>
+                    )}
                   </div>
 
                   {/* Error Message */}
@@ -393,9 +502,17 @@ export default function ThemeGlobePage() {
                     <h2 className="text-2xl font-bold text-white mb-2">
                       Generating Category Puzzle
                     </h2>
-                    <p className="text-purple-300 text-lg font-medium">
-                      {selectedCategory?.name} Theme
-                    </p>
+                    <div className="text-purple-300 text-lg font-medium">
+                      {selectedCategories.length === 1 
+                        ? `${selectedCategories[0].name} Theme`
+                        : `Multi-Category Theme (${selectedCategories.length})`
+                      }
+                    </div>
+                    {selectedCategories.length > 1 && (
+                      <div className="text-sm text-gray-400 mt-1">
+                        {selectedCategories.map(c => c.name).join(', ')}
+                      </div>
+                    )}
                   </div>
 
                   {/* Enhanced Progress Bar with Dynamic Colors */}
