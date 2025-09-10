@@ -4,6 +4,7 @@ import { prisma } from '../lib/prisma';
 import puzzleCronService from '../services/puzzle/cronService';
 import achievementService from '../services/achievement/achievementService';
 import { validateGrid, createSolutionGrid } from '../services/puzzle/gridValidator';
+import { generateStrictPuzzle } from '../services/puzzle/strictCrosswordGenerator';
 import { User } from '@prisma/client';
 
 const router = Router();
@@ -474,6 +475,202 @@ router.post('/auto-solve', authenticateToken, async (req: AuthenticatedRequest, 
 
   } catch (error) {
     console.error('Error auto-solving puzzle:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Generate category-specific puzzle
+router.post('/generate-category', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { categoryName } = req.body;
+    const user = req.user as User;
+
+    if (!categoryName) {
+      return res.status(400).json({ error: 'Category name is required' });
+    }
+
+    console.log(`🎯 Generating category puzzle for: ${categoryName}`);
+
+    // Generate a unique date string for this category puzzle
+    const categoryDate = `category-${categoryName}-${Date.now()}`;
+    
+    try {
+      // Generate the puzzle using the strict generator with category filter
+      const generatedPuzzle = generateStrictPuzzle(categoryDate, categoryName);
+
+      // Store the puzzle in database with a special category date format
+      const puzzleDate = new Date().toISOString().split('T')[0] + `-cat-${categoryName.toLowerCase().replace(/\s+/g, '-')}`;
+      
+      // Check if this category puzzle already exists for today
+      const existingPuzzle = await prisma.dailyPuzzle.findUnique({ 
+        where: { date: puzzleDate } 
+      });
+
+      if (existingPuzzle) {
+        // Delete existing puzzle to replace with new one
+        await prisma.dailyPuzzle.delete({ where: { date: puzzleDate } });
+      }
+
+      // Create the new puzzle
+      const puzzle = await prisma.dailyPuzzle.create({
+        data: {
+          date: puzzleDate,
+          gridData: JSON.stringify(generatedPuzzle.grid),
+          cluesData: JSON.stringify(generatedPuzzle.clues),
+          rows: generatedPuzzle.size.rows,
+          cols: generatedPuzzle.size.cols
+        }
+      });
+
+      // Create or update user's progress for this puzzle
+      await prisma.userProgress.upsert({
+        where: {
+          userId_puzzleDate: {
+            userId: user.id,
+            puzzleDate
+          }
+        },
+        update: {
+          answersData: '{}',
+          completedClues: '[]',
+          isCompleted: false
+        },
+        create: {
+          userId: user.id,
+          puzzleDate,
+          answersData: '{}',
+          completedClues: '[]',
+          isCompleted: false
+        }
+      });
+
+      console.log(`✅ Category puzzle generated successfully for ${categoryName}`);
+
+      res.json({
+        success: true,
+        message: `Category puzzle for "${categoryName}" generated successfully`,
+        puzzleDate,
+        wordCount: generatedPuzzle.clues.length
+      });
+
+    } catch (generateError) {
+      console.error('Error generating category puzzle:', generateError);
+      return res.status(500).json({ 
+        error: 'Failed to generate puzzle for this category. The category might not have enough words or there might be technical issues.' 
+      });
+    }
+
+  } catch (error) {
+    console.error('Error in generate-category endpoint:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get specific puzzle by date
+router.get('/specific/:date', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { date } = req.params;
+    const user = req.user as User;
+
+    if (!date) {
+      return res.status(400).json({ error: 'Date parameter is required' });
+    }
+
+    // Get specific puzzle
+    const puzzle = await prisma.dailyPuzzle.findUnique({ where: { date } });
+
+    if (!puzzle) {
+      return res.status(404).json({ error: 'Puzzle not found for the specified date' });
+    }
+
+    // Get or create user's progress for this puzzle using upsert
+    const progress = await prisma.userProgress.upsert({
+      where: { 
+        userId_puzzleDate: {
+          userId: user.id, 
+          puzzleDate: date 
+        }
+      },
+      update: {}, // Don't update anything if it already exists
+      create: {
+        userId: user.id,
+        puzzleDate: date,
+        answersData: '{}',
+        completedClues: '[]',
+        isCompleted: false
+      }
+    });
+
+    // Parse puzzle data
+    const gridData = JSON.parse(puzzle.gridData);
+    const cluesData = JSON.parse(puzzle.cluesData);
+
+    res.json({
+      puzzle: {
+        date: puzzle.date,
+        grid: gridData,
+        clues: cluesData,
+      },
+      progress: {
+        answers: JSON.parse(progress.answersData),
+        gridData: progress.gridData ? JSON.parse(progress.gridData) : null,
+        completedClues: JSON.parse(progress.completedClues),
+        isCompleted: progress.isCompleted,
+        completedAt: progress.completedAt,
+        solveTime: progress.solveTime,
+        firstViewedAt: progress.firstViewedAt
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching specific puzzle:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get recent category puzzles for dropdown
+router.get('/recent-category', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  try {
+    const user = req.user as User;
+
+    // Get recent category puzzles (puzzles with 'cat-' in the date)
+    const recentPuzzles = await prisma.dailyPuzzle.findMany({
+      where: {
+        date: {
+          contains: '-cat-'
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+      take: 5
+    });
+
+    // Transform the data to extract category name and word count
+    const puzzleData = await Promise.all(
+      recentPuzzles.map(async (puzzle) => {
+        // Extract category name from date format: "2024-01-01-cat-technology"
+        const categoryMatch = puzzle.date.match(/-cat-(.+)$/);
+        const categoryName = categoryMatch ? categoryMatch[1].replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Unknown';
+        
+        // Get word count from clues data
+        const cluesData = JSON.parse(puzzle.cluesData);
+        const wordCount = cluesData.length;
+
+        return {
+          puzzleDate: puzzle.date,
+          categoryName,
+          wordCount
+        };
+      })
+    );
+
+    res.json({
+      recentPuzzles: puzzleData
+    });
+
+  } catch (error) {
+    console.error('Error fetching recent category puzzles:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

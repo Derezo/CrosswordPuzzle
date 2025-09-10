@@ -43,35 +43,21 @@ function CategoryText({
   isFavorite: boolean;
 }) {
   const textRef = useRef<THREE.Mesh>(null);
-  const outlineRef = useRef<THREE.Mesh>(null);
-  const backgroundRef = useRef<THREE.Mesh>(null);
   
   useFrame((state) => {
     if (textRef.current) {
-      // Gentle floating animation
-      const floatOffset = Math.sin(state.clock.elapsedTime + position[0]) * 0.02;
-      textRef.current.position.y = position[1] + floatOffset;
+      // Reduce floating animation frequency for less flicker
+      const floatOffset = Math.sin(state.clock.elapsedTime * 0.5 + position[0]) * 0.015;
+      textRef.current.position.set(position[0], position[1] + floatOffset, position[2]);
       
-      // Face the camera
-      textRef.current.lookAt(state.camera.position);
+      // Face the camera less frequently to reduce flicker
+      if (state.clock.elapsedTime % 0.1 < 0.016) { // Update ~6 times per second instead of 60
+        textRef.current.lookAt(state.camera.position);
+      }
       
-      // Hover scaling effect
-      const targetScale = isHovered ? scale * 1.4 : scale;
-      textRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.1);
-    }
-    
-    // Sync outline and background with main text
-    if (outlineRef.current && textRef.current) {
-      outlineRef.current.position.copy(textRef.current.position);
-      outlineRef.current.rotation.copy(textRef.current.rotation);
-      outlineRef.current.scale.copy(textRef.current.scale);
-    }
-    
-    if (backgroundRef.current && textRef.current) {
-      backgroundRef.current.position.copy(textRef.current.position);
-      backgroundRef.current.rotation.copy(textRef.current.rotation);
-      backgroundRef.current.scale.copy(textRef.current.scale);
-      backgroundRef.current.position.z -= 0.001; // Slightly behind text
+      // Smooth hover scaling effect
+      const targetScale = isHovered ? scale * 1.3 : scale;
+      textRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.08);
     }
   });
 
@@ -89,37 +75,7 @@ function CategoryText({
 
   return (
     <group>
-      {/* Background/border effect - only show when hovered */}
-      {isHovered && (
-        <Text
-          ref={backgroundRef}
-          position={position}
-          fontSize={0.82}
-          color={outlineColor}
-          anchorX="center"
-          anchorY="middle"
-          font={undefined}
-          fillOpacity={0.3}
-        >
-          {category.name}
-        </Text>
-      )}
-      
-      {/* Outline text for border effect */}
-      <Text
-        ref={outlineRef}
-        position={position}
-        fontSize={0.81}
-        color={outlineColor}
-        anchorX="center"
-        anchorY="middle"
-        font={undefined}
-        fillOpacity={isHovered ? 0.8 : 0.4}
-      >
-        {category.name}
-      </Text>
-      
-      {/* Main text */}
+      {/* Single text element with stroke for better performance */}
       <Text
         ref={textRef}
         position={position}
@@ -127,7 +83,10 @@ function CategoryText({
         color={textColor}
         anchorX="center"
         anchorY="middle"
-        font={undefined}
+        strokeWidth={0.02}
+        strokeColor={outlineColor}
+        fillOpacity={1.0}
+        strokeOpacity={isHovered ? 0.8 : 0.5}
         onPointerEnter={(e) => {
           e.stopPropagation();
           onHover(category);
@@ -196,7 +155,7 @@ function Globe({
     }
   });
 
-  // Calculate logarithmic sizes and positions
+  // Calculate stable positions and scales (only recalculate when core data changes)
   const categoryPositions = useMemo(() => {
     if (!categories.length) return [];
     
@@ -205,52 +164,43 @@ function Globe({
     const logMax = Math.log10(maxWords);
     const logMin = Math.log10(minWords);
     
-    return categories.map((category, index) => {
-      // Improved logarithmic scaling for text size (base 10 for better distribution)
+    return categories.map((category) => {
+      // Improved logarithmic scaling for text size
       const logWords = Math.log10(category.wordCount);
       const normalizedSize = (logWords - logMin) / (logMax - logMin);
-      // Enhanced scaling with more dramatic size differences
-      const scale = 0.3 + Math.pow(normalizedSize, 0.7) * 2.2; // Size range: 0.3 to 2.5 with power curve
+      const scale = 0.3 + Math.pow(normalizedSize, 0.7) * 2.2;
       
-      // Simple random sphere distribution using category ID as seed
-      // This completely avoids any sequential patterns that cause spirals
+      // Generate stable sphere distribution based ONLY on category ID and name
+      // Remove wordCount and favoritesCount from position calculation
+      const seed1 = category.id.split('').reduce((hash, char, i) => 
+        ((hash << 5) - hash + char.charCodeAt(0) * (i + 1)) & 0xffffffff, 17);
+      const seed2 = category.name.split('').reduce((hash, char, i) => 
+        ((hash << 3) - hash + char.charCodeAt(0) * (i + 7)) & 0xffffffff, 31);
       
-      // Create a simple hash from category ID for consistent positioning
-      let hash = 0;
-      for (let i = 0; i < category.id.length; i++) {
-        const char = category.id.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash; // Convert to 32-bit integer
-      }
+      // Create two independent random values [0,1)
+      const random1 = Math.abs(Math.sin(seed1 * 12.9898)) % 1;
+      const random2 = Math.abs(Math.sin(seed2 * 78.233)) % 1;
       
-      // Use hash to generate two independent random values
-      const random1 = Math.abs(Math.sin(hash * 0.1234567)) % 1;
-      const random2 = Math.abs(Math.sin(hash * 0.9876543)) % 1;
+      // Use Marsaglia method for uniform sphere distribution
+      const theta = random1 * 2 * Math.PI; // azimuthal angle
+      const phi = Math.acos(2 * random2 - 1); // polar angle for uniform distribution
       
-      // Standard method for uniform distribution on sphere
-      const u = random1; // Random value 0-1
-      const v = random2; // Random value 0-1
-      
-      const theta = 2 * Math.PI * u; // Azimuthal angle
-      const phi = Math.acos(2 * v - 1); // Polar angle (ensures uniform distribution)
-      
-      // Vary radius based on category importance (larger categories closer to surface)
-      const baseRadius = 15.0; // Significantly increased for much larger sphere
-      const radiusVariation = normalizedSize * 0.3; // Minimal variation for very uniform sphere
+      // Convert spherical to cartesian coordinates
+      const baseRadius = 15.0;
+      const radiusVariation = normalizedSize * 0.2;
       const radius = baseRadius + radiusVariation;
       
-      // Convert spherical coordinates to Cartesian coordinates
       const x = radius * Math.sin(phi) * Math.cos(theta);
-      const yPos = radius * Math.cos(phi);
-      const z = radius * Math.sin(phi) * Math.sin(theta);
+      const y = radius * Math.sin(phi) * Math.sin(theta);
+      const z = radius * Math.cos(phi);
       
       return {
-        category,
-        position: [x, yPos, z] as [number, number, number],
+        categoryId: category.id,
+        position: [x, y, z] as [number, number, number],
         scale
       };
     });
-  }, [categories]);
+  }, [categories.map(c => `${c.id}-${c.name}-${c.wordCount}`).sort().join('|')]);
 
   return (
     <group ref={groupRef}>
@@ -266,18 +216,23 @@ function Globe({
       </mesh>
       
       {/* Category texts */}
-      {categoryPositions.map(({ category, position, scale }, index) => (
-        <CategoryText
-          key={category.id}
-          category={category}
-          position={position}
-          scale={scale}
-          onHover={handleCategoryHover}
-          onSelect={onCategorySelect}
-          isHovered={hoveredCategory?.id === category.id}
-          isFavorite={favoriteCategory === category.id}
-        />
-      ))}
+      {categoryPositions.map(({ categoryId, position, scale }) => {
+        const category = categories.find(c => c.id === categoryId);
+        if (!category) return null;
+        
+        return (
+          <CategoryText
+            key={category.id}
+            category={category}
+            position={position}
+            scale={scale}
+            onHover={handleCategoryHover}
+            onSelect={onCategorySelect}
+            isHovered={hoveredCategory?.id === category.id}
+            isFavorite={favoriteCategory === category.id}
+          />
+        );
+      })}
     </group>
   );
 }
@@ -439,6 +394,7 @@ const ThemeGlobe = ({ onCategorySelect }: ThemeGlobeProps) => {
   const [hoveredCategory, setHoveredCategory] = useState<PuzzleCategory | null>(null);
   const [favoriteCategory, setFavoriteCategory] = useState<string | null>(null);
 
+
   useEffect(() => {
     loadCategories();
     if (user) {
@@ -479,8 +435,26 @@ const ThemeGlobe = ({ onCategorySelect }: ThemeGlobeProps) => {
         const response = await categoriesAPI.toggleFavoriteCategory(category.id);
         setFavoriteCategory(response.categoryId);
         
-        // Reload categories to get accurate favorites counts from server
-        await loadCategories();
+        // Update favorites count in local state instead of reloading all data
+        setCategories(prevCategories => 
+          prevCategories.map(cat => {
+            if (cat.id === category.id) {
+              const wasFavorite = favoriteCategory === category.id;
+              return {
+                ...cat,
+                favoritesCount: wasFavorite ? cat.favoritesCount - 1 : cat.favoritesCount + 1
+              };
+            }
+            // If there was a previous favorite, decrease its count
+            if (cat.id === favoriteCategory && favoriteCategory !== category.id) {
+              return {
+                ...cat,
+                favoritesCount: Math.max(0, cat.favoritesCount - 1)
+              };
+            }
+            return cat;
+          })
+        );
       } catch (err) {
         console.error('Error toggling favorite:', err);
       }

@@ -29,6 +29,8 @@ interface DictionaryEntry {
   word: string;
   clue: string;
   is_common_english: boolean;
+  obscure: boolean;
+  categories?: string;
 }
 
 interface WordPlacement {
@@ -53,8 +55,9 @@ export class StrictCrosswordGenerator {
   private placedWords: WordPlacement[] = [];
   private usedWords: Set<string> = new Set();
   private rng: () => number;
+  private categoryFilter: string | null = null;
 
-  constructor(seed: string) {
+  constructor(seed: string, categoryFilter?: string) {
     const hash = crypto.createHash("sha256").update(seed).digest();
     let seedInt = hash.readUInt32BE(0);
     this.rng = () => {
@@ -62,6 +65,7 @@ export class StrictCrosswordGenerator {
       return seedInt / 0x7fffffff;
     };
 
+    this.categoryFilter = categoryFilter || null;
     this.loadDictionary();
   }
 
@@ -75,23 +79,36 @@ export class StrictCrosswordGenerator {
     const records = parse(csvContent, {
       columns: true,
       skip_empty_lines: true,
+      relax_column_count: true, // Allow records with different column counts
     });
 
     this.dictionary = records
       .filter((record: any) => {
         const word = record.word?.toUpperCase();
+        let matchesCategory = true;
+        
+        // If category filter is provided, check if word belongs to that category
+        if (this.categoryFilter && record.categories) {
+          const categories = record.categories.toLowerCase().split(',').map((cat: string) => cat.trim());
+          matchesCategory = categories.includes(this.categoryFilter.toLowerCase());
+        }
+        
         return (
           word &&
           word.length >= MIN_WORD_LENGTH &&
           word.length <= MAX_WORD_LENGTH &&
           /^[A-Z]+$/.test(word) &&
-          record.clue
+          record.clue &&
+          record.obscure !== "True" && record.obscure !== true && // Exclude obscure words
+          matchesCategory // Include category filter
         );
       })
       .map((record: any) => ({
         word: record.word.toUpperCase(),
         clue: record.clue,
         is_common_english: record.is_common_english === "True",
+        obscure: record.obscure === "True" || record.obscure === true,
+        categories: record.categories,
       }));
 
     // Remove duplicates, prioritizing common words
@@ -126,7 +143,7 @@ export class StrictCrosswordGenerator {
       });
     }
 
-    console.log(`📚 Loaded ${this.dictionary.length} words`);
+    console.log(`📚 Loaded ${this.dictionary.length} words${this.categoryFilter ? ` for category: ${this.categoryFilter}` : ''}`);
   }
 
   private initializeGrid(): void {
@@ -782,8 +799,8 @@ export class StrictCrosswordGenerator {
   }
 }
 
-export function generateStrictPuzzle(date: string): GeneratedPuzzle {
-  const generator = new StrictCrosswordGenerator(date + time());
+export function generateStrictPuzzle(date: string, categoryFilter?: string): GeneratedPuzzle {
+  const generator = new StrictCrosswordGenerator(date + time(), categoryFilter);
   return generator.generate();
 }
 

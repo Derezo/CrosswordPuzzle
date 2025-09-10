@@ -12,8 +12,14 @@ COPY package*.json pnpm-lock.yaml ./
 
 # Development stage
 FROM base AS dev
-RUN pnpm install
+# Copy source code first (except node_modules)
 COPY . .
+# Install dependencies (this will also generate Prisma client automatically)
+RUN pnpm install
+# Explicitly generate Prisma client to ensure it's up to date
+RUN npx prisma generate
+# Make init script executable
+RUN chmod +x scripts/docker-init.sh
 EXPOSE 5000
 CMD ["pnpm", "run", "dev"]
 

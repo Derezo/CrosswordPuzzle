@@ -1,13 +1,3 @@
-#!/bin/bash
-
-# Script to populate puzzle categories from dictionary CSV
-
-echo "🌌 Setting up Puzzle Categories from Dictionary..."
-
-cd "$(dirname "$0")/.."
-
-# Create a TypeScript script to populate categories
-cat > src/scripts/populateCategories.ts << 'TSEOF'
 import { prisma } from '../lib/prisma';
 import fs from 'fs';
 import path from 'path';
@@ -107,10 +97,3 @@ async function populateCategories() {
 }
 
 populateCategories();
-TSEOF
-
-# Run the script
-echo "🚀 Running category population script..."
-npx ts-node src/scripts/populateCategories.ts
-
-echo "✅ Category setup complete!"

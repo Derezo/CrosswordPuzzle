@@ -30,7 +30,7 @@ Galactic Crossword is a full-stack web application that allows users to solve da
 ### Backend Development
 ```bash
 cd backend
-npm install                    # Install dependencies
+npm install                   # Install dependencies (supports both npm and pnpm)
 npm run dev                   # Start development server with nodemon
 npm run build                 # Build TypeScript to JavaScript (outputs to dist/)
 npm start                     # Run production build
@@ -40,7 +40,7 @@ npx tsc --noEmit              # Type check without building
 ### Frontend Development
 ```bash
 cd frontend
-npm install                   # Install dependencies
+npm install                   # Install dependencies (supports both npm and pnpm)
 npm run dev                   # Start Next.js development server with Turbopack
 npm run build                 # Build for production with Turbopack
 npm start                     # Run production build
@@ -96,6 +96,13 @@ AUTO_SOLVE_COOLDOWN_HOURS=12
 ```
 
 Note: The .env.example file shows MONGODB_URI, but the actual Prisma schema uses SQLite. Ensure DATABASE_URL points to SQLite when using the current schema.
+
+### Root Level Scripts
+```bash
+# Development setup scripts (run from project root)
+./scripts/dev-setup.sh          # Set up development environment
+./scripts/production-deploy.sh  # Production deployment script
+```
 
 ### Frontend (.env.local)
 ```

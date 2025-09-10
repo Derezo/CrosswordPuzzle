@@ -24,11 +24,42 @@ const limiter = rateLimit({
 
 // Middleware
 app.use(helmet());
+// Enhanced CORS configuration for Docker and local development
+const getCorsOrigins = () => {
+  if (process.env.NODE_ENV === 'production') {
+    return 'https://your-frontend-domain.com';
+  }
+  
+  // Development origins - include both localhost and Docker network IPs
+  const origins = [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://127.0.0.1:3000',
+    'http://0.0.0.0:3000'
+  ];
+  
+  // Add Docker network origins if running in Docker
+  if (process.env.DOCKER_ENV || process.env.BUILD_TARGET === 'dev') {
+    origins.push(
+      'http://crossword-frontend:3000',
+      'http://frontend:3000'
+    );
+  }
+  
+  // Allow all origins in development if ENABLE_CORS_ALL is set
+  if (process.env.ENABLE_CORS_ALL === 'true') {
+    return true;
+  }
+  
+  return origins;
+};
+
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? 'https://your-frontend-domain.com' 
-    : ['http://localhost:3000', 'http://localhost:3001'],
-  credentials: true
+  origin: getCorsOrigins(),
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200
 }));
 app.use(limiter);
 app.use(express.json({ limit: '10mb' }));

@@ -12,8 +12,10 @@ COPY package*.json pnpm-lock.yaml ./
 
 # Development stage
 FROM base AS dev
-RUN pnpm install
+# Copy source code first (except node_modules)
 COPY . .
+# Install dependencies
+RUN pnpm install
 EXPOSE 3000
 CMD ["pnpm", "run", "dev"]
 
@@ -61,8 +63,7 @@ RUN pnpm install --frozen-lockfile --production && \
     pnpm cache clean
 
 # Copy built application from build stage
-COPY --from=build --chown=nodejs:nodejs /app/.next/standalone ./
-COPY --from=build --chown=nodejs:nodejs /app/.next/static ./.next/static
+COPY --from=build --chown=nodejs:nodejs /app/.next ./.next
 COPY --from=build --chown=nodejs:nodejs /app/public ./public
 
 # Create necessary directories
@@ -73,10 +74,10 @@ USER nodejs
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:3000/api/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
+    CMD node -e "require('http').get('http://localhost:3000', (res) => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
 
 # Expose port
 EXPOSE 3000
 
 # Start the application
-CMD ["node", "server.js"]
+CMD ["pnpm", "start"]

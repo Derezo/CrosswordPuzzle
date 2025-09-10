@@ -23,8 +23,8 @@ services:
     volumes:
       - backend_data:/app/prisma
       - backend_logs:/app/logs
-      # Development bind mount (only for dev target)
-      - ${PWD}/backend:/app:delegated
+      # Development bind mount (only for dev target) 
+      - ./backend:/app:delegated
     networks:
       - crossword-network
     restart: unless-stopped
@@ -49,7 +49,7 @@ services:
     volumes:
       - frontend_cache:/app/.next/cache
       # Development bind mount (only for dev target)
-      - ${PWD}/frontend:/app:delegated
+      - ./frontend:/app:delegated
       - /app/node_modules
     networks:
       - crossword-network
@@ -57,7 +57,7 @@ services:
       - backend
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:3000 || exit 1"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (res) => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -74,7 +74,7 @@ services:
     networks:
       - crossword-network
     restart: unless-stopped
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-}
+    command: redis-server --appendonly yes --requirepass dev-redis-password
 
   # Nginx reverse proxy (for production)
   nginx:

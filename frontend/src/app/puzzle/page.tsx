@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Navigation } from "@/components/Navigation";
 import { CrosswordGrid, GridCellData } from "@/components/CrosswordGrid";
 import { CrosswordClues } from "@/components/CrosswordClues";
@@ -245,6 +245,7 @@ const CooldownErrorModal: React.FC<CooldownErrorModalProps> = ({
 export default function PuzzlePage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [puzzle, setPuzzle] = useState<DailyPuzzle | null>(null);
   const [progress, setProgress] = useState<UserProgress | null>(null);
@@ -284,6 +285,8 @@ export default function PuzzlePage() {
   }>>([]);
   const [feedbackClue, setFeedbackClue] = useState<CrosswordClue | null>(null);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [puzzleType, setPuzzleType] = useState<'daily' | 'category'>('daily');
+  const [currentPuzzleDate, setCurrentPuzzleDate] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -292,9 +295,22 @@ export default function PuzzlePage() {
     }
 
     if (user) {
-      loadTodaysPuzzle();
+      // Check for URL parameters to determine puzzle type
+      const dateParam = searchParams.get('date');
+      
+      if (dateParam) {
+        // Category puzzle or specific date puzzle
+        setCurrentPuzzleDate(dateParam);
+        setPuzzleType(dateParam.includes('-cat-') ? 'category' : 'daily');
+        loadSpecificPuzzle(dateParam);
+      } else {
+        // Default to today's daily puzzle
+        setCurrentPuzzleDate(null);
+        setPuzzleType('daily');
+        loadTodaysPuzzle();
+      }
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, searchParams]);
 
   // Timer logic - uses firstViewedAt from backend
   useEffect(() => {
@@ -445,6 +461,18 @@ export default function PuzzlePage() {
   const loadTodaysPuzzle = async () => {
     try {
       setLoading(true);
+      
+      // Clear previous puzzle state
+      setPuzzle(null);
+      setProgress(null);
+      setValidationResults({});
+      setCellValidation({});
+      setCurrentGridData([]);
+      setInitialGridData([]);
+      setAutoSolved(false);
+      setSolveTime(0);
+      setError(null);
+      
       const data = await puzzleAPI.getTodaysPuzzle();
       setPuzzle(data.puzzle);
       setProgress(data.progress);
@@ -581,6 +609,148 @@ export default function PuzzlePage() {
     }
   };
 
+  const loadSpecificPuzzle = async (puzzleDate: string) => {
+    try {
+      setLoading(true);
+      
+      // Clear previous puzzle state
+      setPuzzle(null);
+      setProgress(null);
+      setValidationResults({});
+      setCellValidation({});
+      setCurrentGridData([]);
+      setInitialGridData([]);
+      setAutoSolved(false);
+      setSolveTime(0);
+      setError(null);
+      
+      const data = await puzzleAPI.getSpecificPuzzle(puzzleDate);
+      setPuzzle(data.puzzle);
+      setProgress(data.progress);
+
+      // Check if puzzle was auto-solved (no solve time indicates auto-solve)
+      setAutoSolved(data.progress.isCompleted && !data.progress.solveTime);
+
+      // Initialize timer if puzzle is not completed
+      if (!data.progress.isCompleted) {
+        setSolveTime(0);
+      } else {
+        setSolveTime(data.progress.solveTime || 0);
+      }
+
+      // Use saved gridData if available, otherwise reconstruct if completed
+      if (data.progress.gridData) {
+        setInitialGridData(data.progress.gridData);
+        
+        const completedValidations: { [key: number]: boolean } = {};
+        data.progress.completedClues.forEach((clueNumber) => {
+          completedValidations[clueNumber] = true;
+        });
+        setValidationResults(completedValidations);
+
+        const savedCellValidation: { [cellKey: string]: boolean } = {};
+        for (let row = 0; row < data.progress.gridData.length; row++) {
+          for (let col = 0; col < data.progress.gridData[0]?.length || 0; col++) {
+            const cell = data.progress.gridData[row][col];
+            if (cell && cell.letter && !data.puzzle.grid[row][col].isBlocked) {
+              savedCellValidation[`${row},${col}`] = true;
+            }
+          }
+        }
+        setCellValidation(savedCellValidation);
+      } else if (data.progress.isCompleted && data.progress.answers) {
+        // Handle completed puzzles without saved grid data
+        const completedValidations: { [key: number]: boolean } = {};
+        data.progress.completedClues.forEach((clueNumber) => {
+          completedValidations[clueNumber] = true;
+        });
+        setValidationResults(completedValidations);
+
+        const allCellsCorrect: { [cellKey: string]: boolean } = {};
+        for (let row = 0; row < data.puzzle.grid.length; row++) {
+          for (let col = 0; col < data.puzzle.grid[0].length; col++) {
+            const cell = data.puzzle.grid[row][col];
+            if (!cell.isBlocked) {
+              allCellsCorrect[`${row},${col}`] = true;
+            }
+          }
+        }
+        setCellValidation(allCellsCorrect);
+
+        // Reconstruct the grid data with solved answers (same logic as loadTodaysPuzzle)
+        const reconstructedGrid: GridCellData[][] = data.puzzle.grid.map(
+          (row, rowIndex) =>
+            row.map((cell, colIndex) => {
+              if (cell.isBlocked) {
+                return {
+                  letter: "",
+                  acrossLetter: undefined,
+                  downLetter: undefined,
+                  lastActiveDirection: undefined,
+                };
+              }
+
+              const cluesAtPosition = data.puzzle.clues.filter((clue) => {
+                if (clue.direction === "across") {
+                  return (
+                    rowIndex === clue.startRow &&
+                    colIndex >= clue.startCol &&
+                    colIndex < clue.startCol + clue.length
+                  );
+                } else {
+                  return (
+                    colIndex === clue.startCol &&
+                    rowIndex >= clue.startRow &&
+                    rowIndex < clue.startRow + clue.length
+                  );
+                }
+              });
+
+              let acrossLetter = undefined;
+              let downLetter = undefined;
+              let displayLetter = "";
+              let lastActiveDirection: "across" | "down" | undefined = undefined;
+
+              cluesAtPosition.forEach((clue) => {
+                const answer = data.progress.answers[clue.number.toString()];
+                if (answer) {
+                  const positionInClue =
+                    clue.direction === "across"
+                      ? colIndex - clue.startCol
+                      : rowIndex - clue.startRow;
+
+                  if (positionInClue >= 0 && positionInClue < answer.length) {
+                    const letter = answer[positionInClue].toUpperCase();
+                    if (clue.direction === "across") {
+                      acrossLetter = letter;
+                    } else {
+                      downLetter = letter;
+                    }
+                    displayLetter = letter;
+                    lastActiveDirection = clue.direction;
+                  }
+                }
+              });
+
+              return {
+                letter: displayLetter,
+                acrossLetter,
+                downLetter,
+                lastActiveDirection,
+              };
+            }),
+        );
+
+        setInitialGridData(reconstructedGrid);
+      }
+    } catch (error) {
+      console.error("Error loading specific puzzle:", error);
+      setError("Failed to load the requested puzzle");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Legacy function - no longer used in pure grid-based system
   // Grid updates happen internally in CrosswordGrid component
 
@@ -603,7 +773,7 @@ export default function PuzzlePage() {
       // PURE GRID-BASED VALIDATION
       const payload = {
         gridData: currentGridData,
-        puzzleDate: puzzle.date,
+        puzzleDate: currentPuzzleDate || puzzle.date,
       };
       console.log("Sending to validateGridAnswers:", payload);
 
@@ -691,7 +861,7 @@ export default function PuzzlePage() {
 
     try {
       setAutoSolving(true);
-      const result = await puzzleAPI.autoSolve(puzzle.date);
+      const result = await puzzleAPI.autoSolve(currentPuzzleDate || puzzle.date);
 
       setAutoSolved(true);
 
@@ -803,16 +973,25 @@ export default function PuzzlePage() {
               <div className="text-4xl cosmic-float">🌌</div>
               <div>
                 <h1 className="text-2xl md:text-3xl font-bold nebula-text">
-                  Today's Cosmic Crossword
+                  {puzzleType === 'category' ? 'Category Puzzle' : "Today's Cosmic Crossword"}
                 </h1>
                 <div className="flex items-center gap-2 text-purple-200 text-sm">
-                  <span>📅</span>
+                  <span>{puzzleType === 'category' ? '🎯' : '📅'}</span>
                   <p>
-                    {new Date(puzzle.date).toLocaleDateString("en-US", {
-                      weekday: "short",
-                      month: "short",
-                      day: "numeric",
-                    })}
+                    {puzzleType === 'category' && currentPuzzleDate ? (
+                      // Extract category name from date format
+                      (() => {
+                        const categoryMatch = currentPuzzleDate.match(/-cat-(.+)$/);
+                        const categoryName = categoryMatch ? categoryMatch[1].replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Unknown';
+                        return `${categoryName} Theme`;
+                      })()
+                    ) : (
+                      new Date(puzzle.date).toLocaleDateString("en-US", {
+                        weekday: "short",
+                        month: "short",
+                        day: "numeric",
+                      })
+                    )}
                   </p>
                 </div>
               </div>
@@ -1072,7 +1251,7 @@ export default function PuzzlePage() {
           onSubmit={async (feedback) => {
             try {
               await suggestionAPI.submitSuggestion({
-                puzzleDate: puzzle!.date,
+                puzzleDate: currentPuzzleDate || puzzle!.date,
                 clueNumber: feedback.clueNumber,
                 originalClue: feedback.originalClue,
                 originalAnswer: feedback.originalAnswer,

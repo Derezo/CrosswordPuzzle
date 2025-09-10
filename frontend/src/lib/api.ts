@@ -104,6 +104,35 @@ export const puzzleAPI = {
     const response = await api.post('/puzzle/auto-solve', { puzzleDate });
     return response.data;
   },
+
+  generateCategoryPuzzle: async (categoryName: string): Promise<{
+    success: boolean;
+    message: string;
+    puzzleDate: string;
+    wordCount: number;
+  }> => {
+    const response = await api.post('/puzzle/generate-category', { categoryName });
+    return response.data;
+  },
+
+  getRecentCategoryPuzzles: async (): Promise<{
+    recentPuzzles: Array<{
+      puzzleDate: string;
+      categoryName: string;
+      wordCount: number;
+    }>;
+  }> => {
+    const response = await api.get('/puzzle/recent-category');
+    return response.data;
+  },
+
+  getSpecificPuzzle: async (date: string): Promise<{
+    puzzle: DailyPuzzle;
+    progress: UserProgress;
+  }> => {
+    const response = await api.get(`/puzzle/specific/${date}`);
+    return response.data;
+  },
 };
 
 // Achievement API
