@@ -26,7 +26,9 @@ const ThemeGlobeWrapper = dynamic(
 export default function ThemeGlobePage() {
   const [selectedCategory, setSelectedCategory] =
     useState<PuzzleCategory | null>(null);
-  const [selectedCategories, setSelectedCategories] = useState<PuzzleCategory[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<
+    PuzzleCategory[]
+  >([]);
   const [showList, setShowList] = useState(false);
   const [globeKey, setGlobeKey] = useState(0); // Key to force re-mount
   const [generatingPuzzle, setGeneratingPuzzle] = useState(false);
@@ -40,16 +42,21 @@ export default function ThemeGlobePage() {
 
   const handleAddCategory = (category: PuzzleCategory) => {
     if (selectedCategories.length >= 5) return;
-    if (selectedCategories.some(cat => cat.id === category.id)) return;
-    
-    setSelectedCategories(prev => [...prev, category]);
+    if (selectedCategories.some((cat) => cat.id === category.id)) return;
+
+    setSelectedCategories((prev) => [...prev, category]);
   };
 
   const handleRemoveCategory = (categoryId: string) => {
-    setSelectedCategories(prev => prev.filter(cat => cat.id !== categoryId));
+    setSelectedCategories((prev) =>
+      prev.filter((cat) => cat.id !== categoryId),
+    );
   };
 
-  const totalWordCount = selectedCategories.reduce((sum, cat) => sum + cat.wordCount, 0);
+  const totalWordCount = selectedCategories.reduce(
+    (sum, cat) => sum + cat.wordCount,
+    0,
+  );
   const canGenerate = totalWordCount >= 300 && selectedCategories.length > 0;
 
   const handleCloseErrorDialog = () => {
@@ -79,98 +86,103 @@ export default function ThemeGlobePage() {
         );
       }
 
-      // Use Server-Sent Events to stream progress
-      // For now, we'll use the first selected category (TODO: update backend to handle multiple categories)
-      const categoryName = selectedCategories[0]?.name || 'Mixed';
-      // EventSource doesn't support custom headers, so we'll pass the token as a query param
-      const streamUrl = `${process.env.NEXT_PUBLIC_API_URL}/puzzle/generate-category-stream/${encodeURIComponent(categoryName)}?token=${encodeURIComponent(token)}`;
-      console.log("🔗 Connecting to SSE:", streamUrl);
-      console.log("🔗 API URL:", process.env.NEXT_PUBLIC_API_URL);
-      console.log("🔗 Selected categories:", selectedCategories.map(c => c.name));
-      console.log("🔗 Primary category:", categoryName);
+      // Use multi-category endpoint with POST request
+      const categoryNames = selectedCategories.map((c) => c.name);
+      console.log("🔗 Selected categories:", categoryNames);
 
-      const eventSource = new EventSource(streamUrl);
+      // Since EventSource doesn't support POST, we'll use fetch with streaming
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/puzzle/generate-multi-category-stream`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            categoryNames,
+            token,
+          }),
+        },
+      );
 
-      eventSource.onopen = (event) => {
-        console.log("✅ SSE connection opened:", event);
-      };
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-      eventSource.onmessage = (event) => {
-        console.log("📦 SSE message received:", event.data);
-        try {
-          const data = JSON.parse(event.data);
-          console.log("📋 Parsed data:", data);
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error("Response body is not readable");
+      }
 
-          if (data.error) {
-            console.error("❌ SSE Error received:", data);
-            setGenerationError(
-              data.message ||
-                "The cosmic forces have defeated us... Please try again.",
-            );
-            setGenerationStage("");
-            setGenerationProgress(0);
-            eventSource.close();
-            return;
-          }
+      const decoder = new TextDecoder();
+      let buffer = "";
 
-          if (data.success) {
-            // Final success - redirect to puzzle
-            console.log("🎉 Success received:", data);
-            setGenerationStage("Launching your cosmic crossword...");
-            setGenerationProgress(100);
-            eventSource.close();
+      // Process streaming response
+      while (true) {
+        const { done, value } = await reader.read();
 
-            setTimeout(() => {
-              window.location.href = `/puzzle?date=${data.puzzleDate}`;
-            }, 1000);
-            return;
-          }
-
-          // Progress update
-          if (data.stage && data.progress !== undefined) {
-            console.log(
-              `📈 Progress update: ${data.progress}% - ${data.message}`,
-            );
-            setGenerationStage(data.message || `Working on ${data.stage}...`);
-            setGenerationProgress(data.progress);
-          } else {
-            console.log("⚠️ Received data without expected fields:", data);
-          }
-        } catch (parseError) {
-          console.error(
-            "💥 Error parsing SSE data:",
-            parseError,
-            "Raw data:",
-            event.data,
-          );
-        }
-      };
-
-      eventSource.onerror = (error) => {
-        console.error("🚨 SSE Error:", error);
-        console.log("🔄 SSE ReadyState:", eventSource.readyState);
-        console.log("🔄 EventSource URL:", streamUrl);
-
-        // Check if this is an immediate connection failure
-        if (eventSource.readyState === EventSource.CLOSED) {
-          console.error(
-            "❌ EventSource connection failed immediately - likely authentication or CORS issue",
-          );
-        } else if (eventSource.readyState === EventSource.CONNECTING) {
-          console.error("❌ EventSource connection is stuck connecting");
+        if (done) {
+          console.log("✅ Stream complete");
+          break;
         }
 
-        eventSource.close();
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
 
-        // Fallback to regular API call
-        console.log("🔄 Falling back to regular API");
-        handleGeneratePuzzleFallback();
-      };
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const jsonStr = line.slice(6);
+            if (jsonStr.trim()) {
+              try {
+                const data = JSON.parse(jsonStr);
+                console.log("📋 Parsed data:", data);
 
-      // Clean up on unmount
-      setTimeout(() => {
-        eventSource.close();
-      }, 300000); // 5 minute timeout
+                if (data.error) {
+                  console.error("❌ Error received:", data);
+                  setGenerationError(
+                    data.message ||
+                      "The cosmic forces have defeated us... Please try again.",
+                  );
+                  setGenerationStage("");
+                  setGenerationProgress(0);
+                  return;
+                }
+
+                if (data.success) {
+                  // Final success - redirect to puzzle
+                  console.log("🎉 Success received:", data);
+                  setGenerationStage("Launching your cosmic crossword...");
+                  setGenerationProgress(100);
+
+                  setTimeout(() => {
+                    window.location.href = `/puzzle?date=${data.puzzleDate}`;
+                  }, 1000);
+                  return;
+                }
+
+                // Progress update
+                if (data.stage && data.progress !== undefined) {
+                  console.log(
+                    `📈 Progress update: ${data.progress}% - ${data.message}`,
+                  );
+                  setGenerationStage(
+                    data.message || `Working on ${data.stage}...`,
+                  );
+                  setGenerationProgress(data.progress);
+                }
+              } catch (parseError) {
+                console.error(
+                  "💥 Error parsing data:",
+                  parseError,
+                  "Line:",
+                  line,
+                );
+              }
+            }
+          }
+        }
+      }
     } catch (error: any) {
       console.error("Error setting up streaming:", error);
       // Fallback to regular generation
@@ -182,8 +194,9 @@ export default function ThemeGlobePage() {
     try {
       setGenerationStage("Initializing standard generation...");
 
-      // Use the regular API as fallback (for now, use first category)
-      const categoryName = selectedCategories[0]?.name || 'Mixed';
+      // For fallback, we'll use the first category only
+      // (The multi-category endpoint requires streaming)
+      const categoryName = selectedCategories[0]?.name || "Mixed";
       const data = await puzzleAPI.generateCategoryPuzzle(categoryName);
 
       if (data.success) {
@@ -341,10 +354,17 @@ export default function ThemeGlobePage() {
                 <div className="pt-3 border-t border-purple-500/30 space-y-3">
                   <button
                     onClick={() => handleAddCategory(selectedCategory)}
-                    disabled={selectedCategories.length >= 5 || selectedCategories.some(cat => cat.id === selectedCategory.id)}
+                    disabled={
+                      selectedCategories.length >= 5 ||
+                      selectedCategories.some(
+                        (cat) => cat.id === selectedCategory.id,
+                      )
+                    }
                     className="w-full py-2 px-4 rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium transition-all duration-200 flex items-center justify-center gap-2"
                   >
-                    {selectedCategories.some(cat => cat.id === selectedCategory.id) ? (
+                    {selectedCategories.some(
+                      (cat) => cat.id === selectedCategory.id,
+                    ) ? (
                       <>✅ Already Selected</>
                     ) : selectedCategories.length >= 5 ? (
                       <>🚫 Max 5 Categories</>
@@ -353,7 +373,8 @@ export default function ThemeGlobePage() {
                     )}
                   </button>
                   <p className="text-xs text-gray-400">
-                    Click to add this category to your selection for multi-category puzzle generation.
+                    Click to add this category to your selection for
+                    multi-category puzzle generation.
                   </p>
                 </div>
               </div>
@@ -402,13 +423,15 @@ export default function ThemeGlobePage() {
               <div className="pt-3 border-t border-purple-500/30">
                 <div className="flex items-center justify-between text-sm mb-2">
                   <span className="text-gray-300">Total Words:</span>
-                  <span className={`font-bold ${totalWordCount >= 300 ? 'text-green-400' : 'text-yellow-400'}`}>
+                  <span
+                    className={`font-bold ${totalWordCount >= 300 ? "text-green-400" : "text-yellow-400"}`}
+                  >
                     {totalWordCount.toLocaleString()}
                   </span>
                 </div>
-                {totalWordCount < 300 && (
+                {totalWordCount < 100 && (
                   <div className="text-xs text-yellow-400 mb-2">
-                    ⚠️ Need at least 300 words to generate puzzle
+                    ⚠️ Need at least 100 words to generate puzzle
                   </div>
                 )}
               </div>
@@ -424,11 +447,11 @@ export default function ThemeGlobePage() {
               disabled={!canGenerate || generatingPuzzle}
               className={`py-3 px-6 rounded-xl font-bold text-white transition-all duration-200 flex items-center gap-3 shadow-2xl ${
                 canGenerate && !generatingPuzzle
-                  ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 hover:scale-105 transform animate-pulse'
-                  : 'bg-gray-600 cursor-not-allowed'
+                  ? "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 hover:scale-105 transform animate-pulse"
+                  : "bg-gray-600 cursor-not-allowed"
               }`}
-              style={{ 
-                opacity: canGenerate && !generatingPuzzle ? 1 : 0.2
+              style={{
+                opacity: canGenerate && !generatingPuzzle ? 1 : 0.2,
               }}
             >
               {generatingPuzzle ? (
@@ -461,14 +484,13 @@ export default function ThemeGlobePage() {
                       Oops! Cosmic Malfunction
                     </h2>
                     <div className="text-purple-300 text-lg font-medium">
-                      {selectedCategories.length === 1 
+                      {selectedCategories.length === 1
                         ? `${selectedCategories[0].name} Theme`
-                        : `Multi-Category Theme (${selectedCategories.length})`
-                      }
+                        : `Multi-Category Theme (${selectedCategories.length})`}
                     </div>
                     {selectedCategories.length > 1 && (
                       <div className="text-sm text-gray-400 mt-1">
-                        {selectedCategories.map(c => c.name).join(', ')}
+                        {selectedCategories.map((c) => c.name).join(", ")}
                       </div>
                     )}
                   </div>
@@ -503,14 +525,13 @@ export default function ThemeGlobePage() {
                       Generating Category Puzzle
                     </h2>
                     <div className="text-purple-300 text-lg font-medium">
-                      {selectedCategories.length === 1 
+                      {selectedCategories.length === 1
                         ? `${selectedCategories[0].name} Theme`
-                        : `Multi-Category Theme (${selectedCategories.length})`
-                      }
+                        : `Multi-Category Theme (${selectedCategories.length})`}
                     </div>
                     {selectedCategories.length > 1 && (
                       <div className="text-sm text-gray-400 mt-1">
-                        {selectedCategories.map(c => c.name).join(', ')}
+                        {selectedCategories.map((c) => c.name).join(", ")}
                       </div>
                     )}
                   </div>

@@ -6,6 +6,11 @@ import achievementService from '../services/achievement/achievementService';
 import { validateGrid, createSolutionGrid } from '../services/puzzle/gridValidator';
 import { generateStrictPuzzle } from '../services/puzzle/strictCrosswordGenerator';
 import { User } from '@prisma/client';
+import * as jwt from 'jsonwebtoken';
+
+interface JwtPayload {
+  userId: string;
+}
 
 const router = Router();
 
@@ -475,6 +480,174 @@ router.post('/auto-solve', authenticateToken, async (req: AuthenticatedRequest, 
 
   } catch (error) {
     console.error('Error auto-solving puzzle:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Generate multi-category puzzle with streaming progress
+router.post('/generate-multi-category-stream', async (req, res) => {
+  console.log(`🚀 MULTI-CATEGORY STREAMING ENDPOINT CALLED!`);
+  try {
+    const { categoryNames, token } = req.body;
+    console.log(`🔐 Token received: ${token ? 'YES' : 'NO'}`);
+    console.log(`📚 Categories: ${categoryNames?.join(', ')}`);
+
+    // Manual token authentication for SSE
+    if (!token || typeof token !== 'string') {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    let user: User | null = null;
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as JwtPayload;
+      user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+      if (!user) {
+        return res.status(401).json({ error: 'User not found' });
+      }
+    } catch (err) {
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+
+    if (!categoryNames || !Array.isArray(categoryNames) || categoryNames.length === 0) {
+      return res.status(400).json({ error: 'Category names array is required' });
+    }
+
+    // Set up Server-Sent Events
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'Access-Control-Allow-Origin': '*',
+    });
+
+    const sendUpdate = (stage: string, progress: number, attempt?: number) => {
+      const messages: Record<string, string> = {
+        'initialization': `🚀 Combining ${categoryNames.length} categories into one cosmic puzzle...`,
+        'loading_dictionary': `📚 Loading words from ${categoryNames.join(', ')}...`,
+        'filtering_category': `🔍 Merging ${categoryNames.length} category vocabularies...`,
+        'starting_generation': '🧩 Starting multi-category puzzle generation...',
+        'attempt_10': '🎯 Placing words from different categories...',
+        'attempt_50': '🤔 Balancing category representation...',
+        'attempt_100': '😅 This multi-category mix is challenging...',
+        'attempt_200': '🙄 The categories are being stubborn about mingling...',
+        'word_reduction': `📉 Adjusting word targets (attempt ${attempt || 0})...`,
+        'fallback_start': '🔄 Switching to smaller grid for better fit...',
+        'building_grid': '🏗️ Constructing the multi-category grid...',
+        'finalizing': '✨ Adding finishing touches...',
+        'saving': '💾 Saving your multi-category masterpiece...',
+      };
+
+      const message = messages[stage] || `Processing ${stage}...`;
+      res.write(`data: ${JSON.stringify({ stage, progress, message, attempt })}\n\n`);
+    };
+
+    console.log(`🎯 Generating multi-category puzzle for: ${categoryNames.join(', ')}`);
+    sendUpdate('initialization', 5);
+
+    // Generate a unique identifier for this multi-category puzzle
+    const today = new Date().toISOString().split('T')[0];
+    const categoryId = categoryNames.map(name => name.toLowerCase().replace(/\s+/g, '-')).sort().join('-');
+    const categoryDate = `${today}-multi-${categoryId}`;
+    
+    try {
+      sendUpdate('loading_dictionary', 10);
+      sendUpdate('filtering_category', 20);
+      sendUpdate('starting_generation', 30);
+
+      // Import and create generator with multiple categories
+      const StrictCrosswordModule = await import('../services/puzzle/strictCrosswordGenerator');
+      const generator = new StrictCrosswordModule.StrictCrosswordGenerator(categoryDate, categoryNames);
+      
+      console.log(`📡 SSE: Starting multi-category generation`);
+
+      // Progress tracking
+      let lastProgress = 30;
+      const progressCallback = async (stage: string, attempt: number, targetWords: number, phase: 'normal' | 'fallback') => {
+        let progress = lastProgress;
+        
+        if (phase === 'normal') {
+          if (attempt <= 50) {
+            progress = 30 + (attempt / 50) * 20;
+            if (attempt >= 10) sendUpdate('attempt_10', progress, attempt);
+          } else if (attempt <= 100) {
+            progress = 50 + ((attempt - 50) / 50) * 15;
+            if (attempt === 51) sendUpdate('attempt_50', progress, attempt);
+          } else if (attempt <= 200) {
+            progress = 65 + ((attempt - 100) / 100) * 10;
+            if (attempt === 101) sendUpdate('attempt_100', progress, attempt);
+          } else {
+            progress = 75 + Math.min(15, (attempt - 200) / 20);
+            if (attempt === 201) sendUpdate('attempt_200', progress, attempt);
+          }
+        } else {
+          progress = 80 + Math.min(15, attempt / 10);
+          if (attempt === 1) sendUpdate('fallback_start', progress, attempt);
+        }
+        
+        if (stage === 'word_reduction') {
+          sendUpdate('word_reduction', progress, attempt);
+        }
+        
+        lastProgress = Math.min(95, progress);
+      };
+
+      // Generate the puzzle with progress tracking
+      const generatedPuzzle = await generator.generateWithCallbackAsync(progressCallback);
+      
+      sendUpdate('finalizing', 95);
+      sendUpdate('saving', 96);
+      
+      // Create puzzle date with multi-category identifier
+      const puzzleDate = new Date().toISOString().split('T')[0] + `-multi-${categoryId}`;
+      
+      // Check for existing puzzle
+      const existingPuzzle = await prisma.dailyPuzzle.findUnique({ 
+        where: { date: puzzleDate } 
+      });
+
+      if (existingPuzzle) {
+        // Delete the old puzzle to replace it
+        await prisma.dailyPuzzle.delete({
+          where: { date: puzzleDate }
+        });
+      }
+
+      // Store the new multi-category puzzle
+      await prisma.dailyPuzzle.create({
+        data: {
+          date: puzzleDate,
+          gridData: JSON.stringify(generatedPuzzle.grid),
+          cluesData: JSON.stringify(generatedPuzzle.clues),
+          rows: generatedPuzzle.size.rows,
+          cols: generatedPuzzle.size.cols,
+          createdAt: new Date()
+        }
+      });
+
+      sendUpdate('complete', 100);
+      
+      res.write(`data: ${JSON.stringify({ 
+        success: true, 
+        message: `Multi-category puzzle generated with ${categoryNames.length} categories!`,
+        puzzleDate,
+        wordCount: generatedPuzzle.clues.length,
+        categories: categoryNames
+      })}\n\n`);
+
+      console.log(`✅ Multi-category puzzle generated successfully`);
+
+    } catch (generateError) {
+      console.error('Error generating multi-category puzzle:', generateError);
+      res.write(`data: ${JSON.stringify({ 
+        error: true, 
+        message: 'Failed to generate multi-category puzzle. The categories might be too restrictive.' 
+      })}\n\n`);
+    } finally {
+      res.end();
+    }
+
+  } catch (error) {
+    console.error('Error in multi-category stream endpoint:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

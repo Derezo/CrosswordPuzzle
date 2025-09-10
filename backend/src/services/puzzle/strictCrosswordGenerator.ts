@@ -47,9 +47,17 @@ const MIN_WORD_LENGTH = 3;
 const MAX_WORD_LENGTH = 15;
 const TARGET_BLACK_PERCENTAGE = 15; // Aim for ~15% black squares
 
-// Fallback grid settings
-const FALLBACK_GRID_SIZE = 10;
-const FALLBACK_MAX_WORD_LENGTH = 10;
+// Adaptive strategy configuration
+const ADAPTIVE_STRATEGIES = [
+  { gridSize: 21, maxWordLength: 15, targetWords: 65, minWords: 45 },
+  { gridSize: 21, maxWordLength: 15, targetWords: 35, minWords: 35 },
+  { gridSize: 15, maxWordLength: 13, targetWords: 30, minWords: 22 },
+  { gridSize: 15, maxWordLength: 12, targetWords: 24, minWords: 20 },
+  { gridSize: 10, maxWordLength: 10, targetWords: 20, minWords: 13 },
+  { gridSize: 10, maxWordLength: 8, targetWords: 14, minWords: 10 },
+  { gridSize: 9, maxWordLength: 7, targetWords: 12, minWords: 8 },
+  { gridSize: 8, maxWordLength: 6, targetWords: 9, minWords: 5 },
+];
 
 export class StrictCrosswordGenerator {
   private dictionary: DictionaryEntry[] = [];
@@ -59,11 +67,11 @@ export class StrictCrosswordGenerator {
   private placedWords: WordPlacement[] = [];
   private usedWords: Set<string> = new Set();
   private rng: () => number;
-  private categoryFilter: string | null = null;
+  private categoryFilters: string[] = [];
   private currentGridSize: number = GRID_SIZE;
   private currentMaxWordLength: number = MAX_WORD_LENGTH;
 
-  constructor(seed: string, categoryFilter?: string) {
+  constructor(seed: string, categoryFilter?: string | string[]) {
     const hash = crypto.createHash("sha256").update(seed).digest();
     let seedInt = hash.readUInt32BE(0);
     this.rng = () => {
@@ -71,7 +79,14 @@ export class StrictCrosswordGenerator {
       return seedInt / 0x7fffffff;
     };
 
-    this.categoryFilter = categoryFilter || null;
+    // Handle both single category and multiple categories
+    if (categoryFilter) {
+      this.categoryFilters = Array.isArray(categoryFilter)
+        ? categoryFilter
+        : [categoryFilter];
+    } else {
+      this.categoryFilters = [];
+    }
     this.loadDictionary();
   }
 
@@ -93,15 +108,19 @@ export class StrictCrosswordGenerator {
         const word = record.word?.toUpperCase();
         let matchesCategory = true;
 
-        // If category filter is provided, check if word belongs to that category
-        if (this.categoryFilter && record.categories) {
+        // If category filters are provided, check if word belongs to any of them
+        if (this.categoryFilters.length > 0 && record.categories) {
           const categories = record.categories
             .toLowerCase()
             .split(",")
             .map((cat: string) => cat.trim());
-          matchesCategory = categories.includes(
-            this.categoryFilter.toLowerCase(),
+          // Word should match at least one of the selected categories
+          matchesCategory = this.categoryFilters.some((filter) =>
+            categories.includes(filter.toLowerCase()),
           );
+        } else if (this.categoryFilters.length > 0) {
+          // If we have filters but word has no categories, exclude it
+          matchesCategory = false;
         }
 
         return (
@@ -156,7 +175,7 @@ export class StrictCrosswordGenerator {
     }
 
     console.log(
-      `📚 Loaded ${this.dictionary.length} words${this.categoryFilter ? ` for category: ${this.categoryFilter}` : ""}`,
+      `📚 Loaded ${this.dictionary.length} words${this.categoryFilters.length > 0 ? ` for categories: ${this.categoryFilters.join(", ")}` : ""}`,
     );
   }
 
@@ -471,7 +490,18 @@ export class StrictCrosswordGenerator {
     return false;
   }
 
-  private buildPuzzle(targetWords: number = 35): boolean {
+  private buildPuzzleAdaptive(
+    targetWords: number,
+    maxConsecutiveFailures: number = 30,
+  ): boolean {
+    // More lenient failure threshold for adaptive strategy
+    return this.buildPuzzle(targetWords, maxConsecutiveFailures);
+  }
+
+  private buildPuzzle(
+    targetWords: number = 45,
+    maxConsecutiveFailures: number = 175,
+  ): boolean {
     // Start with a seed word in the center
     const seedWords =
       this.wordsByLength.get(7) ||
@@ -492,7 +522,6 @@ export class StrictCrosswordGenerator {
 
     // Iteratively add crossing words
     let consecutiveFailures = 0;
-    const maxConsecutiveFailures = 175;
 
     while (
       this.placedWords.length < targetWords &&
@@ -815,145 +844,108 @@ export class StrictCrosswordGenerator {
       phase: "normal" | "fallback",
     ) => void,
   ): GeneratedPuzzle {
-    const maxTotalAttempts = 500;
-    let targetWords = 35; // Start with 35 words
-    const minWords = 5; // Minimum word count
+    const maxAttemptsPerStrategy = 100;
+    const maxWordReductionAttempts = 50;
+    let strategyIndex = 0;
+    let totalAttempts = 0;
 
-    // First phase: Normal grid size (15x15)
-    console.log(
-      `🎯 Starting puzzle generation with ${targetWords} target words on ${this.currentGridSize}x${this.currentGridSize} grid`,
-    );
+    // Try each strategy in sequence
+    while (strategyIndex < ADAPTIVE_STRATEGIES.length) {
+      const strategy = ADAPTIVE_STRATEGIES[strategyIndex];
+      this.currentGridSize = strategy.gridSize;
+      this.currentMaxWordLength = strategy.maxWordLength;
+      let targetWords = strategy.targetWords;
+      const minWords = strategy.minWords;
 
-    for (let attempt = 0; attempt < maxTotalAttempts; attempt++) {
-      // Progress callback for normal phase
-      if (progressCallback) {
-        progressCallback("generation", attempt, targetWords, "normal");
-      }
+      console.log(
+        `🎯 Strategy ${strategyIndex + 1}/${ADAPTIVE_STRATEGIES.length}: ${this.currentGridSize}x${this.currentGridSize} grid, target ${targetWords} words`,
+      );
 
-      // Reduce target word count every 30 attempts
-      if (attempt > 0 && attempt % 30 === 0) {
-        if (targetWords > minWords) {
-          targetWords = Math.max(minWords, targetWords - 5);
+      // Reload dictionary with new word length constraints
+      this.loadDictionary();
 
-          console.log(
-            `📉 Reducing target word count to ${targetWords} after ${attempt} attempts`,
-          );
-          if (progressCallback) {
-            progressCallback("word_reduction", attempt, targetWords, "normal");
-          }
-        }
-      }
-
-      this.initializeGrid();
-
-      if (this.buildPuzzle(targetWords)) {
-        this.finalizeBlackSquares();
-
-        if (this.validatePuzzle()) {
-          this.assignNumbers();
-          const clues = this.generateClues();
-
-          if (clues.length >= targetWords / 2) {
-            const acrossCount = clues.filter(
-              (c) => c.direction === "across",
-            ).length;
-            const downCount = clues.filter(
-              (c) => c.direction === "down",
-            ).length;
-
-            console.log(
-              `✅ Valid puzzle generated (attempt ${attempt + 1}): ${acrossCount} across, ${downCount} down, ${targetWords} target words on ${this.currentGridSize}x${this.currentGridSize} grid`,
-            );
-
-            return {
-              grid: this.grid,
-              clues,
-              size: { rows: this.currentGridSize, cols: this.currentGridSize },
-            };
-          }
-        }
-      }
-    }
-
-    // Second phase: Fallback to smaller grid (10x10) with max 10-char words
-    console.log(
-      `🔄 Failed with ${this.currentGridSize}x${this.currentGridSize} grid. Trying fallback: ${FALLBACK_GRID_SIZE}x${FALLBACK_GRID_SIZE} grid with max ${FALLBACK_MAX_WORD_LENGTH}-char words`,
-    );
-
-    if (progressCallback) {
-      progressCallback("fallback_start", 0, targetWords, "fallback");
-    }
-
-    this.currentGridSize = FALLBACK_GRID_SIZE;
-    this.currentMaxWordLength = FALLBACK_MAX_WORD_LENGTH;
-    targetWords = Math.max(20, minWords); // Reset to more reasonable target for smaller grid
-
-    // Rebuild dictionary with smaller word length constraint
-    this.loadDictionary();
-
-    for (let attempt = 0; attempt < maxTotalAttempts; attempt++) {
-      // Progress callback for fallback phase
-      if (progressCallback) {
-        progressCallback(
-          "fallback_generation",
-          attempt,
-          targetWords,
-          "fallback",
+      // Try with progressive word reduction
+      for (
+        let wordReduction = 0;
+        wordReduction <= maxWordReductionAttempts;
+        wordReduction += 10
+      ) {
+        const currentTargetWords = Math.max(
+          minWords,
+          targetWords - Math.floor(wordReduction / 10) * 3,
         );
-      }
 
-      // Reduce target word count every 30 attempts
-      if (attempt > 0 && attempt % 30 === 0) {
-        if (targetWords > minWords) {
-          targetWords -= 2;
-          console.log(
-            `📉 Reducing target word count to ${targetWords} after ${attempt} fallback attempts`,
-          );
+        for (let attempt = 0; attempt < maxAttemptsPerStrategy; attempt++) {
+          totalAttempts++;
+
+          // Progress callback
           if (progressCallback) {
+            const phase = strategyIndex < 3 ? "normal" : "fallback";
             progressCallback(
-              "word_reduction",
-              attempt,
-              targetWords,
-              "fallback",
+              "generation",
+              totalAttempts,
+              currentTargetWords,
+              phase,
             );
           }
-        }
-      }
 
-      this.initializeGrid();
-
-      if (this.buildPuzzle(targetWords)) {
-        this.finalizeBlackSquares();
-
-        if (this.validatePuzzle()) {
-          this.assignNumbers();
-          const clues = this.generateClues();
-
-          if (clues.length >= targetWords / 2) {
-            // Lower threshold for smaller grid
-            const acrossCount = clues.filter(
-              (c) => c.direction === "across",
-            ).length;
-            const downCount = clues.filter(
-              (c) => c.direction === "down",
-            ).length;
-
+          // Log progress periodically
+          if (attempt % 25 === 0 && attempt > 0) {
             console.log(
-              `✅ Valid fallback puzzle generated (attempt ${attempt + 1}): ${acrossCount} across, ${downCount} down, ${targetWords} target words on ${this.currentGridSize}x${this.currentGridSize} grid`,
+              `  Attempt ${attempt}/${maxAttemptsPerStrategy} with ${currentTargetWords} target words`,
             );
+          }
 
-            return {
-              grid: this.grid,
-              clues,
-              size: { rows: this.currentGridSize, cols: this.currentGridSize },
-            };
+          this.initializeGrid();
+
+          if (this.buildPuzzleAdaptive(currentTargetWords)) {
+            this.finalizeBlackSquares();
+
+            if (this.validatePuzzle()) {
+              this.assignNumbers();
+              const clues = this.generateClues();
+
+              // More lenient clue count requirement for smaller grids
+              const requiredClues = Math.max(
+                10,
+                Math.floor(currentTargetWords * 0.6),
+              );
+
+              if (clues.length >= requiredClues) {
+                const acrossCount = clues.filter(
+                  (c) => c.direction === "across",
+                ).length;
+                const downCount = clues.filter(
+                  (c) => c.direction === "down",
+                ).length;
+
+                console.log(
+                  `✅ Valid puzzle generated: ${acrossCount} across, ${downCount} down on ${this.currentGridSize}x${this.currentGridSize} grid (strategy ${strategyIndex + 1}, attempt ${totalAttempts})`,
+                );
+
+                return {
+                  grid: this.grid,
+                  clues,
+                  size: {
+                    rows: this.currentGridSize,
+                    cols: this.currentGridSize,
+                  },
+                };
+              }
+            }
           }
         }
       }
+
+      strategyIndex++;
     }
+
+    console.log(
+      `❌ Failed to generate puzzle after ${totalAttempts} total attempts across all strategies`,
+    );
 
     throw new Error(
-      "Failed to generate valid puzzle after maximum attempts with both normal and fallback strategies",
+      `Failed to generate valid puzzle after ${totalAttempts} attempts across ${ADAPTIVE_STRATEGIES.length} strategies`,
     );
   }
 
@@ -965,156 +957,128 @@ export class StrictCrosswordGenerator {
       phase: "normal" | "fallback",
     ) => Promise<void>,
   ): Promise<GeneratedPuzzle> {
-    const maxTotalAttempts = 500;
-    let targetWords = 35; // Start with 35 words
-    const minWords = 5; // Minimum word count
+    const maxAttemptsPerStrategy = 100;
+    const maxWordReductionAttempts = 50;
+    let strategyIndex = 0;
+    let totalAttempts = 0;
 
-    // First phase: Normal grid size (15x15)
-    console.log(
-      `🎯 Starting async puzzle generation with ${targetWords} target words on ${this.currentGridSize}x${this.currentGridSize} grid`,
-    );
+    // Try each strategy in sequence
+    while (strategyIndex < ADAPTIVE_STRATEGIES.length) {
+      const strategy = ADAPTIVE_STRATEGIES[strategyIndex];
+      this.currentGridSize = strategy.gridSize;
+      this.currentMaxWordLength = strategy.maxWordLength;
+      let targetWords = strategy.targetWords;
+      const minWords = strategy.minWords;
 
-    for (let attempt = 0; attempt < maxTotalAttempts; attempt++) {
-      // Yield every 5 attempts to prevent blocking
-      if (attempt % 5 === 0) {
-        await new Promise(resolve => setImmediate(resolve));
-      }
+      console.log(
+        `🎯 Async Strategy ${strategyIndex + 1}/${ADAPTIVE_STRATEGIES.length}: ${this.currentGridSize}x${this.currentGridSize} grid, target ${targetWords} words`,
+      );
 
-      // Progress callback for normal phase
-      if (progressCallback) {
-        await progressCallback("generation", attempt, targetWords, "normal");
-      }
+      // Reload dictionary with new word length constraints
+      this.loadDictionary();
 
-      // Reduce target word count every 30 attempts
-      if (attempt > 0 && attempt % 30 === 0) {
-        if (targetWords > minWords) {
-          targetWords = Math.max(minWords, targetWords - 5);
-
-          console.log(
-            `📉 Reducing target word count to ${targetWords} after ${attempt} attempts`,
-          );
-          if (progressCallback) {
-            await progressCallback("word_reduction", attempt, targetWords, "normal");
-          }
-        }
-      }
-
-      this.initializeGrid();
-
-      if (await this.buildPuzzleAsync(targetWords)) {
-        this.finalizeBlackSquares();
-
-        if (this.validatePuzzle()) {
-          this.assignNumbers();
-          const clues = this.generateClues();
-
-          if (clues.length >= targetWords / 2) {
-            const acrossCount = clues.filter(
-              (c) => c.direction === "across",
-            ).length;
-            const downCount = clues.filter(
-              (c) => c.direction === "down",
-            ).length;
-
-            console.log(
-              `✅ Valid async puzzle generated (attempt ${attempt + 1}): ${acrossCount} across, ${downCount} down, ${targetWords} target words on ${this.currentGridSize}x${this.currentGridSize} grid`,
-            );
-
-            return {
-              grid: this.grid,
-              clues,
-              size: { rows: this.currentGridSize, cols: this.currentGridSize },
-            };
-          }
-        }
-      }
-    }
-
-    // Second phase: Fallback to smaller grid (10x10) with max 10-char words
-    console.log(
-      `⚠️ Attempting async fallback strategy with smaller grid (${FALLBACK_GRID_SIZE}x${FALLBACK_GRID_SIZE})`,
-    );
-
-    if (progressCallback) {
-      await progressCallback("fallback_start", 0, targetWords, "fallback");
-    }
-
-    this.currentGridSize = FALLBACK_GRID_SIZE;
-    this.currentMaxWordLength = FALLBACK_MAX_WORD_LENGTH;
-    targetWords = Math.min(targetWords, 20); // Reduce target for smaller grid
-
-    for (let attempt = 0; attempt < maxTotalAttempts; attempt++) {
-      // Yield every 5 attempts to prevent blocking
-      if (attempt % 5 === 0) {
-        await new Promise(resolve => setImmediate(resolve));
-      }
-
-      // Progress callback for fallback phase
-      if (progressCallback) {
-        await progressCallback(
-          "fallback_generation",
-          attempt,
-          targetWords,
-          "fallback",
+      // Try with progressive word reduction
+      for (
+        let wordReduction = 0;
+        wordReduction <= maxWordReductionAttempts;
+        wordReduction += 10
+      ) {
+        const currentTargetWords = Math.max(
+          minWords,
+          targetWords - Math.floor(wordReduction / 10) * 3,
         );
-      }
 
-      // Reduce target word count every 30 attempts
-      if (attempt > 0 && attempt % 30 === 0) {
-        if (targetWords > minWords) {
-          targetWords = Math.max(minWords, targetWords - 3);
-          console.log(
-            `📉 Reducing fallback target word count to ${targetWords} after ${attempt} attempts`,
-          );
+        for (let attempt = 0; attempt < maxAttemptsPerStrategy; attempt++) {
+          totalAttempts++;
+
+          // Yield every 5 attempts to prevent blocking
+          if (totalAttempts % 5 === 0) {
+            await new Promise((resolve) => setImmediate(resolve));
+          }
+
+          // Progress callback
           if (progressCallback) {
+            const phase = strategyIndex < 3 ? "normal" : "fallback";
             await progressCallback(
-              "fallback_word_reduction",
-              attempt,
-              targetWords,
-              "fallback",
+              "generation",
+              totalAttempts,
+              currentTargetWords,
+              phase,
             );
           }
-        }
-      }
 
-      this.initializeGrid();
-
-      if (await this.buildPuzzleAsync(targetWords)) {
-        this.finalizeBlackSquares();
-
-        if (this.validatePuzzle()) {
-          this.assignNumbers();
-          const clues = this.generateClues();
-
-          if (clues.length >= targetWords / 2) {
-            // Lower threshold for smaller grid
-            const acrossCount = clues.filter(
-              (c) => c.direction === "across",
-            ).length;
-            const downCount = clues.filter(
-              (c) => c.direction === "down",
-            ).length;
-
+          // Log progress periodically
+          if (attempt % 25 === 0 && attempt > 0) {
             console.log(
-              `✅ Valid async fallback puzzle generated (attempt ${attempt + 1}): ${acrossCount} across, ${downCount} down, ${targetWords} target words on ${this.currentGridSize}x${this.currentGridSize} grid`,
+              `  Async Attempt ${attempt}/${maxAttemptsPerStrategy} with ${currentTargetWords} target words`,
             );
+          }
 
-            return {
-              grid: this.grid,
-              clues,
-              size: { rows: this.currentGridSize, cols: this.currentGridSize },
-            };
+          this.initializeGrid();
+
+          if (await this.buildPuzzleAdaptiveAsync(currentTargetWords)) {
+            this.finalizeBlackSquares();
+
+            if (this.validatePuzzle()) {
+              this.assignNumbers();
+              const clues = this.generateClues();
+
+              // More lenient clue count requirement for smaller grids
+              const requiredClues = Math.max(
+                10,
+                Math.floor(currentTargetWords * 0.6),
+              );
+
+              if (clues.length >= requiredClues) {
+                const acrossCount = clues.filter(
+                  (c) => c.direction === "across",
+                ).length;
+                const downCount = clues.filter(
+                  (c) => c.direction === "down",
+                ).length;
+
+                console.log(
+                  `✅ Valid async puzzle generated: ${acrossCount} across, ${downCount} down on ${this.currentGridSize}x${this.currentGridSize} grid (strategy ${strategyIndex + 1}, attempt ${totalAttempts})`,
+                );
+
+                return {
+                  grid: this.grid,
+                  clues,
+                  size: {
+                    rows: this.currentGridSize,
+                    cols: this.currentGridSize,
+                  },
+                };
+              }
+            }
           }
         }
       }
+
+      strategyIndex++;
     }
+
+    console.log(
+      `❌ Failed to generate async puzzle after ${totalAttempts} total attempts across all strategies`,
+    );
 
     throw new Error(
-      "Failed to generate valid puzzle after maximum attempts with both normal and fallback async strategies",
+      `Failed to generate valid async puzzle after ${totalAttempts} attempts across ${ADAPTIVE_STRATEGIES.length} strategies`,
     );
   }
 
-  private async buildPuzzleAsync(targetWords: number = 35): Promise<boolean> {
+  private async buildPuzzleAdaptiveAsync(
+    targetWords: number,
+    maxConsecutiveFailures: number = 30,
+  ): Promise<boolean> {
+    // More lenient failure threshold for adaptive strategy
+    return this.buildPuzzleAsync(targetWords, maxConsecutiveFailures);
+  }
+
+  private async buildPuzzleAsync(
+    targetWords: number = 35,
+    maxConsecutiveFailures: number = 175,
+  ): Promise<boolean> {
     // Start with a seed word in the center
     const seedWords =
       this.wordsByLength.get(7) ||
@@ -1135,7 +1099,6 @@ export class StrictCrosswordGenerator {
 
     // Iteratively add crossing words
     let consecutiveFailures = 0;
-    const maxConsecutiveFailures = 175;
 
     while (
       this.placedWords.length < targetWords &&
@@ -1143,14 +1106,15 @@ export class StrictCrosswordGenerator {
     ) {
       // Yield every 10 iterations to prevent blocking
       if (consecutiveFailures % 10 === 0) {
-        await new Promise(resolve => setImmediate(resolve));
+        await new Promise((resolve) => setImmediate(resolve));
       }
 
       const candidates = this.findBestCandidates();
       let placed = false;
 
       // Try each candidate (limit processing)
-      for (const entry of candidates.slice(0, 50)) { // Reduced from 200 to 50
+      for (const entry of candidates.slice(0, 50)) {
+        // Reduced from 200 to 50
         const placements = this.findAllPlacements(entry);
 
         // Try best placements (reduced from 5 to 3)
