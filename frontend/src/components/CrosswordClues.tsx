@@ -65,7 +65,7 @@ export const CrosswordClues: React.FC<CrosswordCluesProps> = ({
               <span className="font-bold text-purple-200 min-w-[1.5rem] text-sm bg-purple-500/30 px-1.5 py-0.5 rounded flex-shrink-0">
                 {clue.number}
               </span>
-              <p className="leading-tight text-white text-sm font-medium flex-1 min-w-0 truncate">
+              <p className="leading-tight text-white text-sm font-medium flex-1 min-w-0 truncate" title={clue.clue}>
                 {clue.clue}
               </p>
               {progress.completedClues.includes(clue.number) && (

@@ -1,6 +1,9 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
+import * as fs from 'fs';
+import * as path from 'path';
+import { parse } from 'csv-parse/sync';
 
 const router = Router();
 
@@ -297,6 +300,175 @@ router.get('/user/favorite', authenticateToken, async (req: AuthenticatedRequest
     res.status(500).json({
       success: false,
       message: 'Failed to fetch favorite category'
+    });
+  }
+});
+
+// GET /api/categories/:id/words - Get all words for a specific category
+router.get('/:id/words', async (req, res) => {
+  try {
+    const { id: categoryId } = req.params;
+    const { limit = '100', offset = '0' } = req.query;
+
+    // Check if category exists
+    const category = await prisma.puzzleCategory.findUnique({
+      where: { id: categoryId },
+      select: { name: true, wordCount: true }
+    });
+
+    if (!category) {
+      return res.status(404).json({
+        success: false,
+        message: 'Category not found'
+      });
+    }
+
+    // Load words from CSV
+    const csvPath = path.join(__dirname, '../../src/data/crossword_dictionary_with_clues.csv');
+    const csvContent = fs.readFileSync(csvPath, 'utf-8');
+    
+    const records = parse(csvContent, {
+      columns: true,
+      skip_empty_lines: true,
+      relax_column_count: true
+    });
+
+    // Filter words for this category
+    const categoryWords = records
+      .filter((record: any) => {
+        if (!record.categories) return false;
+        const categories = record.categories.toLowerCase().split(',').map((cat: string) => cat.trim());
+        return categories.includes(category.name.toLowerCase());
+      })
+      .filter((record: any) => {
+        const word = record.word?.toUpperCase();
+        return word && 
+               word.length >= 3 && 
+               word.length <= 15 &&
+               /^[A-Z]+$/.test(word) &&
+               record.clue &&
+               record.obscure !== "True" &&
+               record.obscure !== true;
+      })
+      .map((record: any) => ({
+        word: record.word.toUpperCase(),
+        clue: record.clue,
+        isCommon: record.is_common_english === "True",
+        length: record.word.length
+      }))
+      .sort((a: any, b: any) => {
+        // Sort by commonality first, then alphabetically
+        if (a.isCommon && !b.isCommon) return -1;
+        if (!a.isCommon && b.isCommon) return 1;
+        return a.word.localeCompare(b.word);
+      });
+
+    // Apply pagination
+    const startIndex = parseInt(offset as string);
+    const limitNum = parseInt(limit as string);
+    const paginatedWords = categoryWords.slice(startIndex, startIndex + limitNum);
+
+    res.json({
+      success: true,
+      data: {
+        category: category.name,
+        totalWords: categoryWords.length,
+        words: paginatedWords,
+        pagination: {
+          offset: startIndex,
+          limit: limitNum,
+          hasMore: startIndex + limitNum < categoryWords.length
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching category words:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch category words'
+    });
+  }
+});
+
+// GET /api/categories/:id/puzzles - Get all puzzles for a specific category
+router.get('/:id/puzzles', async (req, res) => {
+  try {
+    const { id: categoryId } = req.params;
+
+    // Check if category exists
+    const category = await prisma.puzzleCategory.findUnique({
+      where: { id: categoryId },
+      select: { name: true }
+    });
+
+    if (!category) {
+      return res.status(404).json({
+        success: false,
+        message: 'Category not found'
+      });
+    }
+
+    // Find puzzles that contain this category name in their date
+    // Category puzzles have dates like: "2025-09-10-cat-categoryname" or "2025-09-10-multi-category1-category2"
+    const categoryNameLower = category.name.toLowerCase().replace(/\s+/g, '-');
+    
+    const puzzles = await prisma.dailyPuzzle.findMany({
+      where: {
+        OR: [
+          { date: { contains: `-cat-${categoryNameLower}` } },
+          { date: { contains: `-multi-${categoryNameLower}-` } },
+          { date: { contains: `-${categoryNameLower}-` } },
+          { date: { endsWith: `-${categoryNameLower}` } }
+        ]
+      },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        date: true,
+        rows: true,
+        cols: true,
+        cluesData: true,
+        createdAt: true
+      }
+    });
+
+    // Process puzzles to count clues
+    const processedPuzzles = puzzles.map(puzzle => {
+      let acrossCount = 0;
+      let downCount = 0;
+      
+      try {
+        const clues = JSON.parse(puzzle.cluesData);
+        acrossCount = clues.filter((clue: any) => clue.direction === 'across').length;
+        downCount = clues.filter((clue: any) => clue.direction === 'down').length;
+      } catch (error) {
+        console.error('Error parsing clues for puzzle:', puzzle.date);
+      }
+
+      return {
+        date: puzzle.date,
+        size: `${puzzle.rows}x${puzzle.cols}`,
+        acrossClues: acrossCount,
+        downClues: downCount,
+        totalClues: acrossCount + downCount,
+        createdAt: puzzle.createdAt,
+        displayName: puzzle.date.includes('-multi-') ? 'Multi-Category' : 'Category Puzzle'
+      };
+    });
+
+    res.json({
+      success: true,
+      data: {
+        category: category.name,
+        puzzles: processedPuzzles
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching category puzzles:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch category puzzles'
     });
   }
 });

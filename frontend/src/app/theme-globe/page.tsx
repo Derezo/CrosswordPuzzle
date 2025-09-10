@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { PuzzleCategory } from "@/types";
 import CategoriesList from "@/components/CategoriesList";
 import { Navigation } from "@/components/Navigation";
 import { puzzleAPI } from "@/lib/api";
+import CosmicLoader from "@/components/CosmicLoader";
 
 // Import the ThemeGlobe wrapper with error boundary and HMR handling
 const ThemeGlobeWrapper = dynamic(
@@ -13,10 +14,14 @@ const ThemeGlobeWrapper = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="w-full h-full flex items-center justify-center bg-gray-900">
-        <div className="text-center text-white">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
-          <p>Initializing the cosmic theme universe...</p>
+      <div className="w-full h-full flex items-center justify-center bg-transparent">
+        <div className="text-center text-purple-300">
+          <div className="w-16 h-16 mx-auto mb-4 relative">
+            <div className="absolute inset-0 rounded-full border-2 border-purple-500/30 animate-spin"></div>
+            <div className="absolute inset-2 rounded-full border border-blue-400/50 animate-pulse"></div>
+            <div className="absolute inset-4 rounded-full bg-gradient-to-r from-purple-600 to-blue-500 animate-pulse"></div>
+          </div>
+          <p className="text-sm opacity-75">Loading 3D components...</p>
         </div>
       </div>
     ),
@@ -30,11 +35,16 @@ export default function ThemeGlobePage() {
     PuzzleCategory[]
   >([]);
   const [showList, setShowList] = useState(false);
-  const [globeKey, setGlobeKey] = useState(0); // Key to force re-mount
+  const [globeKey, setGlobeKey] = useState(0);
   const [generatingPuzzle, setGeneratingPuzzle] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(0);
   const [generationStage, setGenerationStage] = useState("");
   const [generationError, setGenerationError] = useState<string | null>(null);
+  
+  // Loading states
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isGlobeLoading, setIsGlobeLoading] = useState(false);
+  const [showLoader, setShowLoader] = useState(true);
 
   const handleCategorySelect = (category: PuzzleCategory) => {
     setSelectedCategory(category);
@@ -45,6 +55,31 @@ export default function ThemeGlobePage() {
     if (selectedCategories.some((cat) => cat.id === category.id)) return;
 
     setSelectedCategories((prev) => [...prev, category]);
+  };
+
+  // Handle initial page load
+  useEffect(() => {
+    // Simulate initial loading time (for data fetching, etc.)
+    const timer = setTimeout(() => {
+      setIsInitialLoading(false);
+    }, 1500); // Adjust timing as needed
+    
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Handle globe loading state
+  useEffect(() => {
+    if (!showList && !isInitialLoading) {
+      setIsGlobeLoading(true);
+      const timer = setTimeout(() => {
+        setIsGlobeLoading(false);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [showList, globeKey, isInitialLoading]);
+
+  const handleLoaderComplete = () => {
+    setShowLoader(false);
   };
 
   const handleRemoveCategory = (categoryId: string) => {
@@ -228,6 +263,13 @@ export default function ThemeGlobePage() {
 
   return (
     <>
+      {/* Initial page loader */}
+      <CosmicLoader
+        isLoading={showLoader && isInitialLoading}
+        onComplete={handleLoaderComplete}
+        loadingText="Initializing cosmic theme universe..."
+      />
+      
       <Navigation />
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-black">
         {/* Header */}
@@ -246,7 +288,10 @@ export default function ThemeGlobePage() {
 
               <div className="flex items-center gap-4">
                 <button
-                  onClick={() => setGlobeKey((prev) => prev + 1)}
+                  onClick={() => {
+                    setIsGlobeLoading(true);
+                    setGlobeKey((prev) => prev + 1);
+                  }}
                   className="px-4 py-2 rounded-lg bg-blue-600/20 text-white hover:bg-blue-600/40 transition-colors text-sm"
                   title="Reload Globe (fixes HMR issues)"
                 >
@@ -265,34 +310,6 @@ export default function ThemeGlobePage() {
               </div>
             </div>
 
-            {/* Instructions */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-                <div className="text-2xl mb-2">🎯</div>
-                <h3 className="text-white font-semibold mb-1">Interact</h3>
-                <p className="text-sm text-gray-300">
-                  Click and drag to rotate, scroll to zoom. Click categories to
-                  favorite them.
-                </p>
-              </div>
-
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-                <div className="text-2xl mb-2">📏</div>
-                <h3 className="text-white font-semibold mb-1">
-                  Popular Themes
-                </h3>
-                <p className="text-sm text-gray-300 mb-2"></p>
-              </div>
-
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-                <div className="text-2xl mb-2">❤️</div>
-                <h3 className="text-white font-semibold mb-1">Favorites</h3>
-                <p className="text-sm text-gray-300">
-                  Red categories are your favorites. Yellow indicates hover
-                  state.
-                </p>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -310,11 +327,24 @@ export default function ThemeGlobePage() {
             </div>
           ) : (
             // Globe View
-            <div className="h-[calc(100vh-300px)] min-h-[600px]">
-              <ThemeGlobeWrapper
-                key={globeKey}
-                onCategorySelect={handleCategorySelect}
-              />
+            <div className="h-[calc(100vh-300px)] min-h-[600px] relative">
+              {isGlobeLoading && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-900/80 backdrop-blur-sm rounded-xl">
+                  <CosmicLoader
+                    isLoading={isGlobeLoading}
+                    onComplete={() => setIsGlobeLoading(false)}
+                    loadingText="Rendering 3D cosmic globe..."
+                  />
+                </div>
+              )}
+              <div className={`transition-opacity duration-500 h-full ${
+                isGlobeLoading ? 'opacity-30' : 'opacity-100'
+              }`}>
+                <ThemeGlobeWrapper
+                  key={globeKey}
+                  onCategorySelect={handleCategorySelect}
+                />
+              </div>
             </div>
           )}
         </div>
@@ -423,17 +453,10 @@ export default function ThemeGlobePage() {
               <div className="pt-3 border-t border-purple-500/30">
                 <div className="flex items-center justify-between text-sm mb-2">
                   <span className="text-gray-300">Total Words:</span>
-                  <span
-                    className={`font-bold ${totalWordCount >= 300 ? "text-green-400" : "text-yellow-400"}`}
-                  >
+                  <span className="font-bold text-green-400">
                     {totalWordCount.toLocaleString()}
                   </span>
                 </div>
-                {totalWordCount < 100 && (
-                  <div className="text-xs text-yellow-400 mb-2">
-                    ⚠️ Need at least 100 words to generate puzzle
-                  </div>
-                )}
               </div>
             </div>
           </div>

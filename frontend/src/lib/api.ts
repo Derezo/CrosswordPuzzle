@@ -237,6 +237,51 @@ export const categoriesAPI = {
     const response = await api.get('/categories/user/favorite');
     return response.data;
   },
+
+  getCategoryWords: async (categoryId: string, limit?: number, offset?: number): Promise<{
+    success: boolean;
+    data: {
+      category: string;
+      totalWords: number;
+      words: Array<{
+        word: string;
+        clue: string;
+        isCommon: boolean;
+        length: number;
+      }>;
+      pagination: {
+        offset: number;
+        limit: number;
+        hasMore: boolean;
+      };
+    };
+  }> => {
+    const params = new URLSearchParams();
+    if (limit) params.set('limit', limit.toString());
+    if (offset) params.set('offset', offset.toString());
+    
+    const response = await api.get(`/categories/${categoryId}/words?${params}`);
+    return response.data;
+  },
+
+  getCategoryPuzzles: async (categoryId: string): Promise<{
+    success: boolean;
+    data: {
+      category: string;
+      puzzles: Array<{
+        date: string;
+        size: string;
+        acrossClues: number;
+        downClues: number;
+        totalClues: number;
+        createdAt: string;
+        displayName: string;
+      }>;
+    };
+  }> => {
+    const response = await api.get(`/categories/${categoryId}/puzzles`);
+    return response.data;
+  },
 };
 
 export default api;
