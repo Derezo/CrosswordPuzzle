@@ -479,7 +479,222 @@ router.post('/auto-solve', authenticateToken, async (req: AuthenticatedRequest, 
   }
 });
 
-// Generate category-specific puzzle
+// Generate category-specific puzzle with streaming progress
+router.get('/generate-category-stream/:categoryName', async (req, res) => {
+  console.log(`🚀 STREAMING ENDPOINT CALLED! Category: ${req.params.categoryName}`);
+  try {
+    const { categoryName } = req.params;
+    const { token } = req.query;
+    console.log(`🔐 Token received: ${token ? 'YES' : 'NO'}`);
+
+    // Manual token authentication for SSE (can't use middleware due to EventSource limitations)
+    if (!token || typeof token !== 'string') {
+      console.log('❌ No token provided');
+      return res.status(401).json({ error: 'Authentication token required' });
+    }
+
+    // Verify the token manually
+    const jwt = require('jsonwebtoken');
+    let user: User;
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET) as any;
+      user = await prisma.user.findUnique({ where: { id: decoded.userId } }) as User;
+      if (!user) {
+        return res.status(401).json({ error: 'Invalid token' });
+      }
+    } catch (error) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+
+    if (!categoryName) {
+      return res.status(400).json({ error: 'Category name is required' });
+    }
+
+    // Set up Server-Sent Events
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Cache-Control'
+    });
+
+    // Cheeky messages that get progressively more pessimistic
+    const progressMessages = [
+      { stage: 'initialization', message: '🚀 Warming up the cosmic dictionary engine... This should be easy!' },
+      { stage: 'loading_dictionary', message: '📚 Loading galactic word database... Piece of cake!' },
+      { stage: 'filtering_category', message: `🔍 Filtering for "${categoryName}" words... Found some gems!` },
+      { stage: 'starting_generation', message: '🧩 Starting puzzle generation... Here we go!' },
+      { stage: 'attempt_10', message: '🎯 Attempting word placements... Still optimistic!' },
+      { stage: 'attempt_50', message: '🤔 Hmm, a few more tries should do it...' },
+      { stage: 'attempt_100', message: '😅 Okay, this is taking longer than expected...' },
+      { stage: 'attempt_200', message: '🙄 The cosmic forces are being difficult today...' },
+      { stage: 'word_reduction', message: '📉 Fine, we\'ll settle for fewer words. Quality over quantity!' },
+      { stage: 'attempt_300', message: '😤 Starting to question my life choices as an AI...' },
+      { stage: 'attempt_400', message: '🤯 This category is more stubborn than a black hole!' },
+      { stage: 'fallback_phase', message: '💸 Deploying emergency fallback protocol... (a.k.a. panic mode)' },
+      { stage: 'smaller_grid', message: '🗜️ Maybe a smaller grid will cooperate better...' },
+      { stage: 'fallback_attempt_100', message: '🆘 Even the backup plan is struggling... send help!' },
+      { stage: 'fallback_attempt_200', message: '☠️ I am becoming one with the void of failed crosswords...' },
+      { stage: 'last_resort', message: '🙏 Praying to the gods of word puzzles...' },
+      { stage: 'success', message: '🎉 FINALLY! Against all odds, we have a puzzle!' },
+      { stage: 'saving', message: '💾 Saving this miraculous creation to the database...' },
+      { stage: 'complete', message: '✨ Mission accomplished! Launching your cosmic crossword...' }
+    ];
+
+    const sendUpdate = (stage: string, progress: number, attempt?: number) => {
+      const messageObj = progressMessages.find(m => m.stage === stage);
+      let message = messageObj?.message || `Working on ${stage}...`;
+      
+      if (attempt) {
+        message = message.replace(/\.\.\.$/, ` (attempt ${attempt})...`);
+      }
+
+      const data = { stage, progress, message, attempt };
+      console.log(`📡 SSE Sending:`, data);
+      res.write(`data: ${JSON.stringify(data)}\n\n`);
+    };
+
+    console.log(`🎯 Generating category puzzle for: ${categoryName}`);
+    sendUpdate('initialization', 5);
+
+    // Generate a unique date string for this category puzzle
+    const categoryDate = `category-${categoryName}-${Date.now()}`;
+    
+    try {
+      sendUpdate('loading_dictionary', 10);
+      sendUpdate('filtering_category', 20);
+      sendUpdate('starting_generation', 30);
+
+      // Import the generator class to access progress updates
+      const StrictCrosswordModule = await import('../services/puzzle/strictCrosswordGenerator');
+      const generator = new StrictCrosswordModule.StrictCrosswordGenerator(categoryDate, categoryName);
+      
+      console.log(`📡 SSE: Starting generation for ${categoryName}`);
+
+      // Set up progress tracking
+      let lastProgress = 30;
+      const progressCallback = async (stage: string, attempt: number, targetWords: number, phase: 'normal' | 'fallback') => {
+        let progress = lastProgress;
+        
+        if (phase === 'normal') {
+          if (attempt <= 50) {
+            progress = 30 + (attempt / 50) * 20; // 30-50%
+            if (attempt >= 10) sendUpdate('attempt_10', progress, attempt);
+          } else if (attempt <= 100) {
+            progress = 50 + ((attempt - 50) / 50) * 10; // 50-60%
+            if (attempt >= 50) sendUpdate('attempt_50', progress, attempt);
+          } else if (attempt <= 200) {
+            progress = 60 + ((attempt - 100) / 100) * 10; // 60-70%
+            if (attempt >= 100) sendUpdate('attempt_100', progress, attempt);
+          } else {
+            progress = 70 + ((attempt - 200) / 300) * 10; // 70-80%
+            if (attempt >= 200) sendUpdate('attempt_200', progress, attempt);
+            if (attempt >= 300) sendUpdate('attempt_300', progress, attempt);
+            if (attempt >= 400) sendUpdate('attempt_400', progress, attempt);
+          }
+          
+          if (stage === 'word_reduction') {
+            sendUpdate('word_reduction', progress);
+          }
+        } else { // fallback phase
+          if (stage === 'fallback_start') {
+            progress = 80;
+            sendUpdate('fallback_phase', progress);
+            sendUpdate('smaller_grid', progress + 2);
+          } else if (stage === 'fallback_generation') {
+            progress = 82 + (attempt / 500) * 10; // 82-92%
+            if (attempt >= 100) sendUpdate('fallback_attempt_100', progress, attempt);
+            if (attempt >= 200) sendUpdate('fallback_attempt_200', progress, attempt);
+            if (attempt >= 400) sendUpdate('last_resort', progress, attempt);
+          } else if (stage === 'fallback_word_reduction') {
+            sendUpdate('fallback_word_reduction', progress);
+          }
+        }
+        
+        lastProgress = Math.min(progress, 92);
+      };
+
+      // Generate the puzzle with async progress callback
+      const generatedPuzzle = await generator.generateWithCallbackAsync(progressCallback);
+
+      sendUpdate('success', 93);
+
+      // Store the puzzle in database
+      sendUpdate('saving', 96);
+      const puzzleDate = new Date().toISOString().split('T')[0] + `-cat-${categoryName.toLowerCase().replace(/\s+/g, '-')}`;
+      
+      // Check if this category puzzle already exists for today
+      const existingPuzzle = await prisma.dailyPuzzle.findUnique({ 
+        where: { date: puzzleDate } 
+      });
+
+      if (existingPuzzle) {
+        await prisma.dailyPuzzle.delete({ where: { date: puzzleDate } });
+      }
+
+      // Create the new puzzle
+      const puzzle = await prisma.dailyPuzzle.create({
+        data: {
+          date: puzzleDate,
+          gridData: JSON.stringify(generatedPuzzle.grid),
+          cluesData: JSON.stringify(generatedPuzzle.clues),
+          rows: generatedPuzzle.size.rows,
+          cols: generatedPuzzle.size.cols
+        }
+      });
+
+      // Create or update user's progress for this puzzle
+      await prisma.userProgress.upsert({
+        where: {
+          userId_puzzleDate: {
+            userId: user.id,
+            puzzleDate
+          }
+        },
+        update: {
+          answersData: '{}',
+          completedClues: '[]',
+          isCompleted: false
+        },
+        create: {
+          userId: user.id,
+          puzzleDate,
+          answersData: '{}',
+          completedClues: '[]',
+          isCompleted: false
+        }
+      });
+
+      sendUpdate('complete', 100);
+
+      // Send final success message
+      res.write(`data: ${JSON.stringify({ 
+        success: true, 
+        message: `Category puzzle for "${categoryName}" generated successfully!`,
+        puzzleDate,
+        wordCount: generatedPuzzle.clues.length
+      })}\n\n`);
+
+      console.log(`✅ Category puzzle generated successfully for ${categoryName}`);
+
+    } catch (generateError) {
+      console.error('Error generating category puzzle:', generateError);
+      res.write(`data: ${JSON.stringify({ 
+        error: true, 
+        message: 'The cosmic forces have defeated us... This category might not have enough words to create a proper crossword.' 
+      })}\n\n`);
+    }
+
+    res.end();
+
+  } catch (error) {
+    console.error('Error in generate-category-stream endpoint:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Generate category-specific puzzle (non-streaming fallback)
 router.post('/generate-category', authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
     const { categoryName } = req.body;
@@ -673,6 +888,44 @@ router.get('/recent-category', authenticateToken, async (req: AuthenticatedReque
     console.error('Error fetching recent category puzzles:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
+});
+
+// Simple SSE test endpoint
+router.get('/test-sse', (req, res) => {
+  console.log('🧪 Test SSE endpoint called');
+  
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Cache-Control'
+  });
+
+  let counter = 0;
+  const interval = setInterval(() => {
+    counter++;
+    const data = {
+      message: `Test message ${counter}`,
+      progress: counter * 10,
+      timestamp: new Date().toISOString()
+    };
+    
+    console.log(`🧪 Sending test data:`, data);
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+    
+    if (counter >= 10) {
+      console.log('🧪 Test SSE complete');
+      res.write(`data: ${JSON.stringify({ complete: true })}\n\n`);
+      clearInterval(interval);
+      res.end();
+    }
+  }, 1000);
+
+  req.on('close', () => {
+    console.log('🧪 Test SSE connection closed');
+    clearInterval(interval);
+  });
 });
 
 export default router;

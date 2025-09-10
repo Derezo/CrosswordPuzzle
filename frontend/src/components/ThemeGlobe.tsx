@@ -155,7 +155,7 @@ function Globe({
     }
   });
 
-  // Calculate stable positions and scales (only recalculate when core data changes)
+  // Calculate stable positions and scales with improved distribution based on word count
   const categoryPositions = useMemo(() => {
     if (!categories.length) return [];
     
@@ -164,32 +164,88 @@ function Globe({
     const logMax = Math.log10(maxWords);
     const logMin = Math.log10(minWords);
     
-    return categories.map((category) => {
-      // Improved logarithmic scaling for text size
+    // Sort categories by word count for better distribution
+    const sortedCategories = [...categories].sort((a, b) => b.wordCount - a.wordCount);
+    
+    // Create distribution zones based on word count tiers
+    const totalCategories = sortedCategories.length;
+    const tier1Count = Math.floor(totalCategories * 0.15); // Top 15% - largest categories
+    const tier2Count = Math.floor(totalCategories * 0.35); // Next 35% - medium categories
+    const tier3Count = totalCategories - tier1Count - tier2Count; // Rest - smaller categories
+    
+    return sortedCategories.map((category, index) => {
+      // Enhanced logarithmic scaling for text size
       const logWords = Math.log10(category.wordCount);
       const normalizedSize = (logWords - logMin) / (logMax - logMin);
-      const scale = 0.3 + Math.pow(normalizedSize, 0.7) * 2.2;
+      const scale = 0.4 + Math.pow(normalizedSize, 0.6) * 2.8;
       
-      // Generate stable sphere distribution based ONLY on category ID and name
-      // Remove wordCount and favoritesCount from position calculation
+      // Determine tier and distribution strategy
+      let tier: number;
+      let tierIndex: number;
+      let tierSize: number;
+      
+      if (index < tier1Count) {
+        tier = 1;
+        tierIndex = index;
+        tierSize = tier1Count;
+      } else if (index < tier1Count + tier2Count) {
+        tier = 2;
+        tierIndex = index - tier1Count;
+        tierSize = tier2Count;
+      } else {
+        tier = 3;
+        tierIndex = index - tier1Count - tier2Count;
+        tierSize = tier3Count;
+      }
+      
+      // Generate stable sphere distribution with tier-based positioning
       const seed1 = category.id.split('').reduce((hash, char, i) => 
         ((hash << 5) - hash + char.charCodeAt(0) * (i + 1)) & 0xffffffff, 17);
       const seed2 = category.name.split('').reduce((hash, char, i) => 
         ((hash << 3) - hash + char.charCodeAt(0) * (i + 7)) & 0xffffffff, 31);
       
-      // Create two independent random values [0,1)
-      const random1 = Math.abs(Math.sin(seed1 * 12.9898)) % 1;
-      const random2 = Math.abs(Math.sin(seed2 * 78.233)) % 1;
+      // Create pseudo-random values but influenced by tier
+      const random1 = (Math.abs(Math.sin(seed1 * 12.9898 + tier * 100)) % 1);
+      const random2 = (Math.abs(Math.sin(seed2 * 78.233 + tier * 200)) % 1);
       
-      // Use Marsaglia method for uniform sphere distribution
-      const theta = random1 * 2 * Math.PI; // azimuthal angle
-      const phi = Math.acos(2 * random2 - 1); // polar angle for uniform distribution
+      // Strategic positioning based on tier
+      let theta: number, phi: number;
       
-      // Convert spherical to cartesian coordinates
-      const baseRadius = 15.0;
-      const radiusVariation = normalizedSize * 0.2;
+      if (tier === 1) {
+        // Tier 1: Prime positions - evenly distribute around equator and key zones
+        const angle = (tierIndex / tierSize) * 2 * Math.PI + random1 * 0.5;
+        theta = angle;
+        phi = Math.PI / 2 + (random2 - 0.5) * 0.8; // Near equator with some variation
+      } else if (tier === 2) {
+        // Tier 2: Mid-tier positions - distribute in bands above and below equator
+        theta = random1 * 2 * Math.PI;
+        const bandChoice = tierIndex % 2;
+        if (bandChoice === 0) {
+          phi = Math.PI / 3 + random2 * (Math.PI / 6); // Upper band
+        } else {
+          phi = (2 * Math.PI) / 3 + random2 * (Math.PI / 6); // Lower band
+        }
+      } else {
+        // Tier 3: Fill remaining space uniformly
+        theta = random1 * 2 * Math.PI;
+        phi = Math.acos(2 * random2 - 1); // Uniform sphere distribution
+      }
+      
+      // Enhanced radius calculation - larger sphere with better stratification
+      const baseRadius = 22.0; // Increased from 15.0
+      let radiusVariation: number;
+      
+      if (tier === 1) {
+        radiusVariation = normalizedSize * 1.5 + 2.0; // Larger categories further out
+      } else if (tier === 2) {
+        radiusVariation = normalizedSize * 1.0 + 0.5; // Medium distance
+      } else {
+        radiusVariation = normalizedSize * 0.5 - 0.5; // Smaller categories closer in
+      }
+      
       const radius = baseRadius + radiusVariation;
       
+      // Convert spherical to cartesian coordinates
       const x = radius * Math.sin(phi) * Math.cos(theta);
       const y = radius * Math.sin(phi) * Math.sin(theta);
       const z = radius * Math.cos(phi);
@@ -197,26 +253,49 @@ function Globe({
       return {
         categoryId: category.id,
         position: [x, y, z] as [number, number, number],
-        scale
+        scale,
+        tier,
+        wordCount: category.wordCount
       };
     });
   }, [categories.map(c => `${c.id}-${c.name}-${c.wordCount}`).sort().join('|')]);
 
   return (
     <group ref={groupRef}>
-      {/* Wireframe sphere for reference */}
+      {/* Enhanced wireframe sphere for reference with tier visualization */}
       <mesh>
-        <sphereGeometry args={[15, 64, 64]} />
+        <sphereGeometry args={[22, 64, 64]} />
         <meshBasicMaterial 
           color="#6366f1" 
           wireframe 
           transparent 
-          opacity={0.1} 
+          opacity={0.08} 
         />
       </mesh>
       
-      {/* Category texts */}
-      {categoryPositions.map(({ categoryId, position, scale }) => {
+      {/* Inner tier spheres for visual reference */}
+      <mesh>
+        <sphereGeometry args={[20, 32, 32]} />
+        <meshBasicMaterial 
+          color="#7c3aed" 
+          wireframe 
+          transparent 
+          opacity={0.04} 
+        />
+      </mesh>
+      
+      <mesh>
+        <sphereGeometry args={[24, 32, 32]} />
+        <meshBasicMaterial 
+          color="#c084fc" 
+          wireframe 
+          transparent 
+          opacity={0.04} 
+        />
+      </mesh>
+      
+      {/* Category texts with enhanced positioning */}
+      {categoryPositions.map(({ categoryId, position, scale, tier, wordCount }) => {
         const category = categories.find(c => c.id === categoryId);
         if (!category) return null;
         
@@ -246,8 +325,8 @@ function ParticleField() {
     const colors = new Float32Array(2000 * 3);
     
     for (let i = 0; i < 2000; i++) {
-      // Create a more spherical distribution around the larger sphere
-      const radius = 25 + Math.random() * 20;
+      // Create a more spherical distribution around the enlarged sphere
+      const radius = 35 + Math.random() * 25; // Increased to match larger sphere
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(2 * Math.random() - 1);
       
@@ -493,7 +572,21 @@ const ThemeGlobe = ({ onCategorySelect }: ThemeGlobeProps) => {
           Click to favorite • Hover for details
         </p>
         <div className="text-xs text-gray-300">
-          <p className="mb-1">📏 Size Scale (logarithmic):</p>
+          <p className="mb-1">🎯 Strategic Distribution:</p>
+          <div className="mb-2">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+              <span>Tier 1: Top 15% (outer layer)</span>
+            </div>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+              <span>Tier 2: Next 35% (middle bands)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+              <span>Tier 3: Remaining 50% (core)</span>
+            </div>
+          </div>
           <div className="flex items-center gap-2">
             <span className="text-xs">Small</span>
             <div className="flex-1 h-1 bg-gradient-to-r from-purple-600 to-yellow-400 rounded"></div>
@@ -524,20 +617,23 @@ const ThemeGlobe = ({ onCategorySelect }: ThemeGlobeProps) => {
 
       {/* 3D Canvas */}
       <Canvas className="w-full h-full">
-        <PerspectiveCamera makeDefault position={[0, 0, 35]} />
+        <PerspectiveCamera makeDefault position={[0, 0, 50]} />
         
-        {/* Lighting */}
-        <ambientLight intensity={0.6} />
-        <pointLight position={[10, 10, 10]} intensity={0.8} />
+        {/* Enhanced lighting for larger sphere */}
+        <ambientLight intensity={0.7} />
+        <pointLight position={[15, 15, 15]} intensity={0.9} />
+        <pointLight position={[-15, -10, 10]} intensity={0.4} color="#c084fc" />
         
-        {/* Controls */}
+        {/* Controls optimized for larger sphere */}
         <OrbitControls 
           enablePan={true}
           enableZoom={true}
           enableRotate={true}
           autoRotate={false}
-          maxDistance={60}
-          minDistance={20}
+          maxDistance={80}
+          minDistance={30}
+          maxPolarAngle={Math.PI}
+          minPolarAngle={0}
         />
         
         {/* Background particles */}

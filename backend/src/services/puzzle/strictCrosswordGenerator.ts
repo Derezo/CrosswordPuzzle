@@ -785,7 +785,36 @@ export class StrictCrosswordGenerator {
     return this.generateWithAdaptiveStrategy();
   }
 
-  private generateWithAdaptiveStrategy(): GeneratedPuzzle {
+  public generateWithCallback(
+    progressCallback?: (
+      stage: string,
+      attempt: number,
+      targetWords: number,
+      phase: "normal" | "fallback",
+    ) => void,
+  ): GeneratedPuzzle {
+    return this.generateWithAdaptiveStrategy(progressCallback);
+  }
+
+  public async generateWithCallbackAsync(
+    progressCallback?: (
+      stage: string,
+      attempt: number,
+      targetWords: number,
+      phase: "normal" | "fallback",
+    ) => Promise<void>,
+  ): Promise<GeneratedPuzzle> {
+    return this.generateWithAdaptiveStrategyAsync(progressCallback);
+  }
+
+  private generateWithAdaptiveStrategy(
+    progressCallback?: (
+      stage: string,
+      attempt: number,
+      targetWords: number,
+      phase: "normal" | "fallback",
+    ) => void,
+  ): GeneratedPuzzle {
     const maxTotalAttempts = 500;
     let targetWords = 35; // Start with 35 words
     const minWords = 5; // Minimum word count
@@ -796,13 +825,22 @@ export class StrictCrosswordGenerator {
     );
 
     for (let attempt = 0; attempt < maxTotalAttempts; attempt++) {
-      // Reduce target word count every 100 attempts
+      // Progress callback for normal phase
+      if (progressCallback) {
+        progressCallback("generation", attempt, targetWords, "normal");
+      }
+
+      // Reduce target word count every 30 attempts
       if (attempt > 0 && attempt % 30 === 0) {
         if (targetWords > minWords) {
           targetWords = Math.max(minWords, targetWords - 5);
+
           console.log(
             `📉 Reducing target word count to ${targetWords} after ${attempt} attempts`,
           );
+          if (progressCallback) {
+            progressCallback("word_reduction", attempt, targetWords, "normal");
+          }
         }
       }
 
@@ -815,7 +853,7 @@ export class StrictCrosswordGenerator {
           this.assignNumbers();
           const clues = this.generateClues();
 
-          if (clues.length >= 20) {
+          if (clues.length >= targetWords / 2) {
             const acrossCount = clues.filter(
               (c) => c.direction === "across",
             ).length;
@@ -842,6 +880,10 @@ export class StrictCrosswordGenerator {
       `🔄 Failed with ${this.currentGridSize}x${this.currentGridSize} grid. Trying fallback: ${FALLBACK_GRID_SIZE}x${FALLBACK_GRID_SIZE} grid with max ${FALLBACK_MAX_WORD_LENGTH}-char words`,
     );
 
+    if (progressCallback) {
+      progressCallback("fallback_start", 0, targetWords, "fallback");
+    }
+
     this.currentGridSize = FALLBACK_GRID_SIZE;
     this.currentMaxWordLength = FALLBACK_MAX_WORD_LENGTH;
     targetWords = Math.max(20, minWords); // Reset to more reasonable target for smaller grid
@@ -850,13 +892,31 @@ export class StrictCrosswordGenerator {
     this.loadDictionary();
 
     for (let attempt = 0; attempt < maxTotalAttempts; attempt++) {
-      // Reduce target word count every 100 attempts
+      // Progress callback for fallback phase
+      if (progressCallback) {
+        progressCallback(
+          "fallback_generation",
+          attempt,
+          targetWords,
+          "fallback",
+        );
+      }
+
+      // Reduce target word count every 30 attempts
       if (attempt > 0 && attempt % 30 === 0) {
         if (targetWords > minWords) {
           targetWords -= 2;
           console.log(
             `📉 Reducing target word count to ${targetWords} after ${attempt} fallback attempts`,
           );
+          if (progressCallback) {
+            progressCallback(
+              "word_reduction",
+              attempt,
+              targetWords,
+              "fallback",
+            );
+          }
         }
       }
 
@@ -869,7 +929,7 @@ export class StrictCrosswordGenerator {
           this.assignNumbers();
           const clues = this.generateClues();
 
-          if (clues.length >= 15) {
+          if (clues.length >= targetWords / 2) {
             // Lower threshold for smaller grid
             const acrossCount = clues.filter(
               (c) => c.direction === "across",
@@ -895,6 +955,238 @@ export class StrictCrosswordGenerator {
     throw new Error(
       "Failed to generate valid puzzle after maximum attempts with both normal and fallback strategies",
     );
+  }
+
+  private async generateWithAdaptiveStrategyAsync(
+    progressCallback?: (
+      stage: string,
+      attempt: number,
+      targetWords: number,
+      phase: "normal" | "fallback",
+    ) => Promise<void>,
+  ): Promise<GeneratedPuzzle> {
+    const maxTotalAttempts = 500;
+    let targetWords = 35; // Start with 35 words
+    const minWords = 5; // Minimum word count
+
+    // First phase: Normal grid size (15x15)
+    console.log(
+      `🎯 Starting async puzzle generation with ${targetWords} target words on ${this.currentGridSize}x${this.currentGridSize} grid`,
+    );
+
+    for (let attempt = 0; attempt < maxTotalAttempts; attempt++) {
+      // Yield every 5 attempts to prevent blocking
+      if (attempt % 5 === 0) {
+        await new Promise(resolve => setImmediate(resolve));
+      }
+
+      // Progress callback for normal phase
+      if (progressCallback) {
+        await progressCallback("generation", attempt, targetWords, "normal");
+      }
+
+      // Reduce target word count every 30 attempts
+      if (attempt > 0 && attempt % 30 === 0) {
+        if (targetWords > minWords) {
+          targetWords = Math.max(minWords, targetWords - 5);
+
+          console.log(
+            `📉 Reducing target word count to ${targetWords} after ${attempt} attempts`,
+          );
+          if (progressCallback) {
+            await progressCallback("word_reduction", attempt, targetWords, "normal");
+          }
+        }
+      }
+
+      this.initializeGrid();
+
+      if (await this.buildPuzzleAsync(targetWords)) {
+        this.finalizeBlackSquares();
+
+        if (this.validatePuzzle()) {
+          this.assignNumbers();
+          const clues = this.generateClues();
+
+          if (clues.length >= targetWords / 2) {
+            const acrossCount = clues.filter(
+              (c) => c.direction === "across",
+            ).length;
+            const downCount = clues.filter(
+              (c) => c.direction === "down",
+            ).length;
+
+            console.log(
+              `✅ Valid async puzzle generated (attempt ${attempt + 1}): ${acrossCount} across, ${downCount} down, ${targetWords} target words on ${this.currentGridSize}x${this.currentGridSize} grid`,
+            );
+
+            return {
+              grid: this.grid,
+              clues,
+              size: { rows: this.currentGridSize, cols: this.currentGridSize },
+            };
+          }
+        }
+      }
+    }
+
+    // Second phase: Fallback to smaller grid (10x10) with max 10-char words
+    console.log(
+      `⚠️ Attempting async fallback strategy with smaller grid (${FALLBACK_GRID_SIZE}x${FALLBACK_GRID_SIZE})`,
+    );
+
+    if (progressCallback) {
+      await progressCallback("fallback_start", 0, targetWords, "fallback");
+    }
+
+    this.currentGridSize = FALLBACK_GRID_SIZE;
+    this.currentMaxWordLength = FALLBACK_MAX_WORD_LENGTH;
+    targetWords = Math.min(targetWords, 20); // Reduce target for smaller grid
+
+    for (let attempt = 0; attempt < maxTotalAttempts; attempt++) {
+      // Yield every 5 attempts to prevent blocking
+      if (attempt % 5 === 0) {
+        await new Promise(resolve => setImmediate(resolve));
+      }
+
+      // Progress callback for fallback phase
+      if (progressCallback) {
+        await progressCallback(
+          "fallback_generation",
+          attempt,
+          targetWords,
+          "fallback",
+        );
+      }
+
+      // Reduce target word count every 30 attempts
+      if (attempt > 0 && attempt % 30 === 0) {
+        if (targetWords > minWords) {
+          targetWords = Math.max(minWords, targetWords - 3);
+          console.log(
+            `📉 Reducing fallback target word count to ${targetWords} after ${attempt} attempts`,
+          );
+          if (progressCallback) {
+            await progressCallback(
+              "fallback_word_reduction",
+              attempt,
+              targetWords,
+              "fallback",
+            );
+          }
+        }
+      }
+
+      this.initializeGrid();
+
+      if (await this.buildPuzzleAsync(targetWords)) {
+        this.finalizeBlackSquares();
+
+        if (this.validatePuzzle()) {
+          this.assignNumbers();
+          const clues = this.generateClues();
+
+          if (clues.length >= targetWords / 2) {
+            // Lower threshold for smaller grid
+            const acrossCount = clues.filter(
+              (c) => c.direction === "across",
+            ).length;
+            const downCount = clues.filter(
+              (c) => c.direction === "down",
+            ).length;
+
+            console.log(
+              `✅ Valid async fallback puzzle generated (attempt ${attempt + 1}): ${acrossCount} across, ${downCount} down, ${targetWords} target words on ${this.currentGridSize}x${this.currentGridSize} grid`,
+            );
+
+            return {
+              grid: this.grid,
+              clues,
+              size: { rows: this.currentGridSize, cols: this.currentGridSize },
+            };
+          }
+        }
+      }
+    }
+
+    throw new Error(
+      "Failed to generate valid puzzle after maximum attempts with both normal and fallback async strategies",
+    );
+  }
+
+  private async buildPuzzleAsync(targetWords: number = 35): Promise<boolean> {
+    // Start with a seed word in the center
+    const seedWords =
+      this.wordsByLength.get(7) ||
+      this.wordsByLength.get(6) ||
+      this.wordsByLength.get(8) ||
+      [];
+    if (seedWords.length === 0) return false;
+
+    // Place first word
+    const firstWord =
+      seedWords[Math.floor(this.rng() * Math.min(50, seedWords.length))];
+    const centerRow = Math.floor(this.currentGridSize / 2);
+    const startCol = Math.floor(
+      (this.currentGridSize - firstWord.word.length) / 2,
+    );
+
+    this.placeWord(firstWord, centerRow, startCol, "across", []);
+
+    // Iteratively add crossing words
+    let consecutiveFailures = 0;
+    const maxConsecutiveFailures = 175;
+
+    while (
+      this.placedWords.length < targetWords &&
+      consecutiveFailures < maxConsecutiveFailures
+    ) {
+      // Yield every 10 iterations to prevent blocking
+      if (consecutiveFailures % 10 === 0) {
+        await new Promise(resolve => setImmediate(resolve));
+      }
+
+      const candidates = this.findBestCandidates();
+      let placed = false;
+
+      // Try each candidate (limit processing)
+      for (const entry of candidates.slice(0, 50)) { // Reduced from 200 to 50
+        const placements = this.findAllPlacements(entry);
+
+        // Try best placements (reduced from 5 to 3)
+        for (const placement of placements.slice(0, 3)) {
+          // Check if this would create invalid words
+          if (
+            !this.wouldCreateInvalidWord(
+              entry,
+              placement.row,
+              placement.col,
+              placement.direction,
+            )
+          ) {
+            this.placeWord(
+              entry,
+              placement.row,
+              placement.col,
+              placement.direction,
+              placement.intersections,
+            );
+            placed = true;
+            break;
+          }
+        }
+
+        if (placed) break;
+      }
+
+      if (placed) {
+        consecutiveFailures = 0;
+      } else {
+        consecutiveFailures++;
+      }
+    }
+
+    return this.placedWords.length >= 20; // Minimum viable puzzle
   }
 }
 
