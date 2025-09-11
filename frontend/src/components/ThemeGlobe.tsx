@@ -1,7 +1,7 @@
 'use client';
 
-import { useRef, useEffect, useState, useMemo, Suspense } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { useRef, useEffect, useState, useMemo, useCallback, Suspense } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { Text, OrbitControls, PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import { PuzzleCategory } from '@/types';
@@ -132,7 +132,7 @@ function Globe({
   };
   
   // Auto-rotation with mouse influence
-  useFrame((state) => {
+  useFrame(() => {
     if (groupRef.current) {
       // Base rotation
       groupRef.current.rotation.y += 0.005;
@@ -258,7 +258,7 @@ function Globe({
         wordCount: category.wordCount
       };
     });
-  }, [categories.map(c => `${c.id}-${c.name}-${c.wordCount}`).sort().join('|')]);
+  }, [categories]);
 
   return (
     <group ref={groupRef}>
@@ -295,7 +295,7 @@ function Globe({
       </mesh>
       
       {/* Category texts with enhanced positioning */}
-      {categoryPositions.map(({ categoryId, position, scale, tier, wordCount }) => {
+      {categoryPositions.map(({ categoryId, position, scale }) => {
         const category = categories.find(c => c.id === categoryId);
         if (!category) return null;
         
@@ -403,8 +403,6 @@ function ConstellationLines({ categories }: { categories: PuzzleCategory[] }) {
     
     topCategories.forEach((category, index) => {
       if (index < topCategories.length - 1) {
-        const nextCategory = topCategories[index + 1];
-        
         // Temporarily disable constellation lines to focus on sphere distribution
         // We'll re-enable once the sphere is working properly
       }
@@ -474,14 +472,7 @@ const ThemeGlobe = ({ onCategorySelect }: ThemeGlobeProps) => {
   const [favoriteCategory, setFavoriteCategory] = useState<string | null>(null);
 
 
-  useEffect(() => {
-    loadCategories();
-    if (user) {
-      loadUserFavorite();
-    }
-  }, [user]);
-
-  const loadCategories = async () => {
+  const loadCategories = useCallback(async () => {
     try {
       setLoading(true);
       const response = await categoriesAPI.getCategories({
@@ -497,9 +488,9 @@ const ThemeGlobe = ({ onCategorySelect }: ThemeGlobeProps) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const loadUserFavorite = async () => {
+  const loadUserFavorite = useCallback(async () => {
     try {
       const response = await categoriesAPI.getUserFavoriteCategory();
       // Handle case where response.data is null (no favorite category set)
@@ -507,7 +498,14 @@ const ThemeGlobe = ({ onCategorySelect }: ThemeGlobeProps) => {
     } catch (err) {
       console.error('Error loading user favorite:', err);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadCategories();
+    if (user) {
+      loadUserFavorite();
+    }
+  }, [user, loadCategories, loadUserFavorite]);
 
   const handleCategorySelect = async (category: PuzzleCategory) => {
     if (user) {

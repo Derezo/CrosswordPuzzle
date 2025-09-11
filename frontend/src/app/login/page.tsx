@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,9 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showJiggle, setShowJiggle] = useState(false);
   
   // Add page lifecycle debugging
   React.useEffect(() => {
@@ -24,7 +22,7 @@ export default function LoginPage() {
       sessionStorage.removeItem('login-error');
     }
     
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+    const handleBeforeUnload = () => {
       console.log('🚨 Page is about to unload/refresh!');
     };
     
@@ -166,7 +164,6 @@ export default function LoginPage() {
     e.stopPropagation();
     console.log('📝 Form submit triggered - prevented default and propagation');
     setLoading(true);
-    setShowJiggle(false);
 
     try {
       console.log('🚀 Starting login attempt');
@@ -175,8 +172,9 @@ export default function LoginPage() {
       console.log('✅ Login successful, navigating to puzzle');
       console.log('🌐 URL after login:', window.location.href);
       router.push('/puzzle');
-    } catch (err: any) {
-      const friendlyMessage = getFriendlyErrorMessage(err.message || 'Login failed');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Login failed';
+      const friendlyMessage = getFriendlyErrorMessage(errorMessage);
       console.log('🚨 Login failed, showing error');
       console.log('🌐 URL during error:', window.location.href);
       console.log('📄 Document visibility:', document.visibilityState);
@@ -191,10 +189,7 @@ export default function LoginPage() {
         showToastError(friendlyMessage);
       }, 100);
       
-      // Reset jiggle animation after it completes
-      setTimeout(() => {
-        setShowJiggle(false);
-      }, 600);
+      // Jiggle animation handled by DOM-based toast system
     } finally {
       console.log('🏁 Login attempt finished');
       console.log('🌐 Final URL:', window.location.href);

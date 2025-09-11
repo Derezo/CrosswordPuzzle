@@ -16,7 +16,7 @@ class ThemeGlobeErrorBoundary extends Component<
   private retryCount = 0;
   private maxRetries = 3;
 
-  constructor(props: any) {
+  constructor(props: { children: ReactNode; fallback: (error: Error, reset: () => void) => ReactNode; onError?: (error: Error) => void }) {
     super(props);
     this.state = { 
       hasError: false, 
@@ -34,7 +34,7 @@ class ThemeGlobeErrorBoundary extends Component<
     };
   }
 
-  componentDidCatch(error: Error, errorInfo: any) {
+  componentDidCatch(error: Error, errorInfo: unknown) {
     console.error('ThemeGlobe Error:', error, errorInfo);
     
     // Report error to parent component if provided
@@ -68,7 +68,7 @@ class ThemeGlobeErrorBoundary extends Component<
     );
   }
 
-  componentDidUpdate(prevProps: any) {
+  componentDidUpdate(prevProps: { children: ReactNode; fallback: (error: Error, reset: () => void) => ReactNode; onError?: (error: Error) => void }) {
     // Reset error boundary when children change (HMR update)
     if (this.state.hasError && prevProps.children !== this.props.children) {
       console.log('Resetting error boundary due to HMR update');
@@ -93,37 +93,7 @@ class ThemeGlobeErrorBoundary extends Component<
 function ThemeGlobeErrorFallback({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) {
   const [diagnostics, setDiagnostics] = useState<string>('');
   
-  useEffect(() => {
-    // Gather diagnostic information
-    const diagInfo = {
-      timestamp: new Date().toISOString(),
-      userAgent: navigator.userAgent,
-      href: window.location.href,
-      errorName: error.name,
-      errorMessage: error.message,
-      stack: error.stack?.split('\n').slice(0, 5).join('\n') || 'No stack trace available',
-      isHMRError: isHMRRelatedError(error),
-      recommendations: getErrorRecommendations(error)
-    };
-    
-    setDiagnostics(JSON.stringify(diagInfo, null, 2));
-  }, [error]);
-  
-  const isHMRRelatedError = (error: Error): boolean => {
-    const hmrKeywords = [
-      'module factory not available',
-      'Cannot read properties of undefined',
-      'ChunkLoadError',
-      'Loading chunk',
-      'Failed to import'
-    ];
-    
-    return hmrKeywords.some(keyword => 
-      error.message.toLowerCase().includes(keyword.toLowerCase())
-    );
-  };
-  
-  const getErrorRecommendations = (error: Error): string[] => {
+  const getErrorRecommendations = useCallback((error: Error): string[] => {
     const recommendations: string[] = [];
     
     if (isHMRRelatedError(error)) {
@@ -148,6 +118,36 @@ function ThemeGlobeErrorFallback({ error, resetErrorBoundary }: { error: Error; 
     }
     
     return recommendations;
+  }, []);
+
+  useEffect(() => {
+    // Gather diagnostic information
+    const diagInfo = {
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+      href: window.location.href,
+      errorName: error.name,
+      errorMessage: error.message,
+      stack: error.stack?.split('\n').slice(0, 5).join('\n') || 'No stack trace available',
+      isHMRError: isHMRRelatedError(error),
+      recommendations: getErrorRecommendations(error)
+    };
+    
+    setDiagnostics(JSON.stringify(diagInfo, null, 2));
+  }, [error, getErrorRecommendations]);
+  
+  const isHMRRelatedError = (error: Error): boolean => {
+    const hmrKeywords = [
+      'module factory not available',
+      'Cannot read properties of undefined',
+      'ChunkLoadError',
+      'Loading chunk',
+      'Failed to import'
+    ];
+    
+    return hmrKeywords.some(keyword => 
+      error.message.toLowerCase().includes(keyword.toLowerCase())
+    );
   };
   
   const handleFullReload = () => {
@@ -278,11 +278,9 @@ interface ThemeGlobeWrapperProps {
 
 export default function ThemeGlobeWrapper({ onCategorySelect }: ThemeGlobeWrapperProps) {
   const [errorCount, setErrorCount] = useState(0);
-  const [lastErrorTime, setLastErrorTime] = useState<number>(0);
   
   const handleError = useCallback((error: Error) => {
     const now = Date.now();
-    setLastErrorTime(now);
     setErrorCount(prev => prev + 1);
     
     // Log error with context for debugging

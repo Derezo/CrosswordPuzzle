@@ -14,7 +14,7 @@ const api = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
-  if (token) {
+  if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
@@ -41,7 +41,7 @@ export const authAPI = {
     lastName: string;
   }): Promise<AuthResponse> => {
     const response = await api.post('/auth/register', data);
-    return response.data;
+    return response.data as any
   },
 
   login: async (data: {
@@ -49,18 +49,18 @@ export const authAPI = {
     password: string;
   }): Promise<AuthResponse> => {
     const response = await api.post('/auth/login', data);
-    return response.data;
+    return response.data as any
   },
 
   getCurrentUser: async () => {
     const response = await api.get('/auth/me');
-    return response.data;
+    return response.data as any
   },
 
   logout: async () => {
     const response = await api.post('/auth/logout');
     localStorage.removeItem('token');
-    return response.data;
+    return response.data as any
   },
 
   updatePassword: async (data: {
@@ -69,7 +69,7 @@ export const authAPI = {
     confirmPassword: string;
   }) => {
     const response = await api.put('/auth/update-password', data);
-    return response.data;
+    return response.data as any
   },
 
   updateProfile: async (data: {
@@ -78,23 +78,23 @@ export const authAPI = {
     email: string;
   }) => {
     const response = await api.put('/auth/update-profile', data);
-    return response.data;
+    return response.data as any
   },
 
   getProfile: async () => {
     const response = await api.get('/auth/profile');
-    return response.data;
+    return response.data as any
   },
 
   deleteAccount: async () => {
     const response = await api.delete('/auth/delete-account');
     localStorage.removeItem('token');
-    return response.data;
+    return response.data as any
   },
 
   updateFavoriteCategory: async (categoryId: string | null) => {
     const response = await api.put('/auth/update-favorite-category', { categoryId });
-    return response.data;
+    return response.data as any
   },
 };
 
@@ -105,7 +105,7 @@ export const puzzleAPI = {
     progress: UserProgress;
   }> => {
     const response = await api.get('/puzzle/today');
-    return response.data;
+    return response.data as any;
   },
 
   validateAnswers: async (data: {
@@ -113,7 +113,7 @@ export const puzzleAPI = {
     puzzleDate: string;
   }): Promise<ValidationResult> => {
     const response = await api.post('/puzzle/validate', data);
-    return response.data;
+    return response.data as any;
   },
 
   validateGridAnswers: async (data: {
@@ -121,12 +121,12 @@ export const puzzleAPI = {
     puzzleDate: string;
   }): Promise<ValidationResult> => {
     const response = await api.post('/puzzle/validate-grid', data);
-    return response.data;
+    return response.data as any;
   },
 
   getProgress: async (date: string): Promise<UserProgress> => {
     const response = await api.get(`/puzzle/progress/${date}`);
-    return response.data;
+    return response.data as any;
   },
 
   autoSolve: async (puzzleDate: string): Promise<{
@@ -136,7 +136,7 @@ export const puzzleAPI = {
     autoSolved: boolean;
   }> => {
     const response = await api.post('/puzzle/auto-solve', { puzzleDate });
-    return response.data;
+    return response.data as any;
   },
 
   generateCategoryPuzzle: async (categoryName: string): Promise<{
@@ -146,7 +146,7 @@ export const puzzleAPI = {
     wordCount: number;
   }> => {
     const response = await api.post('/puzzle/generate-category', { categoryName });
-    return response.data;
+    return response.data as any
   },
 
   getRecentCategoryPuzzles: async (): Promise<{
@@ -157,7 +157,7 @@ export const puzzleAPI = {
     }>;
   }> => {
     const response = await api.get('/puzzle/recent-category');
-    return response.data;
+    return response.data as any
   },
 
   getSpecificPuzzle: async (date: string): Promise<{
@@ -165,7 +165,7 @@ export const puzzleAPI = {
     progress: UserProgress;
   }> => {
     const response = await api.get(`/puzzle/specific/${date}`);
-    return response.data;
+    return response.data as any
   },
 };
 
@@ -173,17 +173,17 @@ export const puzzleAPI = {
 export const achievementAPI = {
   getUserAchievements: async () => {
     const response = await api.get('/achievement/user');
-    return response.data;
+    return response.data as any
   },
 
   getAvailableAchievements: async (): Promise<{ achievements: Achievement[] }> => {
     const response = await api.get('/achievement/available');
-    return response.data;
+    return response.data as any
   },
 
   getAchievementStats: async () => {
     const response = await api.get('/achievement/stats');
-    return response.data;
+    return response.data as any
   },
 };
 
@@ -194,12 +194,12 @@ export const leaderboardAPI = {
     userRank?: LeaderboardEntry;
   }> => {
     const response = await api.get('/leaderboard/top100');
-    return response.data;
+    return response.data as any
   },
 
   getUserRank: async () => {
     const response = await api.get('/leaderboard/user-rank');
-    return response.data;
+    return response.data as any
   },
 };
 
@@ -215,12 +215,12 @@ export const suggestionAPI = {
     comments?: string;
   }) => {
     const response = await api.post('/suggestion/submit', data);
-    return response.data;
+    return response.data as any
   },
 
   getMySuggestions: async () => {
     const response = await api.get('/suggestion/my-suggestions');
-    return response.data;
+    return response.data as any
   },
 
   getAllSuggestions: async (params?: {
@@ -229,7 +229,7 @@ export const suggestionAPI = {
     offset?: number;
   }) => {
     const response = await api.get('/suggestion/all', { params });
-    return response.data;
+    return response.data as any
   },
 };
 
@@ -243,17 +243,17 @@ export const categoriesAPI = {
     activeOnly?: boolean;
   }): Promise<{ data: PuzzleCategory[]; total: number }> => {
     const response = await api.get('/categories', { params });
-    return response.data;
+    return response.data as any
   },
 
   getPopularCategories: async (limit: number = 10): Promise<{ data: PuzzleCategory[] }> => {
     const response = await api.get('/categories/popular', { params: { limit } });
-    return response.data;
+    return response.data as any
   },
 
   getCategoryStats: async (): Promise<{ data: CategoryStats }> => {
     const response = await api.get('/categories/stats');
-    return response.data;
+    return response.data as any
   },
 
   toggleFavoriteCategory: async (categoryId: string): Promise<{
@@ -262,14 +262,14 @@ export const categoriesAPI = {
     message: string;
   }> => {
     const response = await api.put(`/categories/${categoryId}/favorite`);
-    return response.data;
+    return response.data as any
   },
 
   getUserFavoriteCategory: async (): Promise<{
     data: { favoriteCategory: PuzzleCategory | null };
   }> => {
     const response = await api.get('/categories/user/favorite');
-    return response.data;
+    return response.data as any
   },
 
   getUserFavoriteCategories: async (): Promise<{
@@ -279,7 +279,7 @@ export const categoriesAPI = {
     };
   }> => {
     const response = await api.get('/categories/user/favorites');
-    return response.data;
+    return response.data as any
   },
 
   getCategoryWords: async (categoryId: string, limit?: number, offset?: number): Promise<{
@@ -305,7 +305,7 @@ export const categoriesAPI = {
     if (offset) params.set('offset', offset.toString());
     
     const response = await api.get(`/categories/${categoryId}/words?${params}`);
-    return response.data;
+    return response.data as any
   },
 
   getCategoryPuzzles: async (categoryId: string): Promise<{
@@ -324,7 +324,7 @@ export const categoriesAPI = {
     };
   }> => {
     const response = await api.get(`/categories/${categoryId}/puzzles`);
-    return response.data;
+    return response.data as any
   },
 };
 

@@ -29,8 +29,9 @@ export default function RegisterPage() {
     try {
       await register({ email, password, firstName, lastName });
       router.push('/puzzle');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      const error = err as { message?: string };
+      setError(error.message || 'Registration failed');
     } finally {
       setLoading(false);
     }

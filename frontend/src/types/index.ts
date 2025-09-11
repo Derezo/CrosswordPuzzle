@@ -33,7 +33,7 @@ export interface DailyPuzzle {
 
 export interface UserProgress {
   answers: { [clueNumber: string]: string };
-  gridData?: any[][]; // Saved grid state
+  gridData?: unknown[][]; // Saved grid state
   completedClues: number[];
   isCompleted: boolean;
   completedAt?: string;
@@ -55,7 +55,7 @@ export interface UserAchievement {
   id: string;
   achievement: Achievement;
   earnedAt: string;
-  metadata?: any;
+  metadata?: unknown;
 }
 
 export interface LeaderboardEntry {
@@ -83,7 +83,7 @@ export interface ValidationResult {
   solveTime?: number;
   newAchievements?: UserAchievement[];
   solvedClues: { [clueNumber: string]: string }; // For UI display only
-  validatedGrid: any[][];  // The validated grid data
+  validatedGrid: unknown[][];  // The validated grid data
 }
 
 export interface PuzzleCategory {

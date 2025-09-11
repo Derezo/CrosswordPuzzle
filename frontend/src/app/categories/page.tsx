@@ -38,7 +38,7 @@ export default function CategoriesPage() {
               </div>
             ) : (
               <p className="text-gray-600">
-                You haven't selected a favorite category yet. Click the heart icon on any category below to set it as your favorite!
+                You haven&apos;t selected a favorite category yet. Click the heart icon on any category below to set it as your favorite!
               </p>
             )}
           </div>

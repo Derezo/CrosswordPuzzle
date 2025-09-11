@@ -2,16 +2,16 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useState, useEffect } from 'react';
-import { UserIcon, HeartIcon, ChartBarIcon, KeyIcon, EnvelopeIcon, PencilIcon, CheckIcon, XMarkIcon, ExclamationTriangleIcon, TrashIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { UserIcon, ChartBarIcon, KeyIcon, EnvelopeIcon, PencilIcon, CheckIcon, XMarkIcon, ExclamationTriangleIcon, TrashIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
 import { authAPI } from '@/lib/api';
 import CategoriesList from '@/components/CategoriesList';
 import { Navigation } from '@/components/Navigation';
 
 export default function ProfilePage() {
-  const { user, updateUser } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [profileData, setProfileData] = useState<any>(null);
+  const { user } = useAuth();
+  const [, setLoading] = useState(true);
+  const [profileData, setProfileData] = useState<unknown>(null);
   
   // Password update state
   const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -57,12 +57,13 @@ export default function ProfilePage() {
       console.log('Profile response:', profileResponse);
       
       // Handle profile data
-      if (profileResponse && profileResponse.user) {
-        setProfileData(profileResponse.user);
+      if (profileResponse && (profileResponse as { user?: unknown }).user) {
+        const userData = (profileResponse as unknown as { user: { firstName: string; lastName: string; email: string; [key: string]: unknown } }).user;
+        setProfileData(userData);
         setProfileForm({
-          firstName: profileResponse.user.firstName,
-          lastName: profileResponse.user.lastName,
-          email: profileResponse.user.email
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          email: userData.email
         });
       }
     } catch (err) {
@@ -89,9 +90,10 @@ export default function ProfilePage() {
       setPasswordSuccess('Password updated successfully!');
       setPasswordForm({ currentPassword: '', password: '', confirmPassword: '' });
       setShowPasswordForm(false);
-    } catch (err: any) {
-      const errors = err.response?.data?.errors || [{ message: err.response?.data?.message || 'Failed to update password' }];
-      setPasswordErrors(errors.map((e: any) => e.message));
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { errors?: Array<{ message: string }>; message?: string } } };
+      const errors = error.response?.data?.errors || [{ message: error.response?.data?.message || 'Failed to update password' }];
+      setPasswordErrors(errors.map((e: { message: string }) => e.message));
     } finally {
       setPasswordLoading(false);
     }
@@ -108,16 +110,12 @@ export default function ProfilePage() {
       setProfileSuccess('Profile updated successfully!');
       setEditingProfile(false);
       
-      // Update user context
-      if (updateUser) {
-        await updateUser();
-      }
-      
       // Update local profile data
-      setProfileData(response.user);
-    } catch (err: any) {
-      const errors = err.response?.data?.errors || [{ message: err.response?.data?.message || 'Failed to update profile' }];
-      setProfileErrors(errors.map((e: any) => e.message));
+      setProfileData((response as { user: unknown }).user);
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { errors?: Array<{ message: string }>; message?: string } } };
+      const errors = error.response?.data?.errors || [{ message: error.response?.data?.message || 'Failed to update profile' }];
+      setProfileErrors(errors.map((e: { message: string }) => e.message));
     } finally {
       setProfileLoading(false);
     }
@@ -153,8 +151,9 @@ export default function ProfilePage() {
       
       // Redirect to home page
       window.location.href = '/';
-    } catch (err: any) {
-      alert('Failed to delete account: ' + (err.response?.data?.message || 'Unknown error'));
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      alert('Failed to delete account: ' + (error.response?.data?.message || 'Unknown error'));
     } finally {
       setDeleteLoading(false);
     }
@@ -233,7 +232,7 @@ export default function ProfilePage() {
                   <div>
                     <p className="text-sm font-bold text-blue-200">🏆 Achievements</p>
                     <p className="text-2xl font-bold text-white">
-                      {profileData?.stats?.totalAchievements || 0}
+                      {(profileData as { stats?: { totalAchievements?: number } })?.stats?.totalAchievements || 0}
                     </p>
                   </div>
                 </div>
@@ -246,7 +245,7 @@ export default function ProfilePage() {
                   <div>
                     <p className="text-sm font-bold text-cyan-200">First Launched</p>
                     <p className="text-lg font-bold text-white">
-                      {new Date(user.createdAt || Date.now()).toLocaleDateString()}
+                      {new Date((user as { createdAt?: string }).createdAt || Date.now()).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
@@ -441,19 +440,19 @@ export default function ProfilePage() {
                     <p className="text-white">{user?.email}</p>
                   </div>
                 </div>
-                {profileData && (
+                {(profileData as any) && (
                   <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-500/50">
                     <div>
                       <p className="text-sm font-medium text-purple-200">Member Since</p>
-                      <p className="text-white">{new Date(profileData.createdAt).toLocaleDateString()}</p>
+                      <p className="text-white">{new Date((profileData as any).createdAt).toLocaleDateString()}</p>
                     </div>
                     <div>
                       <p className="text-sm font-medium text-purple-200">Puzzles Played</p>
-                      <p className="text-white">{profileData.stats?.totalPuzzlesPlayed || 0}</p>
+                      <p className="text-white">{(profileData as any)?.stats?.totalPuzzlesPlayed || 0}</p>
                     </div>
                     <div>
                       <p className="text-sm font-medium text-purple-200">Achievements</p>
-                      <p className="text-white">{profileData.stats?.totalAchievements || 0}</p>
+                      <p className="text-white">{(profileData as any)?.stats?.totalAchievements || 0}</p>
                     </div>
                   </div>
                 )}
@@ -462,7 +461,7 @@ export default function ProfilePage() {
           </div>
           
           {/* Password Section */}
-          {profileData?.hasPassword && (
+          {(profileData as any)?.hasPassword && (
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h4 className="font-medium text-white flex items-center">
@@ -569,14 +568,14 @@ export default function ProfilePage() {
           )}
           
           {/* Google OAuth Users */}
-          {profileData?.isGoogleUser && !profileData?.hasPassword && (
+          {(profileData as any)?.isGoogleUser && !(profileData as any)?.hasPassword && (
             <div className="bg-blue-900/60 border border-blue-500/50 rounded-md p-4">
               <h4 className="font-medium text-blue-200 mb-2 flex items-center">
                 <EnvelopeIcon className="h-5 w-5 mr-2" />
                 Google Account
               </h4>
               <p className="text-blue-300 text-sm">
-                You signed up using Google OAuth. Your account is secured through Google's authentication system.
+                You signed up using Google OAuth. Your account is secured through Google&apos;s authentication system.
               </p>
             </div>
           )}

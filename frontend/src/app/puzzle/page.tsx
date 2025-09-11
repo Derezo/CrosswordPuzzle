@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, Suspense } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Navigation } from "@/components/Navigation";
@@ -242,7 +242,7 @@ const CooldownErrorModal: React.FC<CooldownErrorModalProps> = ({
   );
 };
 
-export default function PuzzlePage() {
+function PuzzlePageContent() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -261,7 +261,7 @@ export default function PuzzlePage() {
   const [newAchievements, setNewAchievements] = useState<UserAchievement[]>([]);
   const [showAchievements, setShowAchievements] = useState(false);
   const [autoSolving, setAutoSolving] = useState(false);
-  const [autoSolved, setAutoSolved] = useState(false);
+  const [, setAutoSolved] = useState(false);
   const [currentGridData, setCurrentGridData] = useState<GridCellData[][]>([]);
   const [initialGridData, setInitialGridData] = useState<GridCellData[][]>([]);
   const [showAutoSolveModal, setShowAutoSolveModal] = useState(false);
@@ -341,6 +341,135 @@ export default function PuzzlePage() {
     };
   }, [puzzle, progress]);
 
+  // Fireworks animation function
+  const createFireworks = useCallback(() => {
+    const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57', '#ff9ff3', '#54a0ff'];
+    const newFireworks = Array.from({ length: 12 }, (_, i) => ({
+      id: `firework-${Date.now()}-${i}`,
+      x: Math.random() * 100,
+      y: 20 + Math.random() * 40,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      delay: Math.random() * 2000,
+    }));
+    
+    setFireworks(newFireworks);
+    
+    // Clear fireworks after animation
+    setTimeout(() => {
+      setFireworks([]);
+    }, 4000);
+  }, []);
+
+  // Dev Easter Egg: Trigger random achievement
+  const triggerRandomAchievement = useCallback(async () => {
+    console.log('🔥 DEV EASTER EGG: triggerRandomAchievement() called!');
+    console.log('🔥 DEV EASTER EGG: isDevMode:', isDevMode);
+    console.log('🔥 DEV EASTER EGG: puzzle exists:', !!puzzle);
+    
+    if (!isDevMode) {
+      console.log('❌ DEV EASTER EGG: Exiting early - not in dev mode');
+      return;
+    }
+    
+    // Allow easter egg even if puzzle isn't loaded yet - it's just for fun!
+    if (!puzzle) {
+      console.log('⚠️ DEV EASTER EGG: No puzzle loaded, but proceeding anyway for dev testing');
+    }
+
+    console.log('🎉 DEV EASTER EGG: A-A-A sequence detected!');
+    
+    try {
+      // For development, we'll create a mock achievement that triggers the visual effects
+      // but also make an API call to simulate real achievement unlocking
+      
+      // Create a mock random achievement for immediate display
+      const devAchievements = [
+        {
+          id: 'dev-test-1',
+          achievement: {
+            id: 'dev-test',
+            name: '🎮 Developer Mode',
+            description: 'You found the secret developer achievement! A+A+A = Success!',
+            icon: '🐛',
+            points: 100,
+          },
+          earnedAt: new Date().toISOString(),
+          metadataData: null
+        },
+        {
+          id: 'dev-test-2', 
+          achievement: {
+            id: 'dev-konami',
+            name: '🕹️ Code Whisperer',
+            description: 'Your keyboard skills have unlocked cosmic secrets of development!',
+            icon: '⌨️',
+            points: 150,
+          },
+          earnedAt: new Date().toISOString(),
+          metadataData: null
+        },
+        {
+          id: 'dev-test-3',
+          achievement: {
+            id: 'dev-easter',
+            name: '🥚 Easter Egg Hunter',
+            description: 'You discovered a hidden development treasure! Keep exploring!',
+            icon: '🔍',
+            points: 75,
+          },
+          earnedAt: new Date().toISOString(),
+          metadataData: null
+        }
+      ];
+
+      const randomAchievement = devAchievements[Math.floor(Math.random() * devAchievements.length)];
+      
+      console.log('🎉 DEV EASTER EGG: Triggered random achievement!', randomAchievement);
+      
+      // Simulate an API call to show network activity in dev tools
+      try {
+        console.log('🌐 DEV EASTER EGG: Making simulated API call...');
+        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        const url = `${API_BASE_URL}/dev/easter-egg-achievement`;
+        const token = localStorage.getItem('token');
+        
+        console.log('🌐 DEV EASTER EGG: API_BASE_URL:', API_BASE_URL);
+        console.log('🌐 DEV EASTER EGG: Full URL:', url);
+        console.log('🌐 DEV EASTER EGG: Token exists:', !!token);
+        console.log('🌐 DEV EASTER EGG: Achievement ID:', randomAchievement.achievement.id);
+        
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ achievementId: randomAchievement.achievement.id })
+        });
+        
+        console.log('🌐 DEV EASTER EGG: Response status:', response.status);
+        console.log('🌐 DEV EASTER EGG: Response ok:', response.ok);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('🌐 DEV EASTER EGG: Response data:', data);
+        } else {
+          console.log('💡 DEV EASTER EGG: API call failed with status:', response.status);
+        }
+      } catch (error) {
+        console.error('💡 DEV EASTER EGG: API call error:', error);
+      }
+      
+      // Show the achievement modal regardless of API result
+      setNewAchievements([randomAchievement]);
+      setShowAchievements(true);
+      setTimeout(() => createFireworks(), 500);
+      
+    } catch (error) {
+      console.error('❌ DEV EASTER EGG: Error triggering achievement', error);
+    }
+  }, [isDevMode, puzzle, setNewAchievements, setShowAchievements, createFireworks]);
+
   // Easter egg keyboard listener - development mode only
   useEffect(() => {
     if (!isDevMode) return;
@@ -375,7 +504,7 @@ export default function PuzzlePage() {
 
     document.addEventListener('keydown', handleKeyPress);
     return () => document.removeEventListener('keydown', handleKeyPress);
-  }, [isDevMode]);
+  }, [isDevMode, triggerRandomAchievement]);
 
   const formatTime = (totalSeconds: number) => {
     const hours = Math.floor(totalSeconds / 3600);
@@ -539,7 +668,7 @@ export default function PuzzlePage() {
       // Use saved gridData if available, otherwise reconstruct if completed
       if (data.progress.gridData) {
         // Use saved grid state directly
-        setInitialGridData(data.progress.gridData);
+        setInitialGridData(data.progress.gridData as GridCellData[][]);
         
         // Create validation results showing all completed clues as correct
         const completedValidations: { [key: number]: boolean } = {};
@@ -553,7 +682,7 @@ export default function PuzzlePage() {
         for (let row = 0; row < data.progress.gridData.length; row++) {
           for (let col = 0; col < data.progress.gridData[0]?.length || 0; col++) {
             const cell = data.progress.gridData[row][col];
-            if (cell && cell.letter && !data.puzzle.grid[row][col].isBlocked) {
+            if (cell && (cell as any).letter && !data.puzzle.grid[row][col].isBlocked) {
               savedCellValidation[`${row},${col}`] = true;
             }
           }
@@ -687,7 +816,7 @@ export default function PuzzlePage() {
 
       // Use saved gridData if available, otherwise reconstruct if completed
       if (data.progress.gridData) {
-        setInitialGridData(data.progress.gridData);
+        setInitialGridData(data.progress.gridData as GridCellData[][]);
         
         const completedValidations: { [key: number]: boolean } = {};
         data.progress.completedClues.forEach((clueNumber) => {
@@ -699,7 +828,7 @@ export default function PuzzlePage() {
         for (let row = 0; row < data.progress.gridData.length; row++) {
           for (let col = 0; col < data.progress.gridData[0]?.length || 0; col++) {
             const cell = data.progress.gridData[row][col];
-            if (cell && cell.letter && !data.puzzle.grid[row][col].isBlocked) {
+            if (cell && (cell as any).letter && !data.puzzle.grid[row][col].isBlocked) {
               savedCellValidation[`${row},${col}`] = true;
             }
           }
@@ -884,133 +1013,6 @@ export default function PuzzlePage() {
     return !!(puzzle && currentGridData.length > 0);
   };
 
-  const createFireworks = () => {
-    const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57', '#ff9ff3', '#54a0ff'];
-    const newFireworks = Array.from({ length: 12 }, (_, i) => ({
-      id: `firework-${Date.now()}-${i}`,
-      x: Math.random() * 100,
-      y: 20 + Math.random() * 40,
-      color: colors[Math.floor(Math.random() * colors.length)],
-      delay: Math.random() * 2000,
-    }));
-    
-    setFireworks(newFireworks);
-    
-    // Clear fireworks after animation
-    setTimeout(() => {
-      setFireworks([]);
-    }, 4000);
-  };
-
-  // Dev Easter Egg: Trigger random achievement
-  const triggerRandomAchievement = async () => {
-    console.log('🔥 DEV EASTER EGG: triggerRandomAchievement() called!');
-    console.log('🔥 DEV EASTER EGG: isDevMode:', isDevMode);
-    console.log('🔥 DEV EASTER EGG: puzzle exists:', !!puzzle);
-    
-    if (!isDevMode) {
-      console.log('❌ DEV EASTER EGG: Exiting early - not in dev mode');
-      return;
-    }
-    
-    // Allow easter egg even if puzzle isn't loaded yet - it's just for fun!
-    if (!puzzle) {
-      console.log('⚠️ DEV EASTER EGG: No puzzle loaded, but proceeding anyway for dev testing');
-    }
-
-    console.log('🎉 DEV EASTER EGG: A-A-A sequence detected!');
-    
-    try {
-      // For development, we'll create a mock achievement that triggers the visual effects
-      // but also make an API call to simulate real achievement unlocking
-      
-      // Create a mock random achievement for immediate display
-      const devAchievements = [
-        {
-          id: 'dev-test-1',
-          achievement: {
-            id: 'dev-test',
-            name: '🎮 Developer Mode',
-            description: 'You found the secret developer achievement! A+A+A = Success!',
-            icon: '🐛',
-            points: 100,
-          },
-          earnedAt: new Date(),
-          metadataData: null
-        },
-        {
-          id: 'dev-test-2', 
-          achievement: {
-            id: 'dev-konami',
-            name: '🕹️ Code Whisperer',
-            description: 'Your keyboard skills have unlocked cosmic secrets of development!',
-            icon: '⌨️',
-            points: 150,
-          },
-          earnedAt: new Date(),
-          metadataData: null
-        },
-        {
-          id: 'dev-test-3',
-          achievement: {
-            id: 'dev-easter',
-            name: '🥚 Easter Egg Hunter',
-            description: 'You discovered a hidden development treasure! Keep exploring!',
-            icon: '🔍',
-            points: 75,
-          },
-          earnedAt: new Date(),
-          metadataData: null
-        }
-      ];
-
-      const randomAchievement = devAchievements[Math.floor(Math.random() * devAchievements.length)];
-      
-      console.log('🎉 DEV EASTER EGG: Triggered random achievement!', randomAchievement);
-      
-      // Simulate an API call to show network activity in dev tools
-      try {
-        console.log('🌐 DEV EASTER EGG: Making simulated API call...');
-        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-        const url = `${API_BASE_URL}/dev/easter-egg-achievement`;
-        const token = localStorage.getItem('token');
-        
-        console.log('🌐 DEV EASTER EGG: API_BASE_URL:', API_BASE_URL);
-        console.log('🌐 DEV EASTER EGG: Full URL:', url);
-        console.log('🌐 DEV EASTER EGG: Token exists:', !!token);
-        console.log('🌐 DEV EASTER EGG: Achievement ID:', randomAchievement.achievement.id);
-        
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ achievementId: randomAchievement.achievement.id })
-        });
-        
-        console.log('🌐 DEV EASTER EGG: Response status:', response.status);
-        console.log('🌐 DEV EASTER EGG: Response ok:', response.ok);
-        
-        if (response.ok) {
-          const data = await response.json();
-          console.log('🌐 DEV EASTER EGG: Response data:', data);
-        } else {
-          console.log('💡 DEV EASTER EGG: API call failed with status:', response.status);
-        }
-      } catch (error) {
-        console.error('💡 DEV EASTER EGG: API call error:', error);
-      }
-      
-      // Show the achievement modal regardless of API result
-      setNewAchievements([randomAchievement]);
-      setShowAchievements(true);
-      setTimeout(() => createFireworks(), 500);
-      
-    } catch (error) {
-      console.error('❌ DEV EASTER EGG: Error triggering achievement', error);
-    }
-  };
 
   const handleCloseAchievements = () => {
     setShowAchievements(false);
@@ -1051,18 +1053,18 @@ export default function PuzzlePage() {
               answers: result.answers,
               completedClues: result.completedClues,
               isCompleted: result.isCompleted,
-              solveTime: null, // No solve time for auto-solved
+              solveTime: undefined, // No solve time for auto-solved
             }
           : null,
       );
 
       // Update validation results - both clue and cell level
-      setValidationResults(result.results || {});
-      setCellValidation(result.cellValidation || {});
+      setValidationResults((result as any).results || {});
+      setCellValidation((result as any).cellValidation || {});
 
       // Update initial grid data to reflect the solved grid
-      if (result.validatedGrid) {
-        setInitialGridData(result.validatedGrid);
+      if ((result as any).validatedGrid) {
+        setInitialGridData((result as any).validatedGrid);
       }
 
       // Trigger energy orbs animation for all completed clues
@@ -1072,17 +1074,23 @@ export default function PuzzlePage() {
           createEnergyOrbs(result.completedClues);
         }, 500); // Slightly longer delay for auto-solve to make it more dramatic
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as { response?: { status?: number; data?: { error?: string; remainingTime?: unknown; message?: string } } };
       console.error("Error auto-solving puzzle:", error);
 
       // Handle cooldown error specifically
       if (
-        error.response?.status === 429 &&
-        error.response?.data?.error === "AUTO_SOLVE_COOLDOWN"
+        err.response?.status === 429 &&
+        err.response?.data?.error === "AUTO_SOLVE_COOLDOWN"
       ) {
         setCooldownData({
-          remainingTime: error.response.data.remainingTime,
-          message: error.response.data.message,
+          remainingTime: err.response.data.remainingTime as {
+            hours: number;
+            minutes: number;
+            seconds: number;
+            totalSeconds: number;
+          },
+          message: err.response.data.message || 'Cooldown active',
         });
         setShowCooldownError(true);
       }
@@ -1103,7 +1111,7 @@ export default function PuzzlePage() {
             </div>
             <div className="text-center">
               <p className="text-white text-xl font-medium mb-2">
-                Loading today's cosmic puzzle...
+                Loading today&apos;s cosmic puzzle...
               </p>
               <p className="text-purple-200 text-sm">
                 Scanning the galaxy for crossword signals ✨
@@ -1343,7 +1351,7 @@ export default function PuzzlePage() {
                 <div className="flex items-center gap-2 text-blue-200">
                   <span>📊</span>
                   <span className="text-sm font-medium">
-                    Won't appear in your solved puzzle history
+                    Won&apos;t appear in your solved puzzle history
                   </span>
                 </div>
               </div>
@@ -1452,7 +1460,7 @@ export default function PuzzlePage() {
             {/* Celebration Message */}
             <div className="mb-6 p-4 bg-white/10 rounded-lg border border-white/20">
               <p className="text-white font-medium">
-                🚀 You're crushing it! Keep solving to unlock more cosmic achievements!
+                🚀 You&apos;re crushing it! Keep solving to unlock more cosmic achievements!
               </p>
             </div>
 
@@ -1510,8 +1518,8 @@ export default function PuzzlePage() {
         <div className="fixed bottom-4 right-4 z-40 bg-green-600/20 border border-green-500/50 rounded-lg px-3 py-2 backdrop-blur-sm">
           <div className="flex items-center gap-2 text-green-300 text-sm">
             <span>🐛</span>
-            <span>Dev Easter Egg: {keySequence.map((key, i) => key).join('-')}</span>
-            <span className="text-xs opacity-70">({3 - keySequence.length} more A's)</span>
+            <span>Dev Easter Egg: {keySequence.map((key) => key).join('-')}</span>
+            <span className="text-xs opacity-70">({3 - keySequence.length} more A&apos;s)</span>
           </div>
         </div>
       )}
@@ -1528,5 +1536,24 @@ export default function PuzzlePage() {
         />
       ))}
     </div>
+  );
+}
+
+export default function PuzzlePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">
+      <div className="cosmic-card p-8 flex flex-col items-center space-y-6">
+        <div className="relative">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-green-500/30 border-t-green-500"></div>
+          <div className="absolute inset-0 animate-ping rounded-full h-16 w-16 border-4 border-green-500/20"></div>
+        </div>
+        <div className="text-center">
+          <p className="text-white text-xl font-medium mb-2">Loading galactic puzzle...</p>
+          <p className="text-purple-200 text-sm">Preparing cosmic crossword ✨</p>
+        </div>
+      </div>
+    </div>}>
+      <PuzzlePageContent />
+    </Suspense>
   );
 }

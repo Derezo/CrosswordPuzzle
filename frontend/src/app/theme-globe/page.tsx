@@ -218,8 +218,9 @@ export default function ThemeGlobePage() {
           }
         }
       }
-    } catch (error: any) {
-      console.error("Error setting up streaming:", error);
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string }; message?: string }; message?: string };
+      console.error("Error setting up streaming:", err);
       // Fallback to regular generation
       handleGeneratePuzzleFallback();
     }
@@ -249,11 +250,12 @@ export default function ThemeGlobePage() {
         setGenerationStage("");
         setGenerationProgress(0);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error generating puzzle (fallback):", error);
+      const err = error as { response?: { data?: { error?: string } }; message?: string };
       const errorMessage =
-        error.response?.data?.error ||
-        error.message ||
+        err.response?.data?.error ||
+        err.message ||
         "The cosmic crossword generator experienced a malfunction. Please try again.";
       setGenerationError(errorMessage);
       setGenerationStage("");
@@ -532,7 +534,7 @@ export default function ThemeGlobePage() {
                       onClick={handleCloseErrorDialog}
                       className="px-6 py-3 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-500 hover:to-pink-500 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg"
                     >
-                      🤷‍♂️ Well, That Didn't Work
+                      🤷‍♂️ Well, That Didn&apos;t Work
                     </button>
                     <p className="text-purple-300 text-xs mt-2">
                       Maybe try a different category? The cosmos can be

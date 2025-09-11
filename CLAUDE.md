@@ -186,20 +186,103 @@ To add testing support:
 - **Database**: Consider using in-memory SQLite for test isolation
 - **Use `./scripts/test.sh`**: Runs type checking for both frontend and backend, ESLint, and puzzle generation tests
 
-## Deployment Considerations
+## Production Deployment
 
-### Backend Deployment
-- Requires SQLite database (or migrate to another database system)
-- Set production environment variables
-- Enable HTTPS in production
-- Configure proper CORS origins
-- Set up process manager (PM2 recommended)
+### Unified Deployment Script
 
-### Frontend Deployment
-- Build static assets: `npm run build`
-- Configure API base URL for production
-- Set up CDN for static assets
-- Enable proper meta tags for SEO
+The project includes a comprehensive single-script deployment solution:
+
+```bash
+# Complete deployment (build + upload + server setup)
+./deploy-production.sh full
+
+# Other deployment modes
+./deploy-production.sh build-only      # Build and package locally only
+./deploy-production.sh upload-only     # Upload existing package to server
+./deploy-production.sh server-only     # Setup server infrastructure only
+./deploy-production.sh help            # Show all options
+```
+
+### Environment Configuration
+
+Configure deployment with environment variables:
+
+```bash
+# Example: Deploy to custom domain
+DEPLOY_DOMAIN=mysite.com ./deploy-production.sh full
+
+# Example: Use custom SSH key
+SSH_KEY=~/.ssh/mykey ./deploy-production.sh full
+
+# All available options:
+DEPLOY_DOMAIN=crossword.mittonvillage.com  # Target domain
+DEPLOY_USER=deploy                         # SSH user
+DEPLOY_PATH=/var/www/crossword            # Server path
+BACKEND_PORT=5001                         # Backend port
+FRONTEND_PORT=3001                        # Frontend port
+SSH_KEY=~/.ssh/id_rsa                     # SSH key path
+ADMIN_EMAIL=admin@domain.com              # Admin email for SSL
+```
+
+### What the Unified Script Does
+
+**Enhanced Reliability Features:**
+- **Comprehensive Error Handling**: Automatic cleanup, rollback commands, and detailed logging
+- **Dependency Management**: Proper order of operations with wait conditions and timeouts
+- **Package Integrity**: Verification of build outputs and deployment packages
+- **SSH Retry Logic**: Robust network error handling with automatic retries
+- **Deployment Tracking**: Unique deployment IDs and comprehensive log files
+
+**Step-by-Step Process:**
+1. **Validates Prerequisites**: 
+   - Git status, required tools, SSH connectivity
+   - Port and domain validation
+   - Build output verification
+2. **Builds Application**: 
+   - Builds frontend with correct production API URL
+   - Builds backend TypeScript to JavaScript
+   - Creates and verifies deployment package integrity
+   - Generates production-ready configurations
+3. **Uploads Package**: 
+   - Securely transfers package to server via SSH
+   - Verifies upload integrity and extraction
+   - Creates automatic backups of existing installations
+4. **Sets Up Server**: 
+   - Installs system dependencies (nginx, certbot, nodejs, pm2)
+   - Creates deploy user and sets permissions
+   - Configures firewall with proper port access
+5. **Configures Application**:
+   - Installs app dependencies with verification
+   - Sets up database with Prisma migration
+   - Configures PM2 with clustering and monitoring
+   - Sets up structured logging and log rotation
+6. **Configures Nginx & SSL**:
+   - Sets up nginx reverse proxy with rate limiting
+   - Obtains SSL certificate from Let's Encrypt (with proper dependency ordering)
+   - Configures security headers and performance optimizations
+7. **Runs Health Checks**: 
+   - Tests PM2 service status
+   - Validates backend API and frontend availability
+   - Verifies SSL certificate installation
+8. **Provides Summary**: 
+   - Shows deployment info, rollback commands, and next steps
+   - Generates comprehensive deployment logs
+
+### Manual Deployment (Legacy)
+
+For manual deployment, individual scripts are available in `deploy/scripts/`:
+- `server-setup.sh` - Server infrastructure setup
+- `app-setup.sh` - Application setup  
+- `ssl-setup.sh` - SSL certificate setup
+- `env-setup.sh` - Environment variable setup
+
+### Deployment Requirements
+
+- **Local**: Node.js, npm, git, ssh, scp
+- **Server**: Ubuntu/Debian-based Linux distribution
+- **Network**: SSH access to target server
+- **DNS**: Domain pointing to server IP address
+- **Ports**: 80, 443, SSH access
 
 ## Development Guidelines
 
@@ -334,3 +417,5 @@ docker-compose logs -f [service]      # View logs for specific service
 ### Environment Files for Docker
 - `.env.development` - Docker environment configuration (if using Docker setup)
 - Backend and frontend `.env` files still required as documented above
+- Always remember your current working directory
+- Always consider temporal dead zones when structuring your code.

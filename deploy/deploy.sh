@@ -43,12 +43,21 @@ fi
 print_status "Building frontend..."
 cd frontend
 npm ci --production=false
-npm run build
+# Temporarily backup and remove .env.local to prevent localhost override
+if [ -f ".env.local" ]; then
+    mv .env.local .env.local.backup
+fi
+# Set production environment variables
+NODE_ENV=production NEXT_PUBLIC_API_URL=https://${DOMAIN}/api npm run build
+# Restore .env.local after build
+if [ -f ".env.local.backup" ]; then
+    mv .env.local.backup .env.local
+fi
 print_success "Frontend build completed"
 
 print_status "Building backend..."
 cd ../backend
-npm ci --production
+npm ci --production=false
 npm run build
 print_success "Backend build completed"
 

@@ -1,0 +1,159 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   String   @id @default(cuid())
+  email                String   @unique
+  password             String?
+  googleId             String?  @unique
+  firstName            String
+  lastName             String
+  points               Int      @default(0)
+  favoriteCategoryId   String?  // User's preferred puzzle category (kept for backwards compatibility)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  // Relations
+  progresses         UserProgress[]
+  achievements       UserAchievement[]
+  suggestions        Suggestion[]
+  favoriteCategory   PuzzleCategory? @relation("UserSingleFavorite", fields: [favoriteCategoryId], references: [id])
+  favoriteCategories UserFavoriteCategory[]
+
+  @@map("users")
+}
+
+model DailyPuzzle {
+  id        String   @id @default(cuid())
+  date      String   @unique // YYYY-MM-DD format
+  gridData  String   // JSON string of the grid
+  cluesData String   // JSON string of the clues
+  rows      Int
+  cols      Int
+  createdAt DateTime @default(now())
+
+  // Relations
+  progresses  UserProgress[]
+  suggestions Suggestion[]
+
+  @@map("daily_puzzles")
+}
+
+model UserProgress {
+  id            String    @id @default(cuid())
+  userId        String
+  puzzleDate    String
+  answersData   String    @default("{}") // JSON string of answers
+  gridData      String?   // JSON string of current grid state
+  completedClues String   @default("[]") // JSON string of completed clue numbers
+  isCompleted   Boolean   @default(false)
+  completedAt   DateTime?
+  solveTime     Int?      // in seconds
+  firstViewedAt DateTime  @default(now()) // When user first viewed this puzzle
+  startedAt     DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  puzzle       DailyPuzzle @relation(fields: [puzzleDate], references: [date])
+
+  @@unique([userId, puzzleDate])
+  @@map("user_progress")
+}
+
+model Achievement {
+  id            String   @id @default(cuid())
+  name          String   @unique
+  description   String
+  points        Int
+  conditionType String
+  conditionData String   // JSON string of condition parameters
+  icon          String
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  // Relations
+  userAchievements UserAchievement[]
+
+  @@map("achievements")
+}
+
+model UserAchievement {
+  id            String    @id @default(cuid())
+  userId        String
+  achievementId String
+  earnedAt      DateTime  @default(now())
+  puzzleDate    String?
+  metadataData  String?   // JSON string of metadata
+
+  // Relations
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement  Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@map("user_achievements")
+}
+
+model Suggestion {
+  id               String   @id @default(cuid())
+  userId           String
+  puzzleId         String
+  puzzleDate       String
+  clueNumber       Int
+  originalClue     String
+  originalAnswer   String
+  suggestedClue    String?
+  suggestedAnswer  String?
+  comments         String?  // Optional user comments about the suggestion
+  status           String   @default("pending") // pending, reviewed, implemented, rejected
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  puzzle DailyPuzzle @relation(fields: [puzzleId], references: [id], onDelete: Cascade)
+
+  @@map("suggestions")
+}
+
+model PuzzleCategory {
+  id              String   @id @default(cuid())
+  name            String   @unique
+  description     String?
+  wordCount       Int      @default(0)  // Number of words in this category
+  favoritesCount  Int      @default(0)  // Number of users who favorited this category
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  usersWhoFavorited User[] @relation("UserSingleFavorite") // Users who have this as their favorite category
+  // Note: No relation to UserFavoriteCategory since it uses string categoryId from CSV
+
+  @@map("puzzle_categories")
+}
+
+model UserFavoriteCategory {
+  id         String   @id @default(cuid())
+  userId     String
+  categoryId String   // Category ID from CSV data, no foreign key constraint
+  createdAt  DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Note: No relation to PuzzleCategory since categories are loaded from CSV, not database
+
+  @@unique([userId, categoryId])
+  @@map("user_favorite_categories")
+}

@@ -52,10 +52,10 @@ Transfer the deployment package to your server and run initial setup:
 
 ```bash
 # Upload deployment package to your server
-scp -r deploy/package/* root@your-server-ip:/tmp/crossword-deployment/
+scp -r deploy/package/* root@mittonvillage.com:/tmp/crossword-deployment/
 
 # SSH into your server as root
-ssh root@your-server-ip
+ssh root@mittonvillage.com
 
 # Navigate to deployment directory
 cd /tmp/crossword-deployment
@@ -329,7 +329,7 @@ npx prisma generate
 ./deploy/deploy.sh
 
 # 2. Upload to server
-scp -r deploy/package/* deploy@your-server-ip:/tmp/update/
+scp -r deploy/package/* deploy@mittonvillage.com:/tmp/update/
 
 # 3. On server, backup current version
 sudo cp -r /var/www/crossword /var/www/crossword.backup.$(date +%Y%m%d)

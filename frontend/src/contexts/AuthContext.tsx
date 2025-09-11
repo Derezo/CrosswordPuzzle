@@ -46,7 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const getCurrentUser = async () => {
     try {
       const data = await authAPI.getCurrentUser();
-      setUser(data.user);
+      setUser((data as any).user);
     } catch (error) {
       console.error('Failed to get current user:', error);
       localStorage.removeItem('token');
@@ -58,11 +58,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const login = async (email: string, password: string) => {
     try {
       const data = await authAPI.login({ email, password });
-      localStorage.setItem('token', data.token);
-      setUser(data.user);
-    } catch (error: any) {
+      localStorage.setItem('token', (data as any).token);
+      setUser((data as any).user);
+    } catch (error: unknown) {
       // Handle both old and new error formats
-      const errorData = error.response?.data;
+      const err = error as { response?: { data?: { error?: string; message?: string; errors?: Array<{ message?: string }> } } };
+      const errorData = err.response?.data;
       let errorMessage = 'Login failed';
       
       if (errorData) {
@@ -90,11 +91,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }) => {
     try {
       const data = await authAPI.register(registerData);
-      localStorage.setItem('token', data.token);
-      setUser(data.user);
-    } catch (error: any) {
+      localStorage.setItem('token', (data as any).token);
+      setUser((data as any).user);
+    } catch (error: unknown) {
       // Handle both old and new error formats
-      const errorData = error.response?.data;
+      const err = error as { response?: { data?: { error?: string; message?: string; errors?: Array<{ message?: string }> } } };
+      const errorData = err.response?.data;
       let errorMessage = 'Registration failed';
       
       if (errorData) {

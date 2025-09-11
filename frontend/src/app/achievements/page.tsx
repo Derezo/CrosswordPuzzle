@@ -12,7 +12,13 @@ export default function AchievementsPage() {
   const router = useRouter();
   
   const [achievements, setAchievements] = useState<Achievement[]>([]);
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<{ 
+    recentAchievements: Array<{ id: string; achievement: { icon: string; name: string; points?: number }; earnedAt: string }>;
+    totalEarned: number;
+    totalPoints: number; 
+    completionPercentage: number;
+    totalAvailable: number;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,8 +41,14 @@ export default function AchievementsPage() {
         achievementAPI.getAchievementStats()
       ]);
       
-      setAchievements(achievementsData.achievements);
-      setStats(statsData);
+      setAchievements((achievementsData as any).achievements);
+      setStats(statsData as unknown as { 
+        recentAchievements: Array<{ id: string; achievement: { icon: string; name: string; points?: number }; earnedAt: string }>;
+        totalEarned: number;
+        totalPoints: number; 
+        completionPercentage: number;
+        totalAvailable: number;
+      });
     } catch (error) {
       console.error('Error loading achievements:', error);
       setError('Failed to load achievements');
@@ -177,17 +189,17 @@ export default function AchievementsPage() {
               <h2 className="text-2xl font-bold text-white">Recently Conquered!</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {stats.recentAchievements.map((achievement: any) => (
+              {stats.recentAchievements.map((achievement: { id: string; achievement: { icon: string; name: string }; earnedAt: string }) => (
                 <div
                   key={achievement.id}
                   className="cosmic-card flex items-center gap-4 p-4 border border-yellow-400/40 bg-gradient-to-br from-yellow-400/20 to-orange-400/20 transition-all duration-300"
                 >
-                  <span className="text-3xl animate-bounce">{achievement.icon}</span>
+                  <span className="text-3xl animate-bounce">{achievement.achievement.icon}</span>
                   <div className="flex-1">
-                    <div className="font-bold text-white text-lg">{achievement.name}</div>
+                    <div className="font-bold text-white text-lg">{achievement.achievement.name}</div>
                     <div className="text-yellow-300 font-bold flex items-center gap-1">
                       <span>⭐</span>
-                      <span>+{achievement.points} points</span>
+                      <span>+{(achievement.achievement as { points?: number }).points || 0} points</span>
                     </div>
                   </div>
                 </div>

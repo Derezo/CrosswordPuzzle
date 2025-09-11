@@ -172,7 +172,7 @@ export const CrosswordGrid: React.FC<CrosswordGridProps> = ({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (!focusedCell || readOnly) return;
 
-    const { row, col, clue, direction } = focusedCell;
+    const { row, col, direction } = focusedCell;
 
     if (e.key.match(/^[A-Za-z]$/)) {
       e.preventDefault();
@@ -336,7 +336,6 @@ export const CrosswordGrid: React.FC<CrosswordGridProps> = ({
     );
     
     const isFocused = focusedCell?.row === row && focusedCell?.col === col;
-    const letter = getLetterAtPosition(row, col);
     
     let validationClass = '';
     if (cellValidation && !isEffectivelyBlocked) {

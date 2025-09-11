@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { HeartIcon, MagnifyingGlassIcon, ChartBarIcon, EyeIcon, DocumentTextIcon, XMarkIcon, ChevronLeftIcon, ChevronRightIcon, SparklesIcon } from '@heroicons/react/24/outline';
+import { useState, useEffect, useCallback } from 'react';
+import { HeartIcon, MagnifyingGlassIcon, ChartBarIcon, EyeIcon, DocumentTextIcon, XMarkIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
 import { PuzzleCategory, CategoryStats } from '@/types';
 import { categoriesAPI } from '@/lib/api';
@@ -43,8 +43,8 @@ const CategoriesList = ({
   const [showWordsModal, setShowWordsModal] = useState(false);
   const [showPuzzlesModal, setShowPuzzlesModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<PuzzleCategory | null>(null);
-  const [categoryWords, setCategoryWords] = useState<any[]>([]);
-  const [categoryPuzzles, setCategoryPuzzles] = useState<any[]>([]);
+  const [categoryWords, setCategoryWords] = useState<unknown[]>([]);
+  const [categoryPuzzles, setCategoryPuzzles] = useState<unknown[]>([]);
   const [wordsLoading, setWordsLoading] = useState(false);
   const [puzzlesLoading, setPuzzlesLoading] = useState(false);
   const [wordsPage, setWordsPage] = useState(0);
@@ -62,17 +62,7 @@ const CategoriesList = ({
     return () => clearTimeout(timer);
   }, [searchTerm]);
   
-  useEffect(() => {
-    loadCategories();
-    if (showStats) {
-      loadStats();
-    }
-    if (user) {
-      loadUserFavorites();
-    }
-  }, [debouncedSearchTerm, sortBy, order, user]);
-
-  const loadCategories = async () => {
+  const loadCategories = useCallback(async () => {
     try {
       setLoading(true);
       const response = await categoriesAPI.getCategories({
@@ -89,18 +79,18 @@ const CategoriesList = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [sortBy, order, limit, debouncedSearchTerm]);
 
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     try {
       const response = await categoriesAPI.getCategoryStats();
       setStats(response.data);
     } catch (err) {
       console.error('Error loading category stats:', err);
     }
-  };
+  }, []);
 
-  const loadUserFavorites = async () => {
+  const loadUserFavorites = useCallback(async () => {
     try {
       const response = await categoriesAPI.getUserFavoriteCategories();
       setFavoriteCategories(new Set(response.data.favoriteIds));
@@ -116,7 +106,17 @@ const CategoriesList = ({
         console.error('Error loading fallback favorite:', fallbackErr);
       }
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadCategories();
+    if (showStats) {
+      loadStats();
+    }
+    if (user) {
+      loadUserFavorites();
+    }
+  }, [debouncedSearchTerm, sortBy, order, user, showStats, loadCategories, loadStats, loadUserFavorites]);
 
   const toggleFavorite = async (categoryId: string) => {
     if (!user) return;
@@ -618,16 +618,16 @@ const CategoriesList = ({
                       <div className="relative z-10">
                         <div className="flex items-center justify-between mb-2">
                           <span className="font-bold text-xl bg-gradient-to-r from-purple-300 to-blue-300 bg-clip-text text-transparent">
-                            {word.word}
+                            {(word as any).word}
                           </span>
                           <div className="flex items-center gap-2">
                             <span className="text-xs px-2 py-1 bg-blue-500/20 text-blue-300 rounded-full border border-blue-500/30">
-                              {word.length}L
+                              {(word as any).length}L
                             </span>
                           </div>
                         </div>
-                        <p className="text-sm text-blue-200/90 leading-relaxed mb-2">{word.clue}</p>
-                        {word.isCommon && (
+                        <p className="text-sm text-blue-200/90 leading-relaxed mb-2">{(word as any).clue}</p>
+                        {(word as any).isCommon && (
                           <span className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-green-500/20 text-green-300 rounded-full border border-green-500/30">
                             <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
                             Common
@@ -732,7 +732,7 @@ const CategoriesList = ({
                     <div className="absolute inset-0 bg-purple-400/20 rounded-full blur-xl animate-pulse"></div>
                   </div>
                   <p className="text-purple-300/80 text-lg mb-2">No cosmic puzzles found</p>
-                  <p className="text-blue-300/60 text-sm">This category hasn't been used to generate puzzles yet</p>
+                  <p className="text-blue-300/60 text-sm">This category hasn&apos;t been used to generate puzzles yet</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -745,7 +745,7 @@ const CategoriesList = ({
                         border: '1px solid rgba(59,130,246,0.2)',
                         backdropFilter: 'blur(10px)'
                       }}
-                      onClick={() => openPuzzle(puzzle.date)}
+                      onClick={() => openPuzzle((puzzle as any).date)}
                     >
                       {/* Hover glow effect */}
                       <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
@@ -758,18 +758,18 @@ const CategoriesList = ({
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-3">
                             <span className="text-2xl group-hover:scale-110 transition-transform duration-200">
-                              {puzzle.displayName?.includes('Multi') ? '🌌' : '🧩'}
+                              {(puzzle as any).displayName?.includes('Multi') ? '🌌' : '🧩'}
                             </span>
                             <div>
                               <h3 className="font-bold text-lg bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent">
-                                {puzzle.displayName}
+                                {(puzzle as any).displayName}
                               </h3>
-                              <p className="text-xs text-blue-300/60 font-mono">{puzzle.date}</p>
+                              <p className="text-xs text-blue-300/60 font-mono">{(puzzle as any).date}</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="px-3 py-1 bg-blue-500/20 text-blue-300 text-sm rounded-full border border-blue-500/30">
-                              {puzzle.size}
+                              {(puzzle as any).size}
                             </span>
                           </div>
                         </div>
@@ -778,16 +778,16 @@ const CategoriesList = ({
                           <div className="flex items-center gap-4 text-blue-200/80">
                             <div className="flex items-center gap-1">
                               <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
-                              <span>{puzzle.acrossClues} across</span>
+                              <span>{(puzzle as any).acrossClues} across</span>
                             </div>
                             <div className="flex items-center gap-1">
                               <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
-                              <span>{puzzle.downClues} down</span>
+                              <span>{(puzzle as any).downClues} down</span>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="px-2 py-1 bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-purple-200 text-xs rounded-full border border-purple-500/20">
-                              {puzzle.totalClues} total clues
+                              {(puzzle as any).totalClues} total clues
                             </span>
                             <span className="text-purple-300 opacity-0 group-hover:opacity-100 transition-opacity duration-200">→</span>
                           </div>

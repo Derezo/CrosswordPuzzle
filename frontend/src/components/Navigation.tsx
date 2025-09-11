@@ -97,7 +97,7 @@ export const Navigation: React.FC = () => {
           {/* Navigation Items */}
           <div className="hidden md:block">
             <div className="ml-6 flex items-baseline space-x-1">
-              {/* Today's Puzzles Dropdown */}
+              {/* Today&apos;s Puzzles Dropdown */}
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setShowPuzzleDropdown(!showPuzzleDropdown)}
@@ -127,7 +127,7 @@ export const Navigation: React.FC = () => {
 
                   <span className="relative flex items-center gap-1.5">
                     <span className="text-base">🧩</span>
-                    <span className="hidden lg:inline">Today's Puzzles</span>
+                    <span className="hidden lg:inline">Today&apos;s Puzzles</span>
                     <span className="text-xs">
                       {showPuzzleDropdown ? "▲" : "▼"}
                     </span>
@@ -157,7 +157,7 @@ export const Navigation: React.FC = () => {
                           <div className="px-4 py-1 text-xs text-purple-300 font-semibold">
                             Recent Category Puzzles
                           </div>
-                          {recentPuzzles.map((puzzle, index) => (
+                          {recentPuzzles.map((puzzle) => (
                             <Link
                               key={puzzle.puzzleDate}
                               href={`/puzzle?date=${puzzle.puzzleDate}`}
@@ -302,7 +302,7 @@ export const Navigation: React.FC = () => {
               >
                 <span className="flex items-center gap-2.5">
                   <span className="text-lg">🧩</span>
-                  <span>Today's Puzzles</span>
+                  <span>Today&apos;s Puzzles</span>
                 </span>
                 <span className="text-xs">
                   {showPuzzleDropdown ? "▲" : "▼"}

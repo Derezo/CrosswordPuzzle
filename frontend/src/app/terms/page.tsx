@@ -44,10 +44,10 @@ export default function TermsOfServicePage() {
                   Agreement to Terms
                 </h2>
                 <p className="text-purple-200/90 leading-relaxed">
-                  Welcome to Galactic Crossword ("we," "us," "our"). These Terms
-                  of Service ("Terms") govern your access to and use of our
+                  Welcome to Galactic Crossword (&quot;we,&quot; &quot;us,&quot; &quot;our&quot;). These Terms
+                  of Service (&quot;Terms&quot;) govern your access to and use of our
                   website, mobile application, and services (collectively, the
-                  "Service"). By accessing or using our Service, you agree to be
+                  &quot;Service&quot;). By accessing or using our Service, you agree to be
                   bound by these Terms. If you do not agree to these Terms, you
                   may not access or use our Service.
                 </p>
@@ -148,7 +148,7 @@ export default function TermsOfServicePage() {
                   <li>
                     Use the Service for any illegal or unauthorized purpose
                   </li>
-                  <li>Interfere with other users' enjoyment of the Service</li>
+                  <li>Interfere with other users&apos; enjoyment of the Service</li>
                   <li>
                     Upload malicious code or attempt to damage our
                     infrastructure
