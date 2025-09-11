@@ -502,7 +502,8 @@ const ThemeGlobe = ({ onCategorySelect }: ThemeGlobeProps) => {
   const loadUserFavorite = async () => {
     try {
       const response = await categoriesAPI.getUserFavoriteCategory();
-      setFavoriteCategory(response.data.favoriteCategory?.id || null);
+      // Handle case where response.data is null (no favorite category set)
+      setFavoriteCategory(response.data?.favoriteCategory?.id || null);
     } catch (err) {
       console.error('Error loading user favorite:', err);
     }

@@ -15,9 +15,12 @@ case "$1" in
         npx prisma studio
         ;;
     "migrate")
-        echo "🔄 Running database migrations..."
-        cd backend
-        npx prisma migrate dev
+        echo "🔄 Running database migration..."
+        ./scripts/db-migrate.sh deploy
+        ;;
+    "migration-status")
+        echo "📊 Checking migration status..."
+        ./scripts/db-migrate.sh status
         ;;
     "generate")
         echo "⚙️ Generating Prisma client..."
@@ -26,17 +29,20 @@ case "$1" in
         ;;
     "backup")
         echo "💾 Creating database backup..."
-        timestamp=$(date +%Y%m%d_%H%M%S)
-        mkdir -p backups
-        cp backend/prisma/dev.db "backups/backup_${timestamp}.db"
-        echo "✅ Backup created: backups/backup_${timestamp}.db"
+        ./scripts/db-backup.sh create "manual_$(date +%Y%m%d_%H%M%S)"
+        ;;
+    "list-backups")
+        echo "📋 Listing database backups..."
+        ./scripts/db-backup.sh list
         ;;
     *)
         echo "Database utilities:"
-        echo "  ./scripts/db-utils.sh reset    - Reset database and reseed"
-        echo "  ./scripts/db-utils.sh studio   - Open Prisma Studio"
-        echo "  ./scripts/db-utils.sh migrate  - Run migrations"
-        echo "  ./scripts/db-utils.sh generate - Generate Prisma client"
-        echo "  ./scripts/db-utils.sh backup   - Create database backup"
+        echo "  ./scripts/db-utils.sh reset            - Reset database and reseed"
+        echo "  ./scripts/db-utils.sh studio           - Open Prisma Studio"
+        echo "  ./scripts/db-utils.sh migrate          - Run migrations"
+        echo "  ./scripts/db-utils.sh migration-status - Check migration status"
+        echo "  ./scripts/db-utils.sh generate         - Generate Prisma client"
+        echo "  ./scripts/db-utils.sh backup           - Create database backup"
+        echo "  ./scripts/db-utils.sh list-backups     - List all backups"
         ;;
 esac

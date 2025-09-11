@@ -21,6 +21,7 @@ Galactic Crossword is a full-stack web application that allows users to solve da
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS v4
 - **UI Components**: Custom components with framer-motion and Heroicons
+- **3D Graphics**: React Three Fiber and Drei for 3D visualizations
 - **State Management**: React Context API
 - **HTTP Client**: Axios
 - **Location**: `./frontend/`
@@ -64,10 +65,14 @@ npx tsc --noEmit              # Type check without building
 ```bash
 cd backend
 npx prisma generate          # Generate client after schema changes
-npx prisma db push           # Push schema changes to database  
+./scripts/db-migrate.sh create [name]  # Create new migration (RECOMMENDED)
+./scripts/db-migrate.sh deploy         # Deploy pending migrations
+./scripts/db-migrate.sh status         # Show migration status
 npx prisma studio            # Open Prisma Studio GUI
-npx prisma migrate dev       # Create and apply migration (if using migrations)
 npx prisma db seed           # Run seed script (if configured)
+
+# Legacy command (avoid in production):
+npx prisma db push           # Push schema changes directly (bypasses migrations)
 ```
 
 ### Puzzle Generation
@@ -99,8 +104,13 @@ Note: The .env.example file shows MONGODB_URI, but the actual Prisma schema uses
 
 ### Root Level Scripts
 ```bash
-# Development setup scripts (run from project root)
-./scripts/dev-setup.sh          # Set up development environment
+# Development setup and utility scripts (run from project root)
+./scripts/dev-setup.sh          # Set up complete development environment with Docker
+./scripts/dev.sh                # Start full development environment with Docker Compose
+./scripts/dev-backend.sh        # Start only backend development server
+./scripts/dev-frontend.sh       # Start only frontend development server
+./scripts/db-utils.sh           # Database utility commands (reset, studio, migrate, backup)
+./scripts/test.sh               # Run all tests and type checking
 ./scripts/production-deploy.sh  # Production deployment script
 ```
 
@@ -113,7 +123,7 @@ NEXT_PUBLIC_API_URL=http://localhost:5000/api
 
 ### Backend Architecture
 - **Models**: User, DailyPuzzle, UserProgress, Achievement, UserAchievement, Suggestion (Prisma schema)
-- **Routes**: `/api/auth`, `/api/puzzle`, `/api/leaderboard`, `/api/achievement`, `/api/suggestion`
+- **Routes**: `/api/auth`, `/api/puzzle`, `/api/leaderboard`, `/api/achievement`, `/api/suggestion`, `/api/categories`
 - **Services**: 
   - `puzzle/` - Multiple crossword generation algorithms:
     - `strictCrosswordGenerator.ts` - Primary generator used by cron and scripts
@@ -122,6 +132,7 @@ NEXT_PUBLIC_API_URL=http://localhost:5000/api
     - `gridValidator.ts` - Grid validation utilities  
   - `achievement/achievementService.ts` - Achievement logic and point calculation
   - `auth/passport.ts` - Passport.js authentication configuration
+  - CSV-based category management for crossword word organization
 - **Middleware**: Authentication, rate limiting, error handling
 - **Database**: Prisma client configuration in `lib/prisma.ts`
 
@@ -157,6 +168,13 @@ NEXT_PUBLIC_API_URL=http://localhost:5000/api
 - Real-time progress tracking
 - Achievement triggers on successful validation
 
+#### Categories System
+- CSV-based crossword word categorization and management
+- Dynamic category loading with caching (5-minute cache duration)
+- Category statistics and popularity tracking
+- Word filtering and pagination by category
+- User favorite category functionality (mocked for now)
+
 ## Testing
 
 **Note**: No testing framework is currently configured in this project. The npm test commands will fail with "Error: no test specified".
@@ -166,6 +184,7 @@ To add testing support:
 - **Backend**: Consider Jest, Vitest, or Mocha for unit/integration tests
 - **Frontend**: Next.js has built-in support for Jest and Testing Library
 - **Database**: Consider using in-memory SQLite for test isolation
+- **Use `./scripts/test.sh`**: Runs type checking for both frontend and backend, ESLint, and puzzle generation tests
 
 ## Deployment Considerations
 
@@ -252,7 +271,8 @@ backend/
 │   │   ├── puzzle.ts               # Puzzle CRUD operations
 │   │   ├── leaderboard.ts          # Leaderboard data
 │   │   ├── achievement.ts          # Achievement management
-│   │   └── suggestion.ts           # User suggestion management
+│   │   ├── suggestion.ts           # User suggestion management
+│   │   └── categories.ts           # Category management and CSV processing
 │   ├── services/
 │   │   ├── puzzle/                 # Puzzle generation services
 │   │   │   ├── strictCrosswordGenerator.ts  # Primary puzzle generator (used by cron)
@@ -264,7 +284,9 @@ backend/
 │   │   ├── achievement/            # Achievement system
 │   │   └── auth/                   # Authentication services
 │   ├── middleware/auth.ts          # JWT authentication middleware
-│   └── utils/jwt.ts               # JWT utilities
+│   ├── utils/jwt.ts               # JWT utilities
+│   └── data/                      # Static data files
+│       └── crossword_dictionary_with_clues.csv  # Category word definitions
 ├── prisma/
 │   ├── schema.prisma              # Database schema
 │   └── dev.db                     # SQLite database file
@@ -293,3 +315,22 @@ frontend/
 └── .env.local                     # Frontend environment variables
 ```
 - Always descriptive variable names
+
+## Docker Development (Optional)
+
+The project includes Docker setup for a complete development environment:
+
+### Docker Commands
+```bash
+# Start full development environment with Docker Compose
+./scripts/dev.sh                      # Uses docker-compose.yml with development profile
+
+# Alternative Docker development (if docker-compose.yml exists)
+docker-compose up --build backend frontend redis   # Start all services
+docker-compose down                   # Stop all services
+docker-compose logs -f [service]      # View logs for specific service
+```
+
+### Environment Files for Docker
+- `.env.development` - Docker environment configuration (if using Docker setup)
+- Backend and frontend `.env` files still required as documented above

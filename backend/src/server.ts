@@ -4,6 +4,12 @@ import helmet from 'helmet';
 import session from 'express-session';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
+import { helmetConfig, rateLimiters, sanitizeInput, securityHeaders, corsConfig } from './middleware/security';
+import { requestSizeLimits } from './middleware/validation';
+import { requestLogger, authLogger, securityEventLogger, rateLimitLogger } from './middleware/logging';
+import { errorHandler, notFoundHandler, setupGlobalErrorHandlers, performHealthCheck } from './middleware/errorHandler';
+import { metricsMiddleware, getMetrics } from './utils/monitoring';
+import logger, { logSecurityEvent } from './utils/logger';
 import passport from './services/auth/passport';
 import apiRoutes from './routes';
 import puzzleCronService from './services/puzzle/cronService';
@@ -16,14 +22,18 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000, // limit each IP to 1000 requests per windowMs (increased for theme globe)
-});
+// Security middleware
+app.use(helmetConfig);
+app.use(securityHeaders);
 
-// Middleware
-app.use(helmet());
+// Logging middleware (early in the pipeline)
+app.use(requestLogger);
+app.use(authLogger);
+app.use(securityEventLogger);
+app.use(rateLimitLogger);
+
+// Metrics middleware
+app.use(metricsMiddleware);
 // Enhanced CORS configuration for Docker and local development
 const getCorsOrigins = () => {
   if (process.env.NODE_ENV === 'production') {
@@ -54,16 +64,22 @@ const getCorsOrigins = () => {
   return origins;
 };
 
+// CORS with enhanced security configuration
 app.use(cors({
-  origin: getCorsOrigins(),
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  optionsSuccessStatus: 200
+  ...corsConfig,
+  origin: getCorsOrigins() // Use existing origin logic
 }));
-app.use(limiter);
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+
+// Rate limiting with different limits for different endpoints
+app.use('/api/auth', rateLimiters.auth);
+app.use('/api/puzzle/generate', rateLimiters.puzzleGeneration);
+app.use('/api/suggestion', rateLimiters.suggestions);
+app.use('/api', rateLimiters.general);
+
+// Request parsing with size limits and sanitization
+app.use(express.json({ limit: requestSizeLimits.medium }));
+app.use(express.urlencoded({ extended: true, limit: requestSizeLimits.medium }));
+app.use(sanitizeInput);
 
 // Session configuration
 app.use(session({
@@ -84,9 +100,48 @@ app.use(passport.session());
 // API Routes
 app.use('/api', apiRoutes);
 
-// Health check
-app.get('/api/health', (req: express.Request, res: express.Response) => {
-  res.json({ status: 'OK', message: 'Galactic Crossword API is running' });
+// Health check endpoints
+app.get('/api/health', async (req: express.Request, res: express.Response) => {
+  try {
+    const healthResult = await performHealthCheck();
+    const statusCode = healthResult.status === 'healthy' ? 200 : 
+                      healthResult.status === 'degraded' ? 200 : 503;
+    
+    res.status(statusCode).json({
+      message: 'Galactic Crossword API health check',
+      ...healthResult
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'unhealthy',
+      message: 'Health check failed',
+      error: (error as Error).message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Simple ping endpoint for load balancers
+app.get('/api/ping', (req: express.Request, res: express.Response) => {
+  res.json({ 
+    status: 'OK', 
+    message: 'pong',
+    timestamp: new Date().toISOString() 
+  });
+});
+
+// Metrics endpoint (protected in production)
+app.get('/api/metrics', (req: express.Request, res: express.Response) => {
+  if (process.env.NODE_ENV === 'production' && req.headers.authorization !== `Bearer ${process.env.METRICS_TOKEN}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  const metrics = getMetrics();
+  res.json({
+    message: 'Application metrics',
+    timestamp: new Date().toISOString(),
+    ...metrics
+  });
 });
 
 // Development Easter Egg endpoint (for testing network requests)
@@ -102,15 +157,22 @@ if (process.env.NODE_ENV === 'development') {
   });
 }
 
+// Error handling middleware (must be last)
+app.use(notFoundHandler);
+app.use(errorHandler);
+
+// Setup global error handlers
+setupGlobalErrorHandlers();
+
 // Database connection
 const connectDB = async (): Promise<boolean> => {
   try {
     await prisma.$connect();
-    console.log('✅ SQLite database connected successfully');
+    logger.info('SQLite database connected successfully');
     return true;
   } catch (error) {
-    console.error('❌ Database connection error:', error);
-    console.log('⚠️  Continuing without database - some features will not work');
+    logger.error('Database connection error', { error });
+    logger.warn('Continuing without database - some features will not work');
     return false;
   }
 };
@@ -125,24 +187,33 @@ const startServer = async () => {
       await achievementService.initializeAchievements();
       // Start puzzle cron service
       puzzleCronService.start();
+      logger.info('Services initialized successfully', { 
+        achievements: true, 
+        puzzleCron: true 
+      });
     } catch (error) {
-      console.error('❌ Error initializing services:', error);
+      logger.error('Error initializing services', { error });
     }
   }
   
   app.listen(PORT, () => {
-    console.log(`🚀 Galactic Crossword API server running on port ${PORT}`);
-    console.log(`🌌 Environment: ${process.env.NODE_ENV || 'development'}`);
-    if (dbConnected) {
-      console.log(`📊 Database: Connected`);
-      console.log(`🏆 Achievements: Initialized`);
-      console.log(`📅 Puzzle cron: Running`);
-    } else {
-      console.log(`📊 Database: Disconnected (features limited)`);
-    }
+    logger.info('Galactic Crossword API server started', {
+      port: PORT,
+      environment: process.env.NODE_ENV || 'development',
+      database: dbConnected ? 'Connected' : 'Disconnected',
+      features: {
+        achievements: dbConnected,
+        puzzleCron: dbConnected,
+        logging: true,
+        security: true,
+        validation: true
+      }
+    });
   });
 };
 
-startServer().catch(console.error);
+startServer().catch((error) => {
+  logger.error('Failed to start server', { error });
+  process.exit(1);
+});
 
-export default app;

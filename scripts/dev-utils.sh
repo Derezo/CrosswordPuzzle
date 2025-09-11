@@ -199,21 +199,52 @@ reset_all() {
     echo -e "${YELLOW}🔄 Resetting entire development environment...${NC}"
     
     # Stop all services
+    echo -e "${BLUE}🛑 Stopping all services...${NC}"
     stop_services
     
     # Clean Docker resources
+    echo -e "${BLUE}🧹 Cleaning Docker resources...${NC}"
     clean_docker
     
-    # Regenerate Prisma client
+    # Clean Prisma permission issues
+    echo -e "${BLUE}🔧 Cleaning Prisma client permissions...${NC}"
+    clean_prisma_permissions
+    
+    # Regenerate Prisma client with better error handling
     echo -e "${BLUE}🔧 Regenerating Prisma client...${NC}"
-    cd "$BACKEND_DIR" && npx prisma generate
+    cd "$BACKEND_DIR"
+    if ! npx prisma generate; then
+        echo -e "${RED}❌ Failed to generate Prisma client. Trying with force...${NC}"
+        # Try to install dependencies if generation fails
+        npm install --silent 2>/dev/null || true
+        npx prisma generate --force-reinstall 2>/dev/null || npx prisma generate
+    fi
     cd "$PROJECT_ROOT"
     
-    # Rebuild and start
-    echo -e "${BLUE}🏗️ Rebuilding and starting services...${NC}"
-    docker-compose --env-file .env.development up --build backend frontend redis -d
+    # Load environment variables
+    load_env
     
-    echo -e "${GREEN}✅ Environment reset complete!${NC}"
+    # Rebuild and start with better error handling
+    echo -e "${BLUE}🏗️ Rebuilding and starting services...${NC}"
+    if docker-compose --env-file .env.development up --build -d backend frontend redis; then
+        echo -e "${GREEN}✅ Services started successfully${NC}"
+        
+        # Wait for services to be ready
+        echo -e "${BLUE}⏱️ Waiting for services to initialize...${NC}"
+        sleep 10
+        
+        # Check if services are running
+        if docker-compose ps | grep -q "Up"; then
+            echo -e "${GREEN}✅ Environment reset complete!${NC}"
+            print_success_info
+        else
+            echo -e "${YELLOW}⚠️ Services may not be fully ready. Check status with: ./scripts/dev-utils.sh status${NC}"
+        fi
+    else
+        echo -e "${RED}❌ Failed to start services. Check Docker and try again.${NC}"
+        echo -e "${YELLOW}💡 You can check logs with: docker-compose logs${NC}"
+        return 1
+    fi
 }
 
 initial_setup() {
@@ -305,6 +336,43 @@ clean_docker() {
     docker system prune -f
     
     echo -e "${GREEN}✅ Docker cleanup complete${NC}"
+}
+
+clean_prisma_permissions() {
+    echo -e "${YELLOW}🔧 Cleaning Prisma client permissions...${NC}"
+    
+    # Check if the Prisma client directory exists and is owned by root
+    if [ -d "$BACKEND_DIR/node_modules/.prisma" ]; then
+        # Check if we need sudo to remove the directory
+        if [ "$(stat -c %U "$BACKEND_DIR/node_modules/.prisma" 2>/dev/null)" = "root" ]; then
+            echo -e "${BLUE}   Removing root-owned Prisma client files...${NC}"
+            if command -v sudo >/dev/null 2>&1; then
+                sudo rm -rf "$BACKEND_DIR/node_modules/.prisma" 2>/dev/null || true
+            else
+                echo -e "${YELLOW}   Warning: sudo not available, attempting regular removal...${NC}"
+                rm -rf "$BACKEND_DIR/node_modules/.prisma" 2>/dev/null || true
+            fi
+        else
+            echo -e "${BLUE}   Removing Prisma client files...${NC}"
+            rm -rf "$BACKEND_DIR/node_modules/.prisma" 2>/dev/null || true
+        fi
+    fi
+    
+    # Also clean any generated Prisma types that might have permission issues
+    if [ -d "$BACKEND_DIR/node_modules/@prisma/client" ]; then
+        if [ "$(stat -c %U "$BACKEND_DIR/node_modules/@prisma/client" 2>/dev/null)" = "root" ]; then
+            echo -e "${BLUE}   Removing root-owned Prisma types...${NC}"
+            if command -v sudo >/dev/null 2>&1; then
+                sudo rm -rf "$BACKEND_DIR/node_modules/@prisma/client" 2>/dev/null || true
+            else
+                rm -rf "$BACKEND_DIR/node_modules/@prisma/client" 2>/dev/null || true
+            fi
+        else
+            rm -rf "$BACKEND_DIR/node_modules/@prisma/client" 2>/dev/null || true
+        fi
+    fi
+    
+    echo -e "${GREEN}✅ Prisma permissions cleaned${NC}"
 }
 
 print_success_info() {

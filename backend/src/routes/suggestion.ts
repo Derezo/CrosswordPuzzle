@@ -1,12 +1,13 @@
 import { Router } from 'express';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
+import { suggestionValidationSchemas, commonValidations } from '../middleware/validation';
 import { prisma } from '../lib/prisma';
 import { User } from '@prisma/client';
 
 const router = Router();
 
 // Submit a new suggestion
-router.post('/submit', authenticateToken, async (req: AuthenticatedRequest, res) => {
+router.post('/submit', authenticateToken, suggestionValidationSchemas.submitSuggestion, async (req: AuthenticatedRequest, res) => {
   try {
     const { 
       puzzleDate, 
@@ -18,12 +19,6 @@ router.post('/submit', authenticateToken, async (req: AuthenticatedRequest, res)
       comments
     } = req.body;
     const user = req.user as User;
-
-    if (!puzzleDate || !clueNumber || !originalClue || !originalAnswer) {
-      return res.status(400).json({ 
-        error: 'Missing required fields: puzzleDate, clueNumber, originalClue, originalAnswer' 
-      });
-    }
 
     if (!suggestedClue && !suggestedAnswer && !comments) {
       return res.status(400).json({ 

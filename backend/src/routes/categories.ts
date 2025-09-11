@@ -1,14 +1,148 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
+import { categoryValidationSchemas } from '../middleware/validation';
 import * as fs from 'fs';
 import * as path from 'path';
 import { parse } from 'csv-parse/sync';
 
 const router = Router();
 
+// CSV file path - use absolute path from project root
+const csvPath = path.join(process.cwd(), 'src/data/crossword_dictionary_with_clues.csv');
+
+// Cache for categories to avoid repeated CSV parsing
+let categoriesCache: any[] = [];
+let cacheTimestamp = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+// Helper function to load and parse categories from CSV
+const loadCategoriesFromCSV = () => {
+  try {
+    if (categoriesCache.length > 0 && Date.now() - cacheTimestamp < CACHE_DURATION) {
+      return categoriesCache;
+    }
+
+    console.log('🔍 Loading categories from CSV...');
+    const csvContent = fs.readFileSync(csvPath, 'utf-8');
+    const records = parse(csvContent, { 
+      columns: true, 
+      skip_empty_lines: true,
+      skip_records_with_error: true,  // Skip invalid rows instead of failing
+      relax_column_count: true        // Allow rows with different column counts
+    });
+
+    // Count words per category
+    const categoryStats = new Map<string, { name: string; wordCount: number; words: any[] }>();
+    
+    records.forEach((record: any) => {
+      if (record.categories && record.categories.trim()) {
+        const categories = record.categories.split(',').map((cat: string) => cat.trim());
+        categories.forEach((categoryName: string) => {
+          if (categoryName) {
+            const key = categoryName.toLowerCase();
+            if (!categoryStats.has(key)) {
+              categoryStats.set(key, {
+                name: categoryName,
+                wordCount: 0,
+                words: []
+              });
+            }
+            const stats = categoryStats.get(key)!;
+            stats.wordCount++;
+            stats.words.push({
+              word: record.word,
+              clue: record.clue,
+              isCommon: record.is_common_english === 'True',
+              length: record.word.length
+            });
+          }
+        });
+      }
+    });
+
+    // Convert to array and create category objects
+    const categories = Array.from(categoryStats.entries()).map(([key, stats]) => ({
+      id: key,
+      name: stats.name.charAt(0).toUpperCase() + stats.name.slice(1),
+      description: `${stats.wordCount} crossword words related to ${stats.name}`,
+      wordCount: stats.wordCount,
+      favoritesCount: Math.floor(Math.random() * 10), // Mock favorites for now
+      isActive: stats.wordCount > 5, // Only show categories with more than 5 words
+      createdAt: new Date().toISOString()
+    }));
+
+    // Sort by word count descending
+    categories.sort((a, b) => b.wordCount - a.wordCount);
+
+    categoriesCache = categories;
+    cacheTimestamp = Date.now();
+    console.log(`✅ Loaded ${categories.length} categories from CSV`);
+    
+    return categories;
+  } catch (error) {
+    console.error('❌ Error loading categories from CSV:', error);
+    return [];
+  }
+};
+
+// Helper function to get words for a specific category
+const getWordsForCategory = (categoryName: string, limit: number = 100, offset: number = 0) => {
+  try {
+    const csvContent = fs.readFileSync(csvPath, 'utf-8');
+    const records = parse(csvContent, { 
+      columns: true, 
+      skip_empty_lines: true,
+      skip_records_with_error: true,  // Skip invalid rows instead of failing
+      relax_column_count: true        // Allow rows with different column counts
+    });
+
+    const categoryNameLower = categoryName.toLowerCase();
+    const words: any[] = [];
+    
+    records.forEach((record: any) => {
+      if (record.categories && record.categories.trim()) {
+        const categories = record.categories.split(',').map((cat: string) => cat.trim().toLowerCase());
+        if (categories.includes(categoryNameLower)) {
+          words.push({
+            word: record.word,
+            clue: record.clue,
+            isCommon: record.is_common_english === 'True',
+            length: record.word.length
+          });
+        }
+      }
+    });
+
+    // Sort by word length and then alphabetically
+    words.sort((a, b) => {
+      if (a.word.length !== b.word.length) {
+        return a.word.length - b.word.length;
+      }
+      return a.word.localeCompare(b.word);
+    });
+
+    const totalWords = words.length;
+    const paginatedWords = words.slice(offset, offset + limit);
+    const hasMore = offset + limit < totalWords;
+
+    return {
+      words: paginatedWords,
+      totalWords,
+      hasMore
+    };
+  } catch (error) {
+    console.error('❌ Error getting words for category:', error);
+    return {
+      words: [],
+      totalWords: 0,
+      hasMore: false
+    };
+  }
+};
+
 // GET /api/categories - Get all categories with optional sorting and filtering
-router.get('/', async (req, res) => {
+router.get('/', categoryValidationSchemas.getCategories, async (req, res) => {
   try {
     const { 
       sortBy = 'wordCount', 
@@ -18,46 +152,37 @@ router.get('/', async (req, res) => {
       activeOnly = 'true'
     } = req.query;
 
-    // Build where clause
-    const whereClause: any = {};
+    let categories = loadCategoriesFromCSV();
     
+    // Filter by active status
     if (activeOnly === 'true') {
-      whereClause.isActive = true;
+      categories = categories.filter(cat => cat.isActive);
     }
     
+    // Filter by search term
     if (search && typeof search === 'string') {
-      whereClause.name = {
-        contains: search,
-        mode: 'insensitive'
-      };
+      categories = categories.filter(cat => 
+        cat.name.toLowerCase().includes(search.toLowerCase())
+      );
     }
 
-    // Build order by clause
-    const orderByClause: any = {};
-    if (sortBy === 'wordCount') {
-      orderByClause.wordCount = order;
-    } else if (sortBy === 'favoritesCount') {
-      orderByClause.favoritesCount = order;
-    } else if (sortBy === 'name') {
-      orderByClause.name = order;
-    } else {
-      orderByClause.wordCount = 'desc'; // Default
-    }
-
-    const categories = await prisma.puzzleCategory.findMany({
-      where: whereClause,
-      orderBy: orderByClause,
-      take: limit ? parseInt(limit as string) : undefined,
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        wordCount: true,
-        favoritesCount: true,
-        isActive: true,
-        createdAt: true
+    // Sort categories
+    categories.sort((a, b) => {
+      let comparison = 0;
+      if (sortBy === 'wordCount') {
+        comparison = a.wordCount - b.wordCount;
+      } else if (sortBy === 'favoritesCount') {
+        comparison = a.favoritesCount - b.favoritesCount;
+      } else if (sortBy === 'name') {
+        comparison = a.name.localeCompare(b.name);
       }
+      return order === 'desc' ? -comparison : comparison;
     });
+
+    // Apply limit
+    if (limit) {
+      categories = categories.slice(0, parseInt(limit as string));
+    }
 
     res.json({
       success: true,
@@ -66,7 +191,7 @@ router.get('/', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error fetching categories:', error);
+    console.error('❌ Error fetching categories:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch categories'
@@ -74,26 +199,23 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /api/categories/popular - Get most popular categories (by favorites)
+// GET /api/categories/popular - Get most popular categories (by word count since we don't have real favorites)
 router.get('/popular', async (req, res) => {
   try {
     const { limit = '10' } = req.query;
-
-    const popularCategories = await prisma.puzzleCategory.findMany({
-      where: { isActive: true },
-      orderBy: [
-        { favoritesCount: 'desc' },
-        { wordCount: 'desc' }
-      ],
-      take: parseInt(limit as string),
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        wordCount: true,
-        favoritesCount: true
-      }
-    });
+    
+    const categories = loadCategoriesFromCSV();
+    const popularCategories = categories
+      .filter(cat => cat.isActive)
+      .sort((a, b) => b.wordCount - a.wordCount) // Sort by word count as proxy for popularity
+      .slice(0, parseInt(limit as string))
+      .map(cat => ({
+        id: cat.id,
+        name: cat.name,
+        description: cat.description,
+        wordCount: cat.wordCount,
+        favoritesCount: cat.favoritesCount
+      }));
 
     res.json({
       success: true,
@@ -101,7 +223,7 @@ router.get('/popular', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error fetching popular categories:', error);
+    console.error('❌ Error fetching popular categories:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch popular categories'
@@ -112,45 +234,36 @@ router.get('/popular', async (req, res) => {
 // GET /api/categories/stats - Get category statistics
 router.get('/stats', async (req, res) => {
   try {
-    const totalCategories = await prisma.puzzleCategory.count({
-      where: { isActive: true }
-    });
-
-    const totalWords = await prisma.puzzleCategory.aggregate({
-      where: { isActive: true },
-      _sum: { wordCount: true }
-    });
-
-    const totalFavorites = await prisma.puzzleCategory.aggregate({
-      where: { isActive: true },
-      _sum: { favoritesCount: true }
-    });
-
-    const topCategory = await prisma.puzzleCategory.findFirst({
-      where: { isActive: true },
-      orderBy: { wordCount: 'desc' },
-      select: { name: true, wordCount: true }
-    });
-
-    const mostPopular = await prisma.puzzleCategory.findFirst({
-      where: { isActive: true },
-      orderBy: { favoritesCount: 'desc' },
-      select: { name: true, favoritesCount: true }
-    });
+    const categories = loadCategoriesFromCSV();
+    const activeCategories = categories.filter(cat => cat.isActive);
+    
+    const totalWords = activeCategories.reduce((sum, cat) => sum + cat.wordCount, 0);
+    const totalFavorites = activeCategories.reduce((sum, cat) => sum + cat.favoritesCount, 0);
+    
+    const topCategory = activeCategories.length > 0 ? activeCategories[0] : null;
+    const mostPopular = activeCategories.length > 0 
+      ? activeCategories.reduce((max, cat) => cat.favoritesCount > max.favoritesCount ? cat : max)
+      : null;
 
     res.json({
       success: true,
       data: {
-        totalCategories,
-        totalWords: totalWords._sum.wordCount || 0,
-        totalFavorites: totalFavorites._sum.favoritesCount || 0,
-        topCategory,
-        mostPopular
+        totalCategories: activeCategories.length,
+        totalWords,
+        totalFavorites,
+        topCategory: topCategory ? {
+          name: topCategory.name,
+          wordCount: topCategory.wordCount
+        } : null,
+        mostPopular: mostPopular ? {
+          name: mostPopular.name,
+          favoritesCount: mostPopular.favoritesCount
+        } : null
       }
     });
 
   } catch (error) {
-    console.error('Error fetching category stats:', error);
+    console.error('❌ Error fetching category stats:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch category statistics'
@@ -164,10 +277,9 @@ router.put('/:id/favorite', authenticateToken, async (req: AuthenticatedRequest,
     const { id: categoryId } = req.params;
     const userId = req.user!.id;
 
-    // Check if category exists
-    const category = await prisma.puzzleCategory.findUnique({
-      where: { id: categoryId }
-    });
+    // Check if category exists in CSV data
+    const categories = loadCategoriesFromCSV();
+    const category = categories.find(cat => cat.id === categoryId);
 
     if (!category) {
       return res.status(404).json({
@@ -176,127 +288,127 @@ router.put('/:id/favorite', authenticateToken, async (req: AuthenticatedRequest,
       });
     }
 
-    // Get current user
-    const currentUser = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { favoriteCategoryId: true }
+    // Check if user has already favorited this category
+    const existingFavorite = await prisma.userFavoriteCategory.findUnique({
+      where: {
+        userId_categoryId: {
+          userId: userId,
+          categoryId: categoryId
+        }
+      }
     });
 
-    if (!currentUser) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
+    let isFavorite = false;
+    let message = '';
 
-    const isCurrentlyFavorite = currentUser.favoriteCategoryId === categoryId;
-    const newFavoriteCategoryId = isCurrentlyFavorite ? null : categoryId;
-
-    // Update user's favorite category
-    await prisma.user.update({
-      where: { id: userId },
-      data: { favoriteCategoryId: newFavoriteCategoryId }
-    });
-
-    // Update favorites counts for affected categories
-    if (isCurrentlyFavorite) {
-      // Removing favorite - decrease count (ensure it doesn't go below 0)
-      await prisma.puzzleCategory.update({
-        where: { id: categoryId },
-        data: { 
-          favoritesCount: {
-            decrement: 1
-          }
+    if (existingFavorite) {
+      // Remove from favorites
+      await prisma.userFavoriteCategory.delete({
+        where: {
+          id: existingFavorite.id
         }
       });
-      // Ensure count doesn't go negative
-      await prisma.puzzleCategory.updateMany({
-        where: { 
-          id: categoryId,
-          favoritesCount: { lt: 0 }
-        },
-        data: { favoritesCount: 0 }
-      });
+      isFavorite = false;
+      message = 'Category removed from favorites';
     } else {
-      // Adding favorite - increase count for new category
-      await prisma.puzzleCategory.update({
-        where: { id: categoryId },
-        data: { favoritesCount: { increment: 1 } }
+      // Add to favorites
+      await prisma.userFavoriteCategory.create({
+        data: {
+          userId: userId,
+          categoryId: categoryId
+        }
       });
-
-      // Decrease count for previous favorite if exists
-      if (currentUser.favoriteCategoryId) {
-        await prisma.puzzleCategory.update({
-          where: { id: currentUser.favoriteCategoryId },
-          data: { favoritesCount: { decrement: 1 } }
-        });
-        // Ensure previous favorite count doesn't go negative
-        await prisma.puzzleCategory.updateMany({
-          where: { 
-            id: currentUser.favoriteCategoryId,
-            favoritesCount: { lt: 0 }
-          },
-          data: { favoritesCount: 0 }
-        });
-      }
+      isFavorite = true;
+      message = 'Category added to favorites';
     }
-
+    
     res.json({
       success: true,
-      data: {
-        isFavorite: !isCurrentlyFavorite,
-        categoryId: newFavoriteCategoryId
-      },
-      message: isCurrentlyFavorite 
-        ? 'Category removed from favorites' 
-        : 'Category added to favorites'
+      isFavorite,
+      categoryId: isFavorite ? categoryId : null,
+      message
     });
 
   } catch (error) {
-    console.error('Error toggling category favorite:', error);
+    console.error('❌ Error toggling favorite:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to update favorite category'
+      message: 'Failed to update favorite status'
     });
   }
 });
 
-// GET /api/categories/user/favorite - Get current user's favorite category
-router.get('/user/favorite', authenticateToken, async (req: AuthenticatedRequest, res) => {
+// GET /api/categories/user/favorites - Get all user's favorite categories
+router.get('/user/favorites', authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
     const userId = req.user!.id;
-
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        favoriteCategory: {
-          select: {
-            id: true,
-            name: true,
-            description: true,
-            wordCount: true,
-            favoritesCount: true
-          }
-        }
-      }
+    
+    // Get user's favorite categories from database
+    const userFavorites = await prisma.userFavoriteCategory.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' }
     });
 
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
+    // Get categories data from CSV
+    const categories = loadCategoriesFromCSV();
+    
+    // Match favorites with category data
+    const favoriteCategories = userFavorites
+      .map(fav => categories.find(cat => cat.id === fav.categoryId))
+      .filter(Boolean); // Remove any null/undefined categories
+
+    res.json({
+      success: true,
+      data: {
+        favoriteCategories,
+        favoriteIds: userFavorites.map(fav => fav.categoryId)
+      },
+      message: 'User favorite categories retrieved'
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching user favorite categories:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch favorite categories'
+    });
+  }
+});
+
+// GET /api/categories/user/favorite - Get user's favorite category (backwards compatibility)
+router.get('/user/favorite', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  try {
+    const user = req.user;
+    
+    // First check new favorites system
+    const userFavorites = await prisma.userFavoriteCategory.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: 'desc' },
+      take: 1
+    });
+
+    let favoriteCategory = null;
+
+    if (userFavorites.length > 0) {
+      // Use the most recent favorite from new system
+      const categories = loadCategoriesFromCSV();
+      favoriteCategory = categories.find(cat => cat.id === userFavorites[0].categoryId);
+    } else if (user.favoriteCategoryId) {
+      // Fall back to old single favorite system
+      const categories = loadCategoriesFromCSV();
+      favoriteCategory = categories.find(cat => cat.id === user.favoriteCategoryId);
     }
 
     res.json({
       success: true,
       data: {
-        favoriteCategory: user.favoriteCategory
-      }
+        favoriteCategory: favoriteCategory || null
+      },
+      message: 'User favorite category retrieved'
     });
 
   } catch (error) {
-    console.error('Error fetching user favorite category:', error);
+    console.error('❌ Error fetching user favorite category:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch favorite category'
@@ -305,16 +417,14 @@ router.get('/user/favorite', authenticateToken, async (req: AuthenticatedRequest
 });
 
 // GET /api/categories/:id/words - Get all words for a specific category
-router.get('/:id/words', async (req, res) => {
+router.get('/:id/words', categoryValidationSchemas.getCategoryWords, async (req, res) => {
   try {
     const { id: categoryId } = req.params;
     const { limit = '100', offset = '0' } = req.query;
 
     // Check if category exists
-    const category = await prisma.puzzleCategory.findUnique({
-      where: { id: categoryId },
-      select: { name: true, wordCount: true }
-    });
+    const categories = loadCategoriesFromCSV();
+    const category = categories.find(cat => cat.id === categoryId);
 
     if (!category) {
       return res.status(404).json({
@@ -323,67 +433,27 @@ router.get('/:id/words', async (req, res) => {
       });
     }
 
-    // Load words from CSV
-    const csvPath = path.join(__dirname, '../../src/data/crossword_dictionary_with_clues.csv');
-    const csvContent = fs.readFileSync(csvPath, 'utf-8');
-    
-    const records = parse(csvContent, {
-      columns: true,
-      skip_empty_lines: true,
-      relax_column_count: true
-    });
-
-    // Filter words for this category
-    const categoryWords = records
-      .filter((record: any) => {
-        if (!record.categories) return false;
-        const categories = record.categories.toLowerCase().split(',').map((cat: string) => cat.trim());
-        return categories.includes(category.name.toLowerCase());
-      })
-      .filter((record: any) => {
-        const word = record.word?.toUpperCase();
-        return word && 
-               word.length >= 3 && 
-               word.length <= 15 &&
-               /^[A-Z]+$/.test(word) &&
-               record.clue &&
-               record.obscure !== "True" &&
-               record.obscure !== true;
-      })
-      .map((record: any) => ({
-        word: record.word.toUpperCase(),
-        clue: record.clue,
-        isCommon: record.is_common_english === "True",
-        length: record.word.length
-      }))
-      .sort((a: any, b: any) => {
-        // Sort by commonality first, then alphabetically
-        if (a.isCommon && !b.isCommon) return -1;
-        if (!a.isCommon && b.isCommon) return 1;
-        return a.word.localeCompare(b.word);
-      });
-
-    // Apply pagination
-    const startIndex = parseInt(offset as string);
     const limitNum = parseInt(limit as string);
-    const paginatedWords = categoryWords.slice(startIndex, startIndex + limitNum);
+    const offsetNum = parseInt(offset as string);
+    
+    const result = getWordsForCategory(categoryId, limitNum, offsetNum);
 
     res.json({
       success: true,
       data: {
         category: category.name,
-        totalWords: categoryWords.length,
-        words: paginatedWords,
+        totalWords: result.totalWords,
+        words: result.words,
         pagination: {
-          offset: startIndex,
+          offset: offsetNum,
           limit: limitNum,
-          hasMore: startIndex + limitNum < categoryWords.length
+          hasMore: result.hasMore
         }
       }
     });
 
   } catch (error) {
-    console.error('Error fetching category words:', error);
+    console.error('❌ Error fetching category words:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch category words'
@@ -395,12 +465,11 @@ router.get('/:id/words', async (req, res) => {
 router.get('/:id/puzzles', async (req, res) => {
   try {
     const { id: categoryId } = req.params;
+    const { limit = '50', offset = '0' } = req.query;
 
     // Check if category exists
-    const category = await prisma.puzzleCategory.findUnique({
-      where: { id: categoryId },
-      select: { name: true }
-    });
+    const categories = loadCategoriesFromCSV();
+    const category = categories.find(cat => cat.id === categoryId);
 
     if (!category) {
       return res.status(404).json({
@@ -409,63 +478,97 @@ router.get('/:id/puzzles', async (req, res) => {
       });
     }
 
-    // Find puzzles that contain this category name in their date
-    // Category puzzles have dates like: "2025-09-10-cat-categoryname" or "2025-09-10-multi-category1-category2"
-    const categoryNameLower = category.name.toLowerCase().replace(/\s+/g, '-');
+    const limitNum = parseInt(limit as string);
+    const offsetNum = parseInt(offset as string);
     
+    // Search for puzzles containing words from this category
+    const categoryNameLower = categoryId.toLowerCase();
     const puzzles = await prisma.dailyPuzzle.findMany({
       where: {
         OR: [
-          { date: { contains: `-cat-${categoryNameLower}` } },
-          { date: { contains: `-multi-${categoryNameLower}-` } },
-          { date: { contains: `-${categoryNameLower}-` } },
-          { date: { endsWith: `-${categoryNameLower}` } }
+          {
+            date: {
+              contains: `-cat-${categoryNameLower}`
+            }
+          },
+          {
+            date: {
+              contains: `-multi-${categoryNameLower}-`
+            }
+          }
         ]
       },
-      orderBy: { createdAt: 'desc' },
       select: {
+        id: true,
         date: true,
+        cluesData: true,
         rows: true,
         cols: true,
-        cluesData: true,
         createdAt: true
-      }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+      skip: offsetNum,
+      take: limitNum
     });
 
-    // Process puzzles to count clues
-    const processedPuzzles = puzzles.map(puzzle => {
+    // Parse clues to get counts
+    const puzzleData = puzzles.map(puzzle => {
       let acrossCount = 0;
       let downCount = 0;
       
       try {
-        const clues = JSON.parse(puzzle.cluesData);
-        acrossCount = clues.filter((clue: any) => clue.direction === 'across').length;
-        downCount = clues.filter((clue: any) => clue.direction === 'down').length;
+        const clues = JSON.parse(puzzle.cluesData as string);
+        if (clues.across) acrossCount = Object.keys(clues.across).length;
+        if (clues.down) downCount = Object.keys(clues.down).length;
       } catch (error) {
-        console.error('Error parsing clues for puzzle:', puzzle.date);
+        console.warn('Failed to parse clues for puzzle:', puzzle.id);
       }
 
       return {
+        id: puzzle.id,
         date: puzzle.date,
-        size: `${puzzle.rows}x${puzzle.cols}`,
-        acrossClues: acrossCount,
-        downClues: downCount,
+        acrossCount,
+        downCount,
         totalClues: acrossCount + downCount,
-        createdAt: puzzle.createdAt,
-        displayName: puzzle.date.includes('-multi-') ? 'Multi-Category' : 'Category Puzzle'
+        size: `${puzzle.rows}×${puzzle.cols}`
       };
+    });
+
+    const totalPuzzles = await prisma.dailyPuzzle.count({
+      where: {
+        OR: [
+          {
+            date: {
+              contains: `-cat-${categoryNameLower}`
+            }
+          },
+          {
+            date: {
+              contains: `-multi-${categoryNameLower}-`
+            }
+          }
+        ]
+      }
     });
 
     res.json({
       success: true,
       data: {
         category: category.name,
-        puzzles: processedPuzzles
+        totalPuzzles,
+        puzzles: puzzleData,
+        pagination: {
+          offset: offsetNum,
+          limit: limitNum,
+          hasMore: offsetNum + limitNum < totalPuzzles
+        }
       }
     });
 
   } catch (error) {
-    console.error('Error fetching category puzzles:', error);
+    console.error('❌ Error fetching category puzzles:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch category puzzles'

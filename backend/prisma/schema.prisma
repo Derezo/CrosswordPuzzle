@@ -19,15 +19,16 @@ model User {
   firstName            String
   lastName             String
   points               Int      @default(0)
-  favoriteCategoryId   String?  // User's preferred puzzle category
+  favoriteCategoryId   String?  // User's preferred puzzle category (kept for backwards compatibility)
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
   // Relations
-  progresses       UserProgress[]
-  achievements     UserAchievement[]
-  suggestions      Suggestion[]
-  favoriteCategory PuzzleCategory? @relation(fields: [favoriteCategoryId], references: [id])
+  progresses         UserProgress[]
+  achievements       UserAchievement[]
+  suggestions        Suggestion[]
+  favoriteCategory   PuzzleCategory? @relation("UserSingleFavorite", fields: [favoriteCategoryId], references: [id])
+  favoriteCategories UserFavoriteCategory[]
 
   @@map("users")
 }
@@ -137,7 +138,22 @@ model PuzzleCategory {
   updatedAt       DateTime @updatedAt
 
   // Relations
-  usersWhoFavorited User[] // Users who have this as their favorite category
+  usersWhoFavorited User[] @relation("UserSingleFavorite") // Users who have this as their favorite category
+  // Note: No relation to UserFavoriteCategory since it uses string categoryId from CSV
 
   @@map("puzzle_categories")
+}
+
+model UserFavoriteCategory {
+  id         String   @id @default(cuid())
+  userId     String
+  categoryId String   // Category ID from CSV data, no foreign key constraint
+  createdAt  DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Note: No relation to PuzzleCategory since categories are loaded from CSV, not database
+
+  @@unique([userId, categoryId])
+  @@map("user_favorite_categories")
 }

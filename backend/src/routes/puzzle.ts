@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
+import { puzzleValidationSchemas, commonValidations, handleValidationErrors } from '../middleware/validation';
 import { prisma } from '../lib/prisma';
 import puzzleCronService from '../services/puzzle/cronService';
 import achievementService from '../services/achievement/achievementService';
@@ -101,7 +102,7 @@ router.get('/today', authenticateToken, async (req: AuthenticatedRequest, res) =
 });
 
 // Validate answers
-router.post('/validate', authenticateToken, async (req: AuthenticatedRequest, res) => {
+router.post('/validate', authenticateToken, puzzleValidationSchemas.validateAnswers, async (req: AuthenticatedRequest, res) => {
   try {
     const { answers, puzzleDate } = req.body;
     const user = req.user as User;
@@ -215,7 +216,7 @@ router.post('/validate', authenticateToken, async (req: AuthenticatedRequest, re
 });
 
 // Pure grid-based validation endpoint
-router.post('/validate-grid', authenticateToken, async (req: AuthenticatedRequest, res) => {
+router.post('/validate-grid', authenticateToken, puzzleValidationSchemas.validateGridAnswers, async (req: AuthenticatedRequest, res) => {
   try {
     const { gridData, puzzleDate } = req.body;
     const user = req.user as User;
@@ -485,7 +486,21 @@ router.post('/auto-solve', authenticateToken, async (req: AuthenticatedRequest, 
 });
 
 // Generate multi-category puzzle with streaming progress
-router.post('/generate-multi-category-stream', async (req, res) => {
+router.post('/generate-multi-category-stream', (req, res, next) => {
+  // Manual validation using Joi for this special SSE endpoint
+  const { error } = require('../middleware/validation').joiSchemas.multiCategoryGeneration.validate(req.body);
+  if (error) {
+    return res.status(400).json({
+      success: false,
+      message: 'Validation failed',
+      errors: error.details.map((detail: any) => ({
+        field: detail.path.join('.'),
+        message: detail.message
+      }))
+    });
+  }
+  next();
+}, async (req, res) => {
   console.log(`🚀 MULTI-CATEGORY STREAMING ENDPOINT CALLED!`);
   try {
     const { categoryNames, token } = req.body;
@@ -868,7 +883,7 @@ router.get('/generate-category-stream/:categoryName', async (req, res) => {
 });
 
 // Generate category-specific puzzle (non-streaming fallback)
-router.post('/generate-category', authenticateToken, async (req: AuthenticatedRequest, res) => {
+router.post('/generate-category', authenticateToken, puzzleValidationSchemas.generateCategoryPuzzle, async (req: AuthenticatedRequest, res) => {
   try {
     const { categoryName } = req.body;
     const user = req.user as User;

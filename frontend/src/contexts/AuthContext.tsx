@@ -61,7 +61,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       localStorage.setItem('token', data.token);
       setUser(data.user);
     } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Login failed');
+      // Handle both old and new error formats
+      const errorData = error.response?.data;
+      let errorMessage = 'Login failed';
+      
+      if (errorData) {
+        if (errorData.error) {
+          // Old format
+          errorMessage = errorData.error;
+        } else if (errorData.message) {
+          // New format with structured errors
+          errorMessage = errorData.message;
+          if (errorData.errors && errorData.errors.length > 0) {
+            errorMessage = errorData.errors[0].message || errorMessage;
+          }
+        }
+      }
+      
+      throw new Error(errorMessage);
     }
   };
 
@@ -76,7 +93,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       localStorage.setItem('token', data.token);
       setUser(data.user);
     } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Registration failed');
+      // Handle both old and new error formats
+      const errorData = error.response?.data;
+      let errorMessage = 'Registration failed';
+      
+      if (errorData) {
+        if (errorData.error) {
+          // Old format
+          errorMessage = errorData.error;
+        } else if (errorData.message) {
+          // New format with structured errors
+          errorMessage = errorData.message;
+          if (errorData.errors && errorData.errors.length > 0) {
+            errorMessage = errorData.errors[0].message || errorMessage;
+          }
+        }
+      }
+      
+      throw new Error(errorMessage);
     }
   };
 

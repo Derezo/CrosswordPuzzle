@@ -40,7 +40,7 @@ export default function ThemeGlobePage() {
   const [generationProgress, setGenerationProgress] = useState(0);
   const [generationStage, setGenerationStage] = useState("");
   const [generationError, setGenerationError] = useState<string | null>(null);
-  
+
   // Loading states
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isGlobeLoading, setIsGlobeLoading] = useState(false);
@@ -63,7 +63,7 @@ export default function ThemeGlobePage() {
     const timer = setTimeout(() => {
       setIsInitialLoading(false);
     }, 1500); // Adjust timing as needed
-    
+
     return () => clearTimeout(timer);
   }, []);
 
@@ -92,7 +92,7 @@ export default function ThemeGlobePage() {
     (sum, cat) => sum + cat.wordCount,
     0,
   );
-  const canGenerate = totalWordCount >= 300 && selectedCategories.length > 0;
+  const canGenerate = totalWordCount >= 100 && selectedCategories.length > 0;
 
   const handleCloseErrorDialog = () => {
     setGeneratingPuzzle(false);
@@ -269,7 +269,7 @@ export default function ThemeGlobePage() {
         onComplete={handleLoaderComplete}
         loadingText="Initializing cosmic theme universe..."
       />
-      
+
       <Navigation />
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-black">
         {/* Header */}
@@ -309,7 +309,6 @@ export default function ThemeGlobePage() {
                 </button>
               </div>
             </div>
-
           </div>
         </div>
 
@@ -337,9 +336,11 @@ export default function ThemeGlobePage() {
                   />
                 </div>
               )}
-              <div className={`transition-opacity duration-500 h-full ${
-                isGlobeLoading ? 'opacity-30' : 'opacity-100'
-              }`}>
+              <div
+                className={`transition-opacity duration-500 h-full ${
+                  isGlobeLoading ? "opacity-30" : "opacity-100"
+                }`}
+              >
                 <ThemeGlobeWrapper
                   key={globeKey}
                   onCategorySelect={handleCategorySelect}

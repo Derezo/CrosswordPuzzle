@@ -62,6 +62,40 @@ export const authAPI = {
     localStorage.removeItem('token');
     return response.data;
   },
+
+  updatePassword: async (data: {
+    currentPassword: string;
+    password: string;
+    confirmPassword: string;
+  }) => {
+    const response = await api.put('/auth/update-password', data);
+    return response.data;
+  },
+
+  updateProfile: async (data: {
+    firstName: string;
+    lastName: string;
+    email: string;
+  }) => {
+    const response = await api.put('/auth/update-profile', data);
+    return response.data;
+  },
+
+  getProfile: async () => {
+    const response = await api.get('/auth/profile');
+    return response.data;
+  },
+
+  deleteAccount: async () => {
+    const response = await api.delete('/auth/delete-account');
+    localStorage.removeItem('token');
+    return response.data;
+  },
+
+  updateFavoriteCategory: async (categoryId: string | null) => {
+    const response = await api.put('/auth/update-favorite-category', { categoryId });
+    return response.data;
+  },
 };
 
 // Puzzle API
@@ -235,6 +269,16 @@ export const categoriesAPI = {
     data: { favoriteCategory: PuzzleCategory | null };
   }> => {
     const response = await api.get('/categories/user/favorite');
+    return response.data;
+  },
+
+  getUserFavoriteCategories: async (): Promise<{
+    data: { 
+      favoriteCategories: PuzzleCategory[];
+      favoriteIds: string[];
+    };
+  }> => {
+    const response = await api.get('/categories/user/favorites');
     return response.data;
   },
 

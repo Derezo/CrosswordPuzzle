@@ -14,6 +14,7 @@ export const CosmicLoader: React.FC<CosmicLoaderProps> = ({
   loadingText = "Initializing cosmic theme universe..."
 }) => {
   const [particles, setParticles] = useState<Array<{id: number, x: number, y: number, delay: number}>>([]);
+  const [stars, setStars] = useState<Array<{id: number, left: number, top: number, delay: number, duration: number, opacity: number}>>([]);
   const [showDisintegration, setShowDisintegration] = useState(false);
   const [progress, setProgress] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
@@ -29,6 +30,18 @@ export const CosmicLoader: React.FC<CosmicLoaderProps> = ({
       delay: Math.random() * 0.8
     }));
     setParticles(newParticles);
+
+    // Generate random stars for background animation
+    const starCount = 100;
+    const newStars = Array.from({ length: starCount }, (_, i) => ({
+      id: i,
+      left: Math.random() * 100,
+      top: Math.random() * 100,
+      delay: Math.random() * 3,
+      duration: 2 + Math.random() * 2,
+      opacity: Math.random() * 0.8 + 0.2
+    }));
+    setStars(newStars);
   }, []);
 
   useEffect(() => {
@@ -82,18 +95,18 @@ export const CosmicLoader: React.FC<CosmicLoaderProps> = ({
       }}
     >
       {/* Animated background stars */}
-      {!showDisintegration && !isComplete && (
+      {!showDisintegration && !isComplete && stars.length > 0 && (
         <div className="absolute inset-0 overflow-hidden">
-          {Array.from({ length: 100 }, (_, i) => (
+          {stars.map((star) => (
             <div
-              key={i}
+              key={star.id}
               className="absolute w-1 h-1 bg-white rounded-full animate-pulse"
               style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 3}s`,
-                animationDuration: `${2 + Math.random() * 2}s`,
-                opacity: Math.random() * 0.8 + 0.2
+                left: `${star.left}%`,
+                top: `${star.top}%`,
+                animationDelay: `${star.delay}s`,
+                animationDuration: `${star.duration}s`,
+                opacity: star.opacity
               }}
             />
           ))}
