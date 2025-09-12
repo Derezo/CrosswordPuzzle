@@ -6,7 +6,7 @@
 set -e
 
 # Configuration
-DOMAIN="crossword.mittonvillage.com"
+DOMAIN="${DEPLOY_DOMAIN:-crossword.mittonvillage.com}"
 EMAIL="your-email@example.com"  # UPDATE THIS!
 
 # Colors for output

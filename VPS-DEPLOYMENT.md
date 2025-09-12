@@ -17,6 +17,40 @@ Internet → Nginx (Port 80/443) → Frontend (Port 3001) & Backend (Port 5001)
                               SQLite Database + PM2 Process Manager
 ```
 
+## ⚙️ Optional: Automated Configuration Setup
+
+**For automated deployments without interactive prompts, configure optional settings before deployment:**
+
+### Creating .env.deploy file (Recommended)
+
+```bash
+# Navigate to your project directory
+cd /home/eric/Projects/CrosswordPuzzle
+
+# Copy the example file
+cp .env.deploy.example .env.deploy
+
+# Edit with your values
+nano .env.deploy
+```
+
+**Example .env.deploy content:**
+```bash
+# Google OAuth Configuration (optional)
+GOOGLE_CLIENT_ID=your-google-client-id-here
+GOOGLE_CLIENT_SECRET=your-google-client-secret-here
+
+# Admin email for notifications (optional)
+ADMIN_EMAIL=admin@yourdomain.com
+```
+
+**Benefits of using .env.deploy:**
+- ✅ Eliminates interactive prompts during deployment
+- ✅ Enables fully automated deployments
+- ✅ Consistent configuration across deployments
+- ✅ Secure - file is gitignored and only used locally
+- ✅ All fields are optional - leave empty to skip
+
 ## 🚀 Complete Deployment Process
 
 ### Step 1: Prepare Deployment Package (Local Machine)
@@ -107,19 +141,21 @@ chmod +x scripts/app-setup.sh
 # Still as deploy user in /var/www/crossword
 chmod +x scripts/env-setup.sh
 
-# Run environment setup (interactive)
+# Run environment setup (now automated with .env.deploy)
 ./scripts/env-setup.sh
 ```
 
-**During this step you'll be prompted for:**
-- Google Client ID (optional - press Enter to skip)
-- Google Client Secret (optional - press Enter to skip)
-- Admin email (optional)
+**Configuration behavior:**
+- **With .env.deploy file**: Automatically loads Google Client ID, Client Secret, and Admin Email from the file
+- **Without .env.deploy file**: Falls back to interactive prompts (you can press Enter to skip optional fields)
+- **Mixed approach**: .env.deploy provides defaults, interactive prompts for missing values
 
 **This generates:**
-- Secure JWT, session, and puzzle secrets
-- Production environment files
-- Backup of secrets (save this securely!)
+- Secure JWT, session, and puzzle secrets (automatically generated)
+- Production environment files with your configuration
+- Backup of secrets at `/home/deploy/crossword-secrets-backup-[timestamp].txt` (save this securely!)
+
+**Important:** The deployment script will no longer hang on interactive prompts if you've configured .env.deploy
 
 ### Step 6: Configure Nginx and SSL
 

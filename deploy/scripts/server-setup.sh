@@ -7,7 +7,7 @@ set -e
 
 # Configuration
 APP_NAME="crossword-puzzle"
-DOMAIN="crossword.mittonvillage.com"
+DOMAIN="${DEPLOY_DOMAIN:-crossword.mittonvillage.com}"
 DEPLOY_USER="deploy"
 DEPLOY_PATH="/var/www/crossword"
 BACKEND_PORT="5001"

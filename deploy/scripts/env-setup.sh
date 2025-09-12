@@ -69,6 +69,9 @@ fi
 GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID:-}"
 GOOGLE_CLIENT_SECRET="${GOOGLE_CLIENT_SECRET:-}"
 ADMIN_EMAIL="${ADMIN_EMAIL:-}"
+DEPLOY_DOMAIN="${DEPLOY_DOMAIN:-crossword.mittonvillage.com}"
+FRONTEND_PORT="${FRONTEND_PORT:-3001}"
+BACKEND_PORT="${BACKEND_PORT:-5001}"
 
 # Only prompt interactively if running in interactive mode AND values are not set
 if [[ -t 0 && -t 1 ]] && [[ -z "$GOOGLE_CLIENT_ID" && -z "$GOOGLE_CLIENT_SECRET" && -z "$ADMIN_EMAIL" ]]; then
@@ -89,12 +92,12 @@ NODE_ENV=production
 BUILD_TARGET=production
 
 # Server Configuration
-PORT=5001
-BACKEND_PORT=5001
-FRONTEND_PORT=3001
+PORT=${BACKEND_PORT}
+BACKEND_PORT=${BACKEND_PORT}
+FRONTEND_PORT=${FRONTEND_PORT}
 
 # API Configuration
-NEXT_PUBLIC_API_URL=https://crossword.mittonvillage.com/api
+NEXT_PUBLIC_API_URL=https://${DEPLOY_DOMAIN}/api
 
 # Database Configuration
 DATABASE_URL="file:./prisma/production.db"
@@ -106,7 +109,7 @@ SESSION_SECRET=${SESSION_SECRET}
 PUZZLE_SECRET=${PUZZLE_SECRET}
 
 # CORS Configuration
-CORS_ORIGIN=https://crossword.mittonvillage.com
+CORS_ORIGIN=https://${DEPLOY_DOMAIN}
 
 # OAuth Configuration
 GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
@@ -138,8 +141,8 @@ print_status "Creating frontend environment file..."
 cat > frontend/.env.local << EOF
 # Frontend Production Environment
 NODE_ENV=production
-NEXT_PUBLIC_API_URL=https://crossword.mittonvillage.com/api
-PORT=3001
+NEXT_PUBLIC_API_URL=https://${DEPLOY_DOMAIN}/api
+PORT=${FRONTEND_PORT}
 EOF
 
 print_success "Frontend environment file created"

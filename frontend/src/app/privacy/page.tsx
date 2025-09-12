@@ -300,11 +300,11 @@ export default function PrivacyPolicyPage() {
                 </p>
                 <div className="bg-gray-700/60 rounded-xl p-4 border border-gray-600/50">
                   <p className="text-purple-200/90">
-                    <strong>Email:</strong> privacy@mittonvillage.com
+                    <strong>Email:</strong> {process.env.NEXT_PUBLIC_PRIVACY_EMAIL}
                   </p>
                   <p className="text-purple-200/90 mt-2">
                     <strong>Website:</strong>{" "}
-                    https://crossword.mittonvillage.com
+                    {process.env.NEXT_PUBLIC_SITE_URL}
                   </p>
                   <p className="text-purple-200/90 mt-2">
                     <strong>Response Time:</strong> We aim to respond to all

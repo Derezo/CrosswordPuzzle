@@ -101,7 +101,7 @@ export const Footer: React.FC = () => {
               </li>
               <li>
                 <a
-                  href="mailto:support@crossword.mittonvillage.com"
+                  href={`mailto:${process.env.NEXT_PUBLIC_SUPPORT_EMAIL}`}
                   className="text-purple-300/80 hover:text-white transition-colors duration-200 flex items-center gap-2"
                 >
                   <span>📧</span>

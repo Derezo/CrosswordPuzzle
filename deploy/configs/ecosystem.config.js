@@ -46,7 +46,7 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3001,
-        NEXT_PUBLIC_API_URL: 'https://crossword.mittonvillage.com/api'
+        NEXT_PUBLIC_API_URL: `https://${process.env.DEPLOY_DOMAIN}/api`
       },
       env_production: {
         NODE_ENV: 'production',
@@ -76,7 +76,7 @@ module.exports = {
   deploy: {
     production: {
       user: 'deploy',
-      host: ['crossword.mittonvillage.com'],
+      host: [process.env.DEPLOY_DOMAIN],
       ref: 'origin/main',
       repo: 'git@github.com:your-username/CrosswordPuzzle.git', // Update with your repo
       path: '/var/www/crossword',

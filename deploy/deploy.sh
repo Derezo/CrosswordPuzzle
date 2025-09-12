@@ -1,13 +1,11 @@
 #!/bin/bash
 
 # Galactic Crossword Production Deployment Script
-# Deploy to crossword.mittonvillage.com
-
 set -e
 
 # Configuration
 APP_NAME="crossword-puzzle"
-DOMAIN="crossword.mittonvillage.com"
+DOMAIN="$DEPLOY_DOMAIN"
 DEPLOY_USER="deploy"
 DEPLOY_PATH="/var/www/crossword"
 BACKEND_PORT="5001"

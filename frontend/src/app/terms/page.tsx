@@ -328,7 +328,7 @@ export default function TermsOfServicePage() {
                   </li>
                 </ol>
                 <p className="text-purple-200/90 leading-relaxed">
-                  You agree to first contact us at legal@mittonvillage.com to
+                  You agree to first contact us at {process.env.NEXT_PUBLIC_LEGAL_EMAIL} to
                   attempt resolution before pursuing formal legal action.
                 </p>
               </section>
@@ -382,7 +382,7 @@ export default function TermsOfServicePage() {
                         <strong>General Inquiries:</strong>
                       </p>
                       <p className="text-purple-300/90">
-                        support@mittonvillage.com
+                        {process.env.NEXT_PUBLIC_SUPPORT_EMAIL}
                       </p>
                     </div>
                     <div>
@@ -390,7 +390,7 @@ export default function TermsOfServicePage() {
                         <strong>Legal Matters:</strong>
                       </p>
                       <p className="text-purple-300/90">
-                        legal@mittonvillage.com
+                        {process.env.NEXT_PUBLIC_LEGAL_EMAIL}
                       </p>
                     </div>
                     <div>
@@ -398,7 +398,7 @@ export default function TermsOfServicePage() {
                         <strong>Website:</strong>
                       </p>
                       <p className="text-purple-300/90">
-                        https://crossword.mittonvillage.com
+                        {process.env.NEXT_PUBLIC_SITE_URL}
                       </p>
                     </div>
                     <div>
