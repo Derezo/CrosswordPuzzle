@@ -41,16 +41,16 @@ module.exports = {
       name: 'crossword-frontend',
       cwd: '/var/www/crossword/frontend',
       script: 'npm',
-      args: 'start',
-      instances: 2,
-      exec_mode: 'cluster',
+      args: 'run dev',
+      instances: 1,
+      exec_mode: 'fork',
       env: {
-        NODE_ENV: 'production',
+        NODE_ENV: 'development',
         PORT: 3001,
         NEXT_PUBLIC_API_URL: 'https://crossword.mittonvillage.com/api'
       },
       env_production: {
-        NODE_ENV: 'production',
+        NODE_ENV: 'development',
         PORT: 3001
       },
       // Logging

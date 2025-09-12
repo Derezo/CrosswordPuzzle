@@ -283,6 +283,19 @@ For manual deployment, individual scripts are available in `deploy/scripts/`:
 - **Network**: SSH access to target server
 - **DNS**: Domain pointing to server IP address
 - **Ports**: 80, 443, SSH access
+- **Permissions**: Passwordless sudo for deploy user (see `deploy/SUDO-SETUP.md`)
+
+### Setting Up Passwordless Sudo
+
+For automated deployment, the deploy user needs sudo access without password prompts:
+
+```bash
+# On your production server (run as root or sudo user):
+echo "deploy ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/deploy
+sudo chmod 0440 /etc/sudoers.d/deploy
+```
+
+See `deploy/SUDO-SETUP.md` for detailed setup instructions and security considerations.
 
 ## Development Guidelines
 

@@ -1,24 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Disable all experimental features
-  experimental: {
-    turbo: undefined,
-    turbopack: undefined
-  },
-  
-  // Webpack configuration optimized for stability
+  // Webpack configuration for Three.js
   webpack: (config, { isServer }) => {
     // Handle Three.js imports
     config.module.rules.push({
       test: /\.(glsl|vs|fs|vert|frag)$/,
       type: 'asset/source',
     });
-    
-    // Disable webpack cache for clean builds
-    config.cache = false;
-    
-    // Set mode explicitly
-    config.mode = 'development';
     
     // Optimize for Three.js
     if (!isServer) {
@@ -31,14 +19,15 @@ const nextConfig = {
     return config;
   },
   
-  // Disable fast refresh for stability
-  reactStrictMode: false,
+  // Enable React Strict Mode
+  reactStrictMode: true,
   
-  // Disable SWC minification
-  swcMinify: false,
+  // Use standalone output for production deployment
+  output: 'standalone',
   
-  // Use babel instead of SWC
-  compiler: undefined
+  // Disable trailing slash handling
+  trailingSlash: false,
+  skipTrailingSlashRedirect: true,
 };
 
 module.exports = nextConfig;
