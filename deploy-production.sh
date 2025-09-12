@@ -250,14 +250,16 @@ build_application() {
         mv .env.local .env.local.backup
     fi
     
-    # Set production environment variables and build - skip build for now due to prerendering issues
-    # NODE_ENV=production NEXT_PUBLIC_API_URL=https://${DOMAIN}/api npm run build:stable || print_error "Frontend build failed"
-    print_info "Skipping frontend build - using development mode with PM2"
+    # Set production environment variables and build
+    NODE_ENV=production NEXT_PUBLIC_API_URL=https://${DOMAIN}/api npm run build || {
+        print_warning "Frontend production build failed, trying standard build..."
+        npm run build || print_error "Frontend build failed completely"
+    }
     
-    # Skip build verification for now
-    # if [ ! -d ".next" ] || [ ! -f ".next/BUILD_ID" ]; then
-    #     print_error "Frontend build did not produce expected output"
-    # fi
+    # Verify build output
+    if [ ! -d ".next" ] || [ ! -f ".next/BUILD_ID" ]; then
+        print_error "Frontend build did not produce expected output"
+    fi
     
     # Restore .env.local after build
     if [ -f ".env.local.backup" ]; then
@@ -323,7 +325,11 @@ create_deployment_package() {
     mkdir -p deploy/package/scripts
     
     # Copy built frontend
-    cp -r frontend/.next deploy/package/frontend/ || print_error "Failed to copy frontend build"
+    if [ -d "frontend/.next" ]; then
+        cp -r frontend/.next deploy/package/frontend/ || print_error "Failed to copy frontend build"
+    else
+        print_error "Frontend .next directory not found - build may have failed"
+    fi
     cp -r frontend/public deploy/package/frontend/ || print_error "Failed to copy frontend public files"
     cp frontend/package.json deploy/package/frontend/ || print_error "Failed to copy frontend package.json"
     cp frontend/package-lock.json deploy/package/frontend/ || print_error "Failed to copy frontend package-lock.json"

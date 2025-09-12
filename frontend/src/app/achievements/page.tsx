@@ -13,7 +13,7 @@ export default function AchievementsPage() {
   
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [stats, setStats] = useState<{ 
-    recentAchievements: Array<{ id: string; achievement: { icon: string; name: string; points?: number }; earnedAt: string }>;
+    recentAchievements: Array<{ id: string; icon: string; name: string; points?: number; earnedAt: string }>;
     totalEarned: number;
     totalPoints: number; 
     completionPercentage: number;
@@ -43,7 +43,7 @@ export default function AchievementsPage() {
       
       setAchievements((achievementsData as any).achievements);
       setStats(statsData as unknown as { 
-        recentAchievements: Array<{ id: string; achievement: { icon: string; name: string; points?: number }; earnedAt: string }>;
+        recentAchievements: Array<{ id: string; icon: string; name: string; points?: number; earnedAt: string }>;
         totalEarned: number;
         totalPoints: number; 
         completionPercentage: number;
@@ -189,17 +189,17 @@ export default function AchievementsPage() {
               <h2 className="text-2xl font-bold text-white">Recently Conquered!</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {stats.recentAchievements.map((achievement: { id: string; achievement: { icon: string; name: string }; earnedAt: string }) => (
+              {stats.recentAchievements.map((achievement: { id: string; icon: string; name: string; points?: number; earnedAt: string }) => (
                 <div
                   key={achievement.id}
                   className="cosmic-card flex items-center gap-4 p-4 border border-yellow-400/40 bg-gradient-to-br from-yellow-400/20 to-orange-400/20 transition-all duration-300"
                 >
-                  <span className="text-3xl animate-bounce">{achievement.achievement.icon}</span>
+                  <span className="text-3xl animate-bounce">{achievement.icon}</span>
                   <div className="flex-1">
-                    <div className="font-bold text-white text-lg">{achievement.achievement.name}</div>
+                    <div className="font-bold text-white text-lg">{achievement.name}</div>
                     <div className="text-yellow-300 font-bold flex items-center gap-1">
                       <span>⭐</span>
-                      <span>+{(achievement.achievement as { points?: number }).points || 0} points</span>
+                      <span>+{achievement.points || 0} points</span>
                     </div>
                   </div>
                 </div>
