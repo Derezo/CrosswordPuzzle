@@ -2,7 +2,9 @@
 .env
 .env.local
 .env.*.local
+.env.deploy
 !.env.example
+!.env.deploy.example
 
 # Dependencies
 node_modules/

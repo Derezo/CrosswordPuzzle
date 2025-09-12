@@ -41,12 +41,44 @@ PUZZLE_SECRET=$(generate_secret)
 
 print_success "Secrets generated"
 
-# Get user input for OAuth (optional)
-read -p "Enter Google Client ID (or press Enter to skip): " GOOGLE_CLIENT_ID
-read -p "Enter Google Client Secret (or press Enter to skip): " GOOGLE_CLIENT_SECRET
+# Load optional values from environment or .env file
+print_status "Loading optional configuration values..."
 
-# Get email for notifications (optional)
-read -p "Enter admin email for notifications (optional): " ADMIN_EMAIL
+# Check for .env file in project root or deploy directory
+ENV_FILE=""
+if [ -f "../../.env.deploy" ]; then
+    ENV_FILE="../../.env.deploy"
+elif [ -f "../.env.deploy" ]; then
+    ENV_FILE="../.env.deploy" 
+elif [ -f ".env.deploy" ]; then
+    ENV_FILE=".env.deploy"
+fi
+
+# Load .env file if it exists
+if [ -n "$ENV_FILE" ]; then
+    print_status "Loading configuration from $ENV_FILE"
+    # Source the file, filtering out comments and empty lines
+    set -a  # automatically export all variables
+    source <(grep -v '^#' "$ENV_FILE" | grep -v '^$')
+    set +a
+else
+    print_status "No .env.deploy file found, checking environment variables..."
+fi
+
+# Use environment variables or defaults
+GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID:-}"
+GOOGLE_CLIENT_SECRET="${GOOGLE_CLIENT_SECRET:-}"
+ADMIN_EMAIL="${ADMIN_EMAIL:-}"
+
+# Only prompt interactively if running in interactive mode AND values are not set
+if [[ -t 0 && -t 1 ]] && [[ -z "$GOOGLE_CLIENT_ID" && -z "$GOOGLE_CLIENT_SECRET" && -z "$ADMIN_EMAIL" ]]; then
+    print_status "Interactive mode - prompting for optional configuration..."
+    read -p "Enter Google Client ID (or press Enter to skip): " GOOGLE_CLIENT_ID
+    read -p "Enter Google Client Secret (or press Enter to skip): " GOOGLE_CLIENT_SECRET
+    read -p "Enter admin email for notifications (optional): " ADMIN_EMAIL
+else
+    print_status "Using environment/file configuration or defaults for optional fields"
+fi
 
 print_status "Creating backend environment file..."
 
