@@ -114,3 +114,7 @@ license-reports/
 # Test artifacts
 test-results/
 screenshots/
+
+# Deployment artifacts
+deploy/package/
+deployment-*.log
