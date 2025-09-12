@@ -268,6 +268,25 @@ build_application() {
     
     print_success "Frontend build completed"
     
+    # Setup Next.js standalone mode assets
+    if [ -d ".next/standalone" ]; then
+        print_status "Setting up Next.js standalone mode..."
+        
+        # Copy static files to standalone directory
+        if [ -d ".next/static" ] && [ -d ".next/standalone/frontend/.next" ]; then
+            cp -r .next/static .next/standalone/frontend/.next/
+            print_status "Copied static assets to standalone directory"
+        fi
+        
+        # Copy public files to standalone directory
+        if [ -d "public" ] && [ -d ".next/standalone/frontend" ]; then
+            cp -r public .next/standalone/frontend/
+            print_status "Copied public assets to standalone directory"
+        fi
+        
+        print_success "Next.js standalone mode setup completed"
+    fi
+    
     print_status "Building backend..."
     cd ../backend
     

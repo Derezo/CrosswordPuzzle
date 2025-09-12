@@ -39,9 +39,8 @@ module.exports = {
     },
     {
       name: 'crossword-frontend',
-      cwd: '/var/www/crossword/frontend',
-      script: 'npm',
-      args: 'start',
+      cwd: '/var/www/crossword/frontend/.next/standalone/frontend',
+      script: 'server.js',
       instances: 2,
       exec_mode: 'cluster',
       env: {
