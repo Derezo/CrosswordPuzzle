@@ -1,25 +1,50 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma';
 import { User } from '@prisma/client';
+import { verifyToken } from '../utils/jwt';
 
 export interface AuthenticatedRequest extends Request {
   user?: User;
 }
 
-export const authenticateToken = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  try {
-    const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+export const AUTH_COOKIE_NAME = 'auth_token';
 
+function extractToken(req: Request): string | undefined {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    return authHeader.slice('Bearer '.length).trim();
+  }
+  // express-session and cookie-parser both populate req.cookies; fall back
+  // to a raw cookie header parse for environments without cookie-parser.
+  const cookies = (req as Request & { cookies?: Record<string, string> }).cookies;
+  if (cookies && typeof cookies[AUTH_COOKIE_NAME] === 'string') {
+    return cookies[AUTH_COOKIE_NAME];
+  }
+  const rawCookie = req.headers.cookie;
+  if (typeof rawCookie === 'string') {
+    for (const part of rawCookie.split(';')) {
+      const [name, ...rest] = part.trim().split('=');
+      if (name === AUTH_COOKIE_NAME) {
+        return decodeURIComponent(rest.join('='));
+      }
+    }
+  }
+  return undefined;
+}
+
+export const authenticateToken = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const token = extractToken(req);
     if (!token) {
       return res.status(401).json({ error: 'Access token required' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as { userId: string };
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId }
-    });
+    const decoded = verifyToken(token);
+    const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
 
     if (!user) {
       return res.status(401).json({ error: 'Invalid token' });
@@ -33,16 +58,16 @@ export const authenticateToken = async (req: AuthenticatedRequest, res: Response
   }
 };
 
-export const optionalAuth = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+export const optionalAuth = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) => {
   try {
-    const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(' ')[1];
-
+    const token = extractToken(req);
     if (token) {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as { userId: string };
-      const user = await prisma.user.findUnique({
-        where: { id: decoded.userId }
-      });
+      const decoded = verifyToken(token);
+      const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
       if (user) {
         req.user = user;
       }
@@ -52,4 +77,22 @@ export const optionalAuth = async (req: AuthenticatedRequest, res: Response, nex
     // Continue without authentication
     next();
   }
+};
+
+/**
+ * Restrict an endpoint to admin users. Must be chained after authenticateToken
+ * so req.user is populated. Returns 403 for non-admins.
+ */
+export const requireAdmin = (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  if (!(req.user as User & { isAdmin?: boolean }).isAdmin) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  next();
 };

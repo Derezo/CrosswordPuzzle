@@ -1,0 +1,103 @@
+schema_version: 1
+name: crossword-frontend
+plugin: generic-node
+version_scheme: semver
+target: vps
+
+runtime:
+  port: 3001  # single source of truth for listen port. Matches FRONTEND_PORT
+              # the retired deploy-production.sh used so the nginx upstream
+              # contract is unchanged.
+
+remote:
+  host: mittonvillage.com
+  user: crossword-frontend   # app user: owns app_dir, runs the pm2 daemon for crossword-frontend
+  ssh_user: root             # operator: rsync/ssh/vault-tunnel login
+  app_dir: /var/www/crossword-frontend
+  releases_kept: 3
+
+# Plugin choice: generic-node + `next start` under PM2.
+#
+# Why not next-ssg (static export):
+#   - The puzzle page uses `useSearchParams()` (frontend/src/app/puzzle/page.tsx),
+#     which under Next 15 App Router forces dynamic rendering unless wrapped
+#     in Suspense and explicitly marked static.
+#   - The OAuth callback redirects to a URL that the AuthContext consumes
+#     client-side; this works with `next start` as-is. A static export would
+#     require restructuring the redirect target.
+#   - React Three Fiber + framer-motion components in the layout tree are
+#     client-only, so SSR isn't load-bearing, but a full static export is
+#     more invasive than this migration warrants.
+# Filed as a follow-up: explore output: 'export' in next.config.ts to flip
+# to plugin: next-ssg once the SearchParams + OAuth-callback paths are
+# refactored. That would let nginx serve files directly with no PM2 process.
+build:
+  commands:
+    # `npm ci` runs without NODE_ENV=production so devDependencies (typescript,
+    # eslint, tailwindcss, @types/*) are present for `next build`. The runtime
+    # NODE_ENV is supplied via lsd-vault secrets (rendered .env).
+    - npm ci
+    - npm run build
+  # Ship source verbatim ("."): Next.js needs the .next/ build output AND
+  # node_modules/ AND public/ AND package.json all co-located at runtime.
+  # `next start` reads from .next/ relative to cwd. The plugin auto-excludes
+  # .git, .deploy-staging, data, logs, tests — none of which we need shipped.
+  artifact_dir: "."
+  include: []
+  env: {}
+
+services:
+  - name: crossword-frontend
+    kind: pm2
+    # `next start` is the supported production entrypoint. node_modules/next/
+    # ships in the artifact (generic-node does not run `npm ci --omit=dev`
+    # inside the stage for this layout), so the binary resolves at runtime.
+    script: node_modules/next/dist/bin/next
+    args: ["start", "-p", "3001"]
+    exec_mode: fork
+    singleton: true
+    max_memory: 512M
+
+health:
+  # Just hit the home page — Next renders the marketing landing page, which
+  # is sufficient signal that the server booted and can render at least one
+  # route. /api/health belongs to the backend deploy, not this one.
+  url: https://crossword.mittonvillage.com/
+  expect_status: 200
+  timeout_s: 30
+  retries: 6
+  retry_delay_s: 5
+
+nginx:
+  # Frontend serves the public marketing site + the authenticated puzzle UI
+  # at crossword.mittonvillage.com. The api.conf.tpl template proxies all
+  # traffic to the PM2 upstream on runtime.port, which is what `next start`
+  # is listening on. /api/ requests are forwarded to the backend by adding
+  # the appropriate proxy_pass rule in nginx OR by routing /api/ at the DNS
+  # layer to api.crossword.* (the backend's vhost). For this migration we
+  # rely on the existing routing pattern from the retired deploy-production.sh:
+  # frontend nginx vhost owns /, backend nginx vhost owns api.*.
+  template: api.conf.tpl
+  server_name: crossword.mittonvillage.com
+  # vars.upstream is auto-derived from runtime.port by lsd
+
+hooks:
+  preflight:
+    # TODO: enable npm run lint once the eslint config has been re-tightened
+    # in Phase 6 of the remediation (frontend/eslint.config.mjs currently
+    # disables several strict rules; running lint would be misleading until
+    # those are flipped back on).
+    # - npm run lint
+    - npx tsc --noEmit
+
+secrets:
+  provider: lsd-vault
+  lsd_vault:
+    keys:
+      # NEXT_PUBLIC_API_URL is consumed at BOTH compile time (`npm run build`
+      # bakes it into the static JS bundle) AND runtime (Next reads .env on
+      # boot). lsd renders the vault secret to .env before the build step
+      # runs, so the same value flows into both. Set to:
+      #   https://crossword.mittonvillage.com/api
+      # to match the routing assumption in the nginx block above.
+      - NEXT_PUBLIC_API_URL

@@ -15,9 +15,14 @@ import apiRoutes from './routes';
 import puzzleCronService from './services/puzzle/cronService';
 import achievementService from './services/achievement/achievementService';
 import { prisma } from './lib/prisma';
+import { requireEnv } from './utils/env';
 
 // Load environment variables
 dotenv.config();
+
+// Fail fast if any secret is missing — no silent fallbacks to placeholders.
+const SESSION_SECRET = requireEnv('SESSION_SECRET');
+requireEnv('JWT_SECRET');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -83,7 +88,7 @@ app.use(sanitizeInput);
 
 // Session configuration
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'fallback-secret',
+  secret: SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: {

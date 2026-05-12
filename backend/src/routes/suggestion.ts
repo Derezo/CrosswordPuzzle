@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
+import { authenticateToken, requireAdmin, AuthenticatedRequest } from '../middleware/auth';
 import { suggestionValidationSchemas, commonValidations } from '../middleware/validation';
 import { prisma } from '../lib/prisma';
 import { User } from '@prisma/client';
@@ -104,11 +104,15 @@ router.get('/my-suggestions', authenticateToken, async (req: AuthenticatedReques
   }
 });
 
-// Get all suggestions (admin endpoint - would need role-based auth in production)
-router.get('/all', authenticateToken, async (req: AuthenticatedRequest, res) => {
+// Get all suggestions — admin only.
+router.get('/all', authenticateToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
   try {
-    const { status, limit = 50, offset = 0 } = req.query;
-    
+    const { status } = req.query;
+    const rawLimit = Number.parseInt((req.query.limit as string) ?? '50', 10);
+    const rawOffset = Number.parseInt((req.query.offset as string) ?? '0', 10);
+    const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(rawLimit, 1), 200) : 50;
+    const offset = Number.isFinite(rawOffset) ? Math.max(rawOffset, 0) : 0;
+
     const whereClause: any = {};
     if (status) {
       whereClause.status = status;
@@ -138,8 +142,8 @@ router.get('/all', authenticateToken, async (req: AuthenticatedRequest, res) => 
       orderBy: {
         createdAt: 'desc'
       },
-      take: parseInt(limit as string),
-      skip: parseInt(offset as string)
+      take: limit,
+      skip: offset
     });
 
     const total = await prisma.suggestion.count({
@@ -164,8 +168,8 @@ router.get('/all', authenticateToken, async (req: AuthenticatedRequest, res) => 
         puzzle: s.puzzle
       })),
       total,
-      limit: parseInt(limit as string),
-      offset: parseInt(offset as string)
+      limit,
+      offset
     });
 
   } catch (error) {

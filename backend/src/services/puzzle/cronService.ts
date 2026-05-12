@@ -71,31 +71,46 @@ export class PuzzleCronService {
     }
   }
 
-  // Method to manually generate puzzle for a specific date (for testing/backfill)
-  public async generatePuzzleForDate(date: string): Promise<void> {
+  // Generate the puzzle for a given date. Idempotent by default — a duplicate
+  // call simply logs and returns. Pass { force: true } to overwrite the
+  // existing puzzle (used by ./regenerate-puzzle.sh --force).
+  public async generatePuzzleForDate(
+    date: string,
+    options: { force?: boolean } = {}
+  ): Promise<void> {
     try {
-      // Check if puzzle already exists
       const existingPuzzle = await prisma.dailyPuzzle.findUnique({ where: { date } });
-      
-      if (existingPuzzle) {
-        throw new Error(`Puzzle for ${date} already exists`);
+
+      if (existingPuzzle && !options.force) {
+        console.log(`🧩 Puzzle for ${date} already exists (idempotent skip)`);
+        return;
       }
 
-      console.log(`🧩 Manually generating puzzle for ${date}...`);
+      console.log(`🧩 Generating puzzle for ${date}${options.force ? ' (force)' : ''}...`);
 
-      // Generate the puzzle using strict constraint algorithm
       const puzzleData = generateStrictPuzzle(date);
 
-      // Save to database
-      await prisma.dailyPuzzle.create({
-        data: {
-          date,
-          gridData: JSON.stringify(puzzleData.grid),
-          cluesData: JSON.stringify(puzzleData.clues),
-          rows: puzzleData.size.rows,
-          cols: puzzleData.size.cols
-        }
-      });
+      if (existingPuzzle) {
+        await prisma.dailyPuzzle.update({
+          where: { date },
+          data: {
+            gridData: JSON.stringify(puzzleData.grid),
+            cluesData: JSON.stringify(puzzleData.clues),
+            rows: puzzleData.size.rows,
+            cols: puzzleData.size.cols,
+          },
+        });
+      } else {
+        await prisma.dailyPuzzle.create({
+          data: {
+            date,
+            gridData: JSON.stringify(puzzleData.grid),
+            cluesData: JSON.stringify(puzzleData.clues),
+            rows: puzzleData.size.rows,
+            cols: puzzleData.size.cols,
+          },
+        });
+      }
       console.log(`✅ Puzzle for ${date} generated and saved successfully`);
 
     } catch (error) {

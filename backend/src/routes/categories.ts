@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { prisma } from '../lib/prisma';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 import { categoryValidationSchemas } from '../middleware/validation';
+import { safeJsonParse } from '../utils/json';
 import * as fs from 'fs';
 import * as path from 'path';
 import { parse } from 'csv-parse/sync';
@@ -11,17 +12,32 @@ const router = Router();
 // CSV file path - use absolute path from project root
 const csvPath = path.join(process.cwd(), 'src/data/crossword_dictionary_with_clues.csv');
 
-// Cache for categories to avoid repeated CSV parsing
+// Cache for categories to avoid repeated CSV parsing. The cache is keyed on
+// the CSV file's mtime so editing the CSV invalidates the cache immediately;
+// the 5-minute TTL is the upper bound for stat misses (e.g. if mtime is
+// unchanged but the file is otherwise replaced).
 let categoriesCache: any[] = [];
 let cacheTimestamp = 0;
+let cacheMtime = 0;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 // Helper function to load and parse categories from CSV
 const loadCategoriesFromCSV = () => {
   try {
-    if (categoriesCache.length > 0 && Date.now() - cacheTimestamp < CACHE_DURATION) {
+    let currentMtime = 0;
+    try {
+      currentMtime = fs.statSync(csvPath).mtimeMs;
+    } catch {
+      // Stat failed (file missing). Fall through; reading will throw a real error.
+    }
+    if (
+      categoriesCache.length > 0 &&
+      currentMtime === cacheMtime &&
+      Date.now() - cacheTimestamp < CACHE_DURATION
+    ) {
       return categoriesCache;
     }
+    cacheMtime = currentMtime;
 
     console.log('🔍 Loading categories from CSV...');
     const csvContent = fs.readFileSync(csvPath, 'utf-8');
@@ -518,13 +534,13 @@ router.get('/:id/puzzles', async (req, res) => {
       let acrossCount = 0;
       let downCount = 0;
       
-      try {
-        const clues = JSON.parse(puzzle.cluesData as string);
-        if (clues.across) acrossCount = Object.keys(clues.across).length;
-        if (clues.down) downCount = Object.keys(clues.down).length;
-      } catch (error) {
-        console.warn('Failed to parse clues for puzzle:', puzzle.id);
-      }
+      const clues = safeJsonParse<{ across?: Record<string, unknown>; down?: Record<string, unknown> }>(
+        puzzle.cluesData as string,
+        {},
+        `puzzle.cluesData (${puzzle.id})`
+      );
+      if (clues.across) acrossCount = Object.keys(clues.across).length;
+      if (clues.down) downCount = Object.keys(clues.down).length;
 
       return {
         id: puzzle.id,

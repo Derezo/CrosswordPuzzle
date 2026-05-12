@@ -22,8 +22,14 @@ const eslintConfig = [
   },
   {
     rules: {
-      // Disable stricter TypeScript rules that are blocking deployment
-      "@typescript-eslint/no-explicit-any": "off",
+      // Re-enabled as a warning (not an error) so the build still passes
+      // while the remaining `any` usages in the codebase get cleaned up
+      // incrementally. Phase 6 removed ~30 of them in src/lib/api.ts.
+      "@typescript-eslint/no-explicit-any": "warn",
+      // The @typescript-eslint/no-unsafe-* family requires type-checked
+      // linting (parserOptions.project) which the Next.js default ESLint
+      // config does not enable. Leaving them off here keeps `npm run lint`
+      // green; the `tsc --noEmit` step in Phase 7 is the durable safety net.
       "@typescript-eslint/no-unsafe-member-access": "off",
       "@typescript-eslint/no-unsafe-assignment": "off",
       "@typescript-eslint/no-unsafe-argument": "off",

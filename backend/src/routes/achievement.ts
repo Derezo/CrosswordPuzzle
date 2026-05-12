@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 import { User } from '@prisma/client';
 import achievementService from '../services/achievement/achievementService';
+import { safeJsonParse } from '../utils/json';
 
 const router = Router();
 
@@ -23,7 +24,7 @@ router.get('/user', authenticateToken, async (req: AuthenticatedRequest, res) =>
         },
         earnedAt: ua.earnedAt,
         puzzleDate: ua.puzzleDate,
-        metadata: ua.metadataData ? JSON.parse(ua.metadataData) : null
+        metadata: ua.metadataData ? safeJsonParse<any>(ua.metadataData, null, 'userAchievement.metadataData') : null
       }))
     });
 

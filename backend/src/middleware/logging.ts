@@ -42,7 +42,14 @@ export const authLogger = (req: Request, res: Response, next: NextFunction) => {
   res.send = function(data?: any) {
     // Log authentication events
     if (req.path.includes('/auth/')) {
-      const parsedData = typeof data === 'string' ? JSON.parse(data) : data;
+      let parsedData: any = data;
+      if (typeof data === 'string') {
+        try {
+          parsedData = JSON.parse(data);
+        } catch {
+          parsedData = undefined;
+        }
+      }
       
       if (req.method === 'POST') {
         if (req.path.includes('/login')) {

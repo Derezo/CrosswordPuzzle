@@ -124,12 +124,12 @@ NEXT_PUBLIC_API_URL=http://localhost:5000/api
 ### Backend Architecture
 - **Models**: User, DailyPuzzle, UserProgress, Achievement, UserAchievement, Suggestion (Prisma schema)
 - **Routes**: `/api/auth`, `/api/puzzle`, `/api/leaderboard`, `/api/achievement`, `/api/suggestion`, `/api/categories`
-- **Services**: 
-  - `puzzle/` - Multiple crossword generation algorithms:
-    - `strictCrosswordGenerator.ts` - Primary generator used by cron and scripts
-    - `hybridGenerator.ts`, `improvedCrosswordGenerator.ts`, `constraintCrosswordGenerator.ts` - Alternative algorithms
-    - `cronService.ts` - Daily puzzle scheduling with node-cron
-    - `gridValidator.ts` - Grid validation utilities  
+- **Services**:
+  - `puzzle/`:
+    - `strictCrosswordGenerator.ts` - Public façade used by cron, routes, and `regenerate-puzzle.sh`. Delegates to `nytStyleGenerator`.
+    - `nytStyleGenerator.ts` - NYT-style template + backtracking-fill engine. The actual algorithm.
+    - `cronService.ts` - Daily puzzle scheduling with node-cron. Idempotent on duplicate dates; pass `{ force: true }` to overwrite.
+    - `gridValidator.ts` - User-answer validation against the solution grid.
   - `achievement/achievementService.ts` - Achievement logic and point calculation
   - `auth/passport.ts` - Passport.js authentication configuration
   - CSV-based category management for crossword word organization
@@ -177,125 +177,42 @@ NEXT_PUBLIC_API_URL=http://localhost:5000/api
 
 ## Testing
 
-**Note**: No testing framework is currently configured in this project. The npm test commands will fail with "Error: no test specified".
+**Backend** uses Vitest. Tests live alongside source as `*.test.ts`. Coverage thresholds are set in `backend/vitest.config.ts` (lines/functions/statements 30%, branches 25%).
 
-### Adding Tests (Future)
-To add testing support:
-- **Backend**: Consider Jest, Vitest, or Mocha for unit/integration tests
-- **Frontend**: Next.js has built-in support for Jest and Testing Library
-- **Database**: Consider using in-memory SQLite for test isolation
-- **Use `./scripts/test.sh`**: Runs type checking for both frontend and backend, ESLint, and puzzle generation tests
+```bash
+cd backend
+npm test                # vitest run — one-shot CI mode
+npm run test:watch      # vitest watch
+npm run test:coverage   # writes HTML coverage to coverage/
+```
+
+Existing coverage focuses on critical paths: `services/puzzle/strictCrosswordGenerator` (structural invariants + determinism), `services/puzzle/gridValidator` (answer matching), `services/achievement/achievementService` (idempotency + condition evaluation), `routes/auth` (Supertest against a mocked prisma), and the `utils/` helpers (`env`, `json`, `date`, `jwt`).
+
+**Frontend** has no test framework wired yet — tracked in `FINDINGS_OUTSIDE_SCOPE.md`.
 
 ## Production Deployment
 
-### Unified Deployment Script
-
-The project includes a comprehensive single-script deployment solution:
+This project deploys via **lsd** (Lifestream Dynamics deployment CLI). See `~/Projects/lifestream-deploy/CLAUDE.md` for the tool's full surface area, and `DEPLOY.md` in this repo for the per-service quick reference.
 
 ```bash
-# Complete deployment (build + upload + server setup)
-./deploy-production.sh full
+# Build and ship the backend (Express + Prisma + PM2)
+lsd deploy crossword-backend
 
-# Other deployment modes
-./deploy-production.sh build-only      # Build and package locally only
-./deploy-production.sh upload-only     # Upload existing package to server
-./deploy-production.sh server-only     # Setup server infrastructure only
-./deploy-production.sh help            # Show all options
+# Build and ship the frontend (Next.js + PM2)
+lsd deploy crossword-frontend
+
+# Rollback to the previous release
+lsd rollback crossword-backend
+
+# Inspect deployment state
+lsd status
+lsd history crossword-backend --limit 10
+lsd doctor   # verify SSH/rsync/vault connectivity
 ```
 
-### Environment Configuration
+The per-service deploy.yaml lives at `backend/deploy.yaml` and `frontend/deploy.yaml`. Secrets live in lsd-vault (`lsd secrets set crossword-backend JWT_SECRET`, etc) — never in source.
 
-Configure deployment with environment variables:
-
-```bash
-# Example: Deploy to custom domain
-DEPLOY_DOMAIN=mysite.com ./deploy-production.sh full
-
-# Example: Use custom SSH key
-SSH_KEY=~/.ssh/mykey ./deploy-production.sh full
-
-# All available options:
-DEPLOY_DOMAIN=crossword.mittonvillage.com  # Target domain
-DEPLOY_USER=deploy                         # SSH user
-DEPLOY_PATH=/var/www/crossword            # Server path
-BACKEND_PORT=5001                         # Backend port
-FRONTEND_PORT=3001                        # Frontend port
-SSH_KEY=~/.ssh/id_rsa                     # SSH key path
-ADMIN_EMAIL=admin@domain.com              # Admin email for SSL
-```
-
-### What the Unified Script Does
-
-**Enhanced Reliability Features:**
-- **Comprehensive Error Handling**: Automatic cleanup, rollback commands, and detailed logging
-- **Dependency Management**: Proper order of operations with wait conditions and timeouts
-- **Package Integrity**: Verification of build outputs and deployment packages
-- **SSH Retry Logic**: Robust network error handling with automatic retries
-- **Deployment Tracking**: Unique deployment IDs and comprehensive log files
-
-**Step-by-Step Process:**
-1. **Validates Prerequisites**: 
-   - Git status, required tools, SSH connectivity
-   - Port and domain validation
-   - Build output verification
-2. **Builds Application**: 
-   - Builds frontend with correct production API URL
-   - Builds backend TypeScript to JavaScript
-   - Creates and verifies deployment package integrity
-   - Generates production-ready configurations
-3. **Uploads Package**: 
-   - Securely transfers package to server via SSH
-   - Verifies upload integrity and extraction
-   - Creates automatic backups of existing installations
-4. **Sets Up Server**: 
-   - Installs system dependencies (nginx, certbot, nodejs, pm2)
-   - Creates deploy user and sets permissions
-   - Configures firewall with proper port access
-5. **Configures Application**:
-   - Installs app dependencies with verification
-   - Sets up database with Prisma migration
-   - Configures PM2 with clustering and monitoring
-   - Sets up structured logging and log rotation
-6. **Configures Nginx & SSL**:
-   - Sets up nginx reverse proxy with rate limiting
-   - Obtains SSL certificate from Let's Encrypt (with proper dependency ordering)
-   - Configures security headers and performance optimizations
-7. **Runs Health Checks**: 
-   - Tests PM2 service status
-   - Validates backend API and frontend availability
-   - Verifies SSL certificate installation
-8. **Provides Summary**: 
-   - Shows deployment info, rollback commands, and next steps
-   - Generates comprehensive deployment logs
-
-### Manual Deployment (Legacy)
-
-For manual deployment, individual scripts are available in `deploy/scripts/`:
-- `server-setup.sh` - Server infrastructure setup
-- `app-setup.sh` - Application setup  
-- `ssl-setup.sh` - SSL certificate setup
-- `env-setup.sh` - Environment variable setup
-
-### Deployment Requirements
-
-- **Local**: Node.js, npm, git, ssh, scp
-- **Server**: Ubuntu/Debian-based Linux distribution
-- **Network**: SSH access to target server
-- **DNS**: Domain pointing to server IP address
-- **Ports**: 80, 443, SSH access
-- **Permissions**: Passwordless sudo for deploy user (see `deploy/SUDO-SETUP.md`)
-
-### Setting Up Passwordless Sudo
-
-For automated deployment, the deploy user needs sudo access without password prompts:
-
-```bash
-# On your production server (run as root or sudo user):
-echo "deploy ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/deploy
-sudo chmod 0440 /etc/sudoers.d/deploy
-```
-
-See `deploy/SUDO-SETUP.md` for detailed setup instructions and security considerations.
+`./regenerate-puzzle.sh` in `backend/` still works locally for puzzle backfill; production puzzle generation runs via the cron service inside the deployed backend.
 
 ## Development Guidelines
 
@@ -350,7 +267,7 @@ See `deploy/SUDO-SETUP.md` for detailed setup instructions and security consider
 4. **Build Errors**: Check TypeScript configuration and imports
 5. **Prisma Issues**: Run `npx prisma generate` after schema changes
 6. **Turbopack Issues**: Fall back to regular Next.js dev server if needed
-7. **Type Errors**: Backend uses non-strict TypeScript; frontend requires strict typing
+7. **Type Errors**: Backend uses non-strict TypeScript (tracked in `FINDINGS_OUTSIDE_SCOPE.md`); frontend uses strict typing.
 8. **Path Issues**: Ensure you're in the correct directory (backend/ or frontend/) when running commands
 9. **Puzzle Generation**: Use `./regenerate-puzzle.sh` script in backend directory for manual puzzle creation
 
@@ -371,16 +288,17 @@ backend/
 │   │   └── categories.ts           # Category management and CSV processing
 │   ├── services/
 │   │   ├── puzzle/                 # Puzzle generation services
-│   │   │   ├── strictCrosswordGenerator.ts  # Primary puzzle generator (used by cron)
-│   │   │   ├── hybridGenerator.ts           # Alternative hybrid algorithm
-│   │   │   ├── improvedCrosswordGenerator.ts    # Enhanced constraint-based generator  
-│   │   │   ├── constraintCrosswordGenerator.ts  # Advanced constraint solver
-│   │   │   ├── cronService.ts               # Daily puzzle scheduler
-│   │   │   └── gridValidator.ts             # Grid validation utilities
+│   │   │   ├── strictCrosswordGenerator.ts  # Public façade (cron + routes use this)
+│   │   │   ├── nytStyleGenerator.ts         # The actual NYT-style template + fill engine
+│   │   │   ├── cronService.ts               # Daily puzzle scheduler (idempotent)
+│   │   │   └── gridValidator.ts             # User-answer validation
 │   │   ├── achievement/            # Achievement system
 │   │   └── auth/                   # Authentication services
-│   ├── middleware/auth.ts          # JWT authentication middleware
-│   ├── utils/jwt.ts               # JWT utilities
+│   ├── middleware/auth.ts          # JWT authentication + cookie + requireAdmin
+│   ├── utils/jwt.ts                # JWT utilities (fails loud on missing JWT_SECRET)
+│   ├── utils/env.ts                # requireEnv / optionalEnv helpers
+│   ├── utils/json.ts               # safeJsonParse for DB JSON columns
+│   ├── utils/date.ts               # YYYY-MM-DD validation, UTC today
 │   └── data/                      # Static data files
 │       └── crossword_dictionary_with_clues.csv  # Category word definitions
 ├── prisma/

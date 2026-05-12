@@ -638,6 +638,37 @@ body {
   }
 }
 
+/* Login error toast — animation is composed so the horizontal centering
+   (translateX(-50%)) is preserved on every keyframe. */
+@keyframes loginErrorSlideIn {
+  from {
+    transform: translateX(-50%) translateY(-100px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes loginErrorJiggle {
+  0%   { transform: translateX(-50%) translateX(0); }
+  10%  { transform: translateX(-50%) translateX(-8px); }
+  20%  { transform: translateX(-50%) translateX(8px); }
+  30%  { transform: translateX(-50%) translateX(-6px); }
+  40%  { transform: translateX(-50%) translateX(6px); }
+  50%  { transform: translateX(-50%) translateX(-4px); }
+  60%  { transform: translateX(-50%) translateX(4px); }
+  70%  { transform: translateX(-50%) translateX(-2px); }
+  80%  { transform: translateX(-50%) translateX(2px); }
+  90%  { transform: translateX(-50%) translateX(-1px); }
+  100% { transform: translateX(-50%) translateX(0); }
+}
+
+.login-error-toast {
+  animation: loginErrorSlideIn 0.3s ease-out, loginErrorJiggle 0.6s ease-in-out 0.3s;
+}
+
 /* Achievement Animation Utilities */
 .animate-fadeIn {
   animation: fadeIn 0.5s ease-out;

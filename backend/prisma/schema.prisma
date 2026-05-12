@@ -19,6 +19,7 @@ model User {
   firstName            String
   lastName             String
   points               Int      @default(0)
+  isAdmin              Boolean  @default(false)
   favoriteCategoryId   String?  // User's preferred puzzle category (kept for backwards compatibility)
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
@@ -69,6 +70,7 @@ model UserProgress {
   puzzle       DailyPuzzle @relation(fields: [puzzleDate], references: [date])
 
   @@unique([userId, puzzleDate])
+  @@index([puzzleDate])
   @@map("user_progress")
 }
 
@@ -86,6 +88,7 @@ model Achievement {
   // Relations
   userAchievements UserAchievement[]
 
+  @@index([conditionType])
   @@map("achievements")
 }
 
@@ -124,6 +127,7 @@ model Suggestion {
   user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   puzzle DailyPuzzle @relation(fields: [puzzleId], references: [id], onDelete: Cascade)
 
+  @@index([status])
   @@map("suggestions")
 }
 

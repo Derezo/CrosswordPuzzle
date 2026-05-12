@@ -1,0 +1,115 @@
+schema_version: 1
+name: crossword-backend
+plugin: node-pm2
+version_scheme: semver
+target: vps
+
+runtime:
+  port: 5001  # single source of truth for listen port. lsd injects PORT=<n> into .env and synthesizes nginx.vars.upstream.
+              # Matches the BACKEND_PORT the retired deploy-production.sh used, so the runtime contract is unchanged.
+
+remote:
+  host: mittonvillage.com
+  user: crossword            # app user: owns app_dir, runs the pm2 daemon for crossword-backend
+  ssh_user: root             # operator: rsync/ssh/vault-tunnel login
+  app_dir: /var/www/crossword-backend
+  releases_kept: 3
+
+build:
+  commands:
+    - npm ci
+    # Prisma client must be regenerated against the production schema before
+    # `npm run build` because the compiled JS references the generated types.
+    - npx prisma generate
+    - npm run build
+  artifact_dir: dist
+  include:
+    - package.json
+    - package-lock.json
+    # prisma/ ships so `npx prisma migrate deploy` (post_deploy hook) can find
+    # the schema + migrations dir, and so the SQLite db file path resolves
+    # relative to the release dir as the runtime expects.
+    - prisma
+    # src/data/ carries the crossword dictionary CSV. The compiled JS in
+    # dist/ reads it via a runtime path relative to the release root, so it
+    # must ship alongside the build output. (tsc only emits .ts → .js; it
+    # does not copy non-source assets.)
+    - src/data
+  # No build.env: NODE_ENV=production would make `npm ci` skip devDependencies,
+  # breaking the build tools (typescript, prisma, @types/*) that the
+  # `npm run build` + `npx prisma generate` steps need. The runtime
+  # NODE_ENV is supplied via lsd-vault secrets (rendered .env).
+
+services:
+  - name: crossword-backend
+    kind: pm2
+    # tsconfig.json has rootDir=src and outDir=dist, so tsc compiles
+    # src/server.ts → dist/server.js. lsd stages dist/* as the release root,
+    # so current/server.js is the final entrypoint path.
+    script: server.js
+
+health:
+  url: https://crossword.mittonvillage.com/api/health
+  localhost_url: http://127.0.0.1:5001/api/health
+  expect_status: 200
+  timeout_s: 30
+  retries: 6
+  retry_delay_s: 5
+  # The /api/health route already exists in src/server.ts (line ~109) and
+  # performs a DB ping via performHealthCheck(). Do not add a new one.
+
+nginx:
+  template: api.conf.tpl
+  # The backend is reached at https://crossword.mittonvillage.com/api/* via
+  # the frontend vhost in production. Giving the backend its own canonical
+  # FQDN keeps the lsd-managed nginx config self-contained (lsd renders one
+  # vhost per app) and avoids cross-app coupling on the same server_name.
+  # Public traffic hitting api.crossword.* is fine to leave open or can be
+  # firewalled internal-only — the frontend's nginx vhost proxies /api/ to
+  # 127.0.0.1:5001 directly, so end users never resolve this hostname.
+  #
+  # Alternative if a unified single-domain layout is preferred: switch the
+  # frontend deploy.yaml to plugin: api-spa and merge backend+frontend into
+  # one vhost served from crossword.mittonvillage.com. Filed as a follow-up
+  # rather than a blocker for this migration.
+  server_name: api.crossword.mittonvillage.com
+  # vars.upstream is auto-derived from runtime.port by lsd
+
+hooks:
+  preflight:
+    # TODO: enable once `npm run lint` exists in backend/package.json
+    # (no eslint config wired up yet; planned in Phase 6 of the remediation).
+    # - npm run lint
+    - npx tsc --noEmit
+    # `npm test` is currently `echo "Error: no test specified" && exit 1`.
+    # Phase 4 of the remediation wires this to `vitest run`. Leaving the
+    # hook in so it auto-activates once Phase 4 lands — a regression in the
+    # vitest suite will then block the deploy.
+    - npm test
+  post_deploy:
+    # SQLite + Prisma: `migrate deploy` applies any pending migrations
+    # against prisma/dev.db (or whatever DATABASE_URL points at). Safe to
+    # rerun on every deploy — no-op when there's nothing to apply.
+    - { id: prisma-migrate, cmd: npx prisma migrate deploy, cwd: current }
+
+secrets:
+  provider: lsd-vault
+  lsd_vault:
+    keys:
+      # Boot-time fail-loud secrets (see backend/src/utils/jwt.ts and
+      # backend/src/services/auth/passport.ts). Phase 1 of the remediation
+      # removed all `|| 'fallback-secret'` defaults, so missing values here
+      # will cause the process to refuse to start — that's intentional.
+      - JWT_SECRET
+      - SESSION_SECRET
+      - PUZZLE_SECRET
+      # Google OAuth — both required if Google login is enabled.
+      - GOOGLE_CLIENT_ID
+      - GOOGLE_CLIENT_SECRET
+      # SQLite DSN, e.g. "file:./prisma/production.db". Prisma reads this
+      # directly from the rendered .env; do not split into DB_HOST/DB_USER etc.
+      - DATABASE_URL
+      # CORS + OAuth redirect target. Set to https://crossword.mittonvillage.com
+      # in production. Used by both the CORS allowlist and the Passport
+      # success-redirect.
+      - FRONTEND_URL

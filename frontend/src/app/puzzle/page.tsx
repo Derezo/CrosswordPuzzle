@@ -6,7 +6,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Navigation } from "@/components/Navigation";
 import { CrosswordGrid, GridCellData } from "@/components/CrosswordGrid";
 import { CrosswordClues } from "@/components/CrosswordClues";
+import { PuzzleErrorBoundary } from "@/components/PuzzleErrorBoundary";
 import { puzzleAPI, suggestionAPI } from "@/lib/api";
+import {
+  reconstructGrid,
+  buildAllCorrectCellValidation,
+  buildCellValidationFromSavedGrid,
+} from "@/lib/puzzle";
 import {
   DailyPuzzle,
   UserProgress,
@@ -669,113 +675,25 @@ function PuzzlePageContent() {
       if (data.progress.gridData) {
         // Use saved grid state directly
         setInitialGridData(data.progress.gridData as GridCellData[][]);
-        
-        // Create validation results showing all completed clues as correct
+
         const completedValidations: { [key: number]: boolean } = {};
         data.progress.completedClues.forEach((clueNumber) => {
           completedValidations[clueNumber] = true;
         });
         setValidationResults(completedValidations);
 
-        // Create cell validation showing validated cells as correct
-        const savedCellValidation: { [cellKey: string]: boolean } = {};
-        for (let row = 0; row < data.progress.gridData.length; row++) {
-          for (let col = 0; col < data.progress.gridData[0]?.length || 0; col++) {
-            const cell = data.progress.gridData[row][col];
-            if (cell && (cell as any).letter && !data.puzzle.grid[row][col].isBlocked) {
-              savedCellValidation[`${row},${col}`] = true;
-            }
-          }
-        }
-        setCellValidation(savedCellValidation);
-      } else if (data.progress.isCompleted && data.progress.answers) {
-        // Create validation results showing all clues as correct
-        const completedValidations: { [key: number]: boolean } = {};
-        data.progress.completedClues.forEach((clueNumber) => {
-          completedValidations[clueNumber] = true;
-        });
-        setValidationResults(completedValidations);
-
-        // Create cell validation showing all cells as correct
-        const allCellsCorrect: { [cellKey: string]: boolean } = {};
-        for (let row = 0; row < data.puzzle.grid.length; row++) {
-          for (let col = 0; col < data.puzzle.grid[0].length; col++) {
-            const cell = data.puzzle.grid[row][col];
-            if (!cell.isBlocked) {
-              allCellsCorrect[`${row},${col}`] = true;
-            }
-          }
-        }
-        setCellValidation(allCellsCorrect);
-
-        // Reconstruct the grid data with solved answers
-        const reconstructedGrid: GridCellData[][] = data.puzzle.grid.map(
-          (row, rowIndex) =>
-            row.map((cell, colIndex) => {
-              if (cell.isBlocked) {
-                return {
-                  letter: "",
-                  acrossLetter: undefined,
-                  downLetter: undefined,
-                  lastActiveDirection: undefined,
-                };
-              }
-
-              // Find clues that intersect this position
-              const cluesAtPosition = data.puzzle.clues.filter((clue) => {
-                if (clue.direction === "across") {
-                  return (
-                    rowIndex === clue.startRow &&
-                    colIndex >= clue.startCol &&
-                    colIndex < clue.startCol + clue.length
-                  );
-                } else {
-                  return (
-                    colIndex === clue.startCol &&
-                    rowIndex >= clue.startRow &&
-                    rowIndex < clue.startRow + clue.length
-                  );
-                }
-              });
-
-              let acrossLetter = undefined;
-              let downLetter = undefined;
-              let displayLetter = "";
-              let lastActiveDirection: "across" | "down" | undefined =
-                undefined;
-
-              // Extract letters from solved clue answers
-              cluesAtPosition.forEach((clue) => {
-                const answer = data.progress.answers[clue.number.toString()];
-                if (answer) {
-                  const positionInClue =
-                    clue.direction === "across"
-                      ? colIndex - clue.startCol
-                      : rowIndex - clue.startRow;
-
-                  if (positionInClue >= 0 && positionInClue < answer.length) {
-                    const letter = answer[positionInClue].toUpperCase();
-                    if (clue.direction === "across") {
-                      acrossLetter = letter;
-                    } else {
-                      downLetter = letter;
-                    }
-                    displayLetter = letter;
-                    lastActiveDirection = clue.direction;
-                  }
-                }
-              });
-
-              return {
-                letter: displayLetter,
-                acrossLetter,
-                downLetter,
-                lastActiveDirection,
-              };
-            }),
+        setCellValidation(
+          buildCellValidationFromSavedGrid(data.puzzle, data.progress.gridData),
         );
+      } else if (data.progress.isCompleted && data.progress.answers) {
+        const completedValidations: { [key: number]: boolean } = {};
+        data.progress.completedClues.forEach((clueNumber) => {
+          completedValidations[clueNumber] = true;
+        });
+        setValidationResults(completedValidations);
 
-        setInitialGridData(reconstructedGrid);
+        setCellValidation(buildAllCorrectCellValidation(data.puzzle));
+        setInitialGridData(reconstructGrid(data.puzzle, data.progress));
       }
     } catch (error) {
       console.error("Error loading puzzle:", error);
@@ -817,107 +735,25 @@ function PuzzlePageContent() {
       // Use saved gridData if available, otherwise reconstruct if completed
       if (data.progress.gridData) {
         setInitialGridData(data.progress.gridData as GridCellData[][]);
-        
+
         const completedValidations: { [key: number]: boolean } = {};
         data.progress.completedClues.forEach((clueNumber) => {
           completedValidations[clueNumber] = true;
         });
         setValidationResults(completedValidations);
 
-        const savedCellValidation: { [cellKey: string]: boolean } = {};
-        for (let row = 0; row < data.progress.gridData.length; row++) {
-          for (let col = 0; col < data.progress.gridData[0]?.length || 0; col++) {
-            const cell = data.progress.gridData[row][col];
-            if (cell && (cell as any).letter && !data.puzzle.grid[row][col].isBlocked) {
-              savedCellValidation[`${row},${col}`] = true;
-            }
-          }
-        }
-        setCellValidation(savedCellValidation);
-      } else if (data.progress.isCompleted && data.progress.answers) {
-        // Handle completed puzzles without saved grid data
-        const completedValidations: { [key: number]: boolean } = {};
-        data.progress.completedClues.forEach((clueNumber) => {
-          completedValidations[clueNumber] = true;
-        });
-        setValidationResults(completedValidations);
-
-        const allCellsCorrect: { [cellKey: string]: boolean } = {};
-        for (let row = 0; row < data.puzzle.grid.length; row++) {
-          for (let col = 0; col < data.puzzle.grid[0].length; col++) {
-            const cell = data.puzzle.grid[row][col];
-            if (!cell.isBlocked) {
-              allCellsCorrect[`${row},${col}`] = true;
-            }
-          }
-        }
-        setCellValidation(allCellsCorrect);
-
-        // Reconstruct the grid data with solved answers (same logic as loadTodaysPuzzle)
-        const reconstructedGrid: GridCellData[][] = data.puzzle.grid.map(
-          (row, rowIndex) =>
-            row.map((cell, colIndex) => {
-              if (cell.isBlocked) {
-                return {
-                  letter: "",
-                  acrossLetter: undefined,
-                  downLetter: undefined,
-                  lastActiveDirection: undefined,
-                };
-              }
-
-              const cluesAtPosition = data.puzzle.clues.filter((clue) => {
-                if (clue.direction === "across") {
-                  return (
-                    rowIndex === clue.startRow &&
-                    colIndex >= clue.startCol &&
-                    colIndex < clue.startCol + clue.length
-                  );
-                } else {
-                  return (
-                    colIndex === clue.startCol &&
-                    rowIndex >= clue.startRow &&
-                    rowIndex < clue.startRow + clue.length
-                  );
-                }
-              });
-
-              let acrossLetter = undefined;
-              let downLetter = undefined;
-              let displayLetter = "";
-              let lastActiveDirection: "across" | "down" | undefined = undefined;
-
-              cluesAtPosition.forEach((clue) => {
-                const answer = data.progress.answers[clue.number.toString()];
-                if (answer) {
-                  const positionInClue =
-                    clue.direction === "across"
-                      ? colIndex - clue.startCol
-                      : rowIndex - clue.startRow;
-
-                  if (positionInClue >= 0 && positionInClue < answer.length) {
-                    const letter = answer[positionInClue].toUpperCase();
-                    if (clue.direction === "across") {
-                      acrossLetter = letter;
-                    } else {
-                      downLetter = letter;
-                    }
-                    displayLetter = letter;
-                    lastActiveDirection = clue.direction;
-                  }
-                }
-              });
-
-              return {
-                letter: displayLetter,
-                acrossLetter,
-                downLetter,
-                lastActiveDirection,
-              };
-            }),
+        setCellValidation(
+          buildCellValidationFromSavedGrid(data.puzzle, data.progress.gridData),
         );
+      } else if (data.progress.isCompleted && data.progress.answers) {
+        const completedValidations: { [key: number]: boolean } = {};
+        data.progress.completedClues.forEach((clueNumber) => {
+          completedValidations[clueNumber] = true;
+        });
+        setValidationResults(completedValidations);
 
-        setInitialGridData(reconstructedGrid);
+        setCellValidation(buildAllCorrectCellValidation(data.puzzle));
+        setInitialGridData(reconstructGrid(data.puzzle, data.progress));
       }
     } catch (error) {
       console.error("Error loading specific puzzle:", error);
@@ -1059,12 +895,12 @@ function PuzzlePageContent() {
       );
 
       // Update validation results - both clue and cell level
-      setValidationResults((result as any).results || {});
-      setCellValidation((result as any).cellValidation || {});
+      setValidationResults(result.results ?? {});
+      setCellValidation(result.cellValidation ?? {});
 
       // Update initial grid data to reflect the solved grid
-      if ((result as any).validatedGrid) {
-        setInitialGridData((result as any).validatedGrid);
+      if (result.validatedGrid) {
+        setInitialGridData(result.validatedGrid as GridCellData[][]);
       }
 
       // Trigger energy orbs animation for all completed clues
@@ -1235,22 +1071,24 @@ function PuzzlePageContent() {
           <div className="lg:col-span-3">
             <div className="cosmic-card p-2">
               <div className="flex justify-center">
-                <CrosswordGrid
-                  grid={puzzle.grid}
-                  clues={puzzle.clues}
-                  progress={progress}
-                  onCellFocus={setFocusedClue}
-                  onGridDataChange={setCurrentGridData}
-                  onCellEdit={handleCellEdit}
-                  cellValidation={cellValidation}
-                  isCompleted={progress.isCompleted}
-                  readOnly={progress.isCompleted}
-                  initialGridData={initialGridData}
-                  onCheckAnswers={handleCheckAnswers}
-                  onAutoSolve={() => setShowAutoSolveModal(true)}
-                  canCheckAnswers={canCheckAnswers()}
-                  autoSolving={autoSolving}
-                />
+                <PuzzleErrorBoundary>
+                  <CrosswordGrid
+                    grid={puzzle.grid}
+                    clues={puzzle.clues}
+                    progress={progress}
+                    onCellFocus={setFocusedClue}
+                    onGridDataChange={setCurrentGridData}
+                    onCellEdit={handleCellEdit}
+                    cellValidation={cellValidation}
+                    isCompleted={progress.isCompleted}
+                    readOnly={progress.isCompleted}
+                    initialGridData={initialGridData}
+                    onCheckAnswers={handleCheckAnswers}
+                    onAutoSolve={() => setShowAutoSolveModal(true)}
+                    canCheckAnswers={canCheckAnswers()}
+                    autoSolving={autoSolving}
+                  />
+                </PuzzleErrorBoundary>
               </div>
             </div>
           </div>

@@ -1,21 +1,23 @@
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import { User } from '@prisma/client';
-
-export const generateToken = (user: User): string => {
-  const secret = process.env.JWT_SECRET || 'fallback-secret';
-  const payload = { userId: user.id };
-  const options: any = { expiresIn: process.env.JWT_EXPIRE || '7d' };
-  
-  return jwt.sign(payload, secret, options) as string;
-};
-
-export const verifyToken = (token: string) => {
-  const secret = process.env.JWT_SECRET || 'fallback-secret';
-  return jwt.verify(token, secret);
-};
+import { optionalEnv, requireEnv } from './env';
 
 export interface TokenPayload {
   userId: string;
   iat: number;
   exp: number;
 }
+
+export const generateToken = (user: User): string => {
+  const secret = requireEnv('JWT_SECRET');
+  const payload = { userId: user.id };
+  const options: SignOptions = {
+    expiresIn: optionalEnv('JWT_EXPIRE', '7d') as SignOptions['expiresIn'],
+  };
+  return jwt.sign(payload, secret, options);
+};
+
+export const verifyToken = (token: string): TokenPayload => {
+  const secret = requireEnv('JWT_SECRET');
+  return jwt.verify(token, secret) as TokenPayload;
+};

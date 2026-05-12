@@ -1,21 +1,75 @@
 import axios from 'axios';
-import { AuthResponse, DailyPuzzle, UserProgress, ValidationResult, Achievement, LeaderboardEntry, PuzzleCategory, CategoryStats } from '@/types';
+import type {
+  AuthResponse,
+  DailyPuzzle,
+  UserProgress,
+  ValidationResult,
+  Achievement,
+  LeaderboardEntry,
+  PuzzleCategory,
+  CategoryStats,
+} from '@/types';
+import type {
+  LoginResponse,
+  RegisterResponse,
+  MeResponse,
+  LogoutResponse,
+  UpdatePasswordResponse,
+  UpdateProfileResponse,
+  GetProfileResponse,
+  DeleteAccountResponse,
+  UpdateFavoriteCategoryResponse,
+  TodayPuzzleResponse,
+  SpecificPuzzleResponse,
+  AutoSolveResponse,
+  GenerateCategoryPuzzleResponse,
+  RecentCategoryPuzzlesResponse,
+  UserAchievementsResponse,
+  AvailableAchievementsResponse,
+  AchievementStatsResponse,
+  Top100Response,
+  UserRankResponse,
+  SubmitSuggestionResponse,
+  MySuggestionsResponse,
+  AllSuggestionsResponse,
+  CategoriesResponse,
+  PopularCategoriesResponse,
+  CategoryStatsResponse,
+  ToggleFavoriteCategoryResponse,
+  UserFavoriteCategoryResponse,
+  UserFavoriteCategoriesResponse,
+  CategoryWordsResponse,
+  CategoryPuzzlesResponse,
+} from '@/types/api';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+// Fail loud on missing NEXT_PUBLIC_API_URL in production builds. The dev
+// fallback to localhost stays in place to keep the developer onboarding
+// experience seamless.
+const envApiUrl = process.env.NEXT_PUBLIC_API_URL;
+if (process.env.NODE_ENV === 'production' && (!envApiUrl || envApiUrl.length === 0)) {
+  throw new Error(
+    'NEXT_PUBLIC_API_URL is required in production builds. Set it in the deploy environment before running `next build`/`next start`.'
+  );
+}
+const API_BASE_URL = envApiUrl || 'http://localhost:5000/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+  // Important: send/receive the auth_token HttpOnly cookie set by the Google
+  // OAuth callback so /api/auth/me works after the OAuth redirect.
   withCredentials: true,
 });
 
 // Request interceptor to add auth token
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token && config.headers) {
-    config.headers.Authorization = `Bearer ${token}`;
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('token');
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
   }
   return config;
 });
@@ -25,8 +79,10 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
@@ -40,61 +96,70 @@ export const authAPI = {
     firstName: string;
     lastName: string;
   }): Promise<AuthResponse> => {
-    const response = await api.post('/auth/register', data);
-    return response.data as any
+    const response = await api.post<RegisterResponse>('/auth/register', data);
+    return response.data;
   },
 
   login: async (data: {
     email: string;
     password: string;
   }): Promise<AuthResponse> => {
-    const response = await api.post('/auth/login', data);
-    return response.data as any
+    const response = await api.post<LoginResponse>('/auth/login', data);
+    return response.data;
   },
 
-  getCurrentUser: async () => {
-    const response = await api.get('/auth/me');
-    return response.data as any
+  getCurrentUser: async (): Promise<MeResponse> => {
+    const response = await api.get<MeResponse>('/auth/me');
+    return response.data;
   },
 
-  logout: async () => {
-    const response = await api.post('/auth/logout');
-    localStorage.removeItem('token');
-    return response.data as any
+  logout: async (): Promise<LogoutResponse> => {
+    const response = await api.post<LogoutResponse>('/auth/logout');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+    }
+    return response.data;
   },
 
   updatePassword: async (data: {
     currentPassword: string;
     password: string;
     confirmPassword: string;
-  }) => {
-    const response = await api.put('/auth/update-password', data);
-    return response.data as any
+  }): Promise<UpdatePasswordResponse> => {
+    const response = await api.put<UpdatePasswordResponse>('/auth/update-password', data);
+    return response.data;
   },
 
   updateProfile: async (data: {
     firstName: string;
     lastName: string;
     email: string;
-  }) => {
-    const response = await api.put('/auth/update-profile', data);
-    return response.data as any
+  }): Promise<UpdateProfileResponse> => {
+    const response = await api.put<UpdateProfileResponse>('/auth/update-profile', data);
+    return response.data;
   },
 
-  getProfile: async () => {
-    const response = await api.get('/auth/profile');
-    return response.data as any
+  getProfile: async (): Promise<GetProfileResponse> => {
+    const response = await api.get<GetProfileResponse>('/auth/profile');
+    return response.data;
   },
 
-  deleteAccount: async () => {
-    const response = await api.delete('/auth/delete-account');
-    localStorage.removeItem('token');
-    return response.data as any
+  deleteAccount: async (): Promise<DeleteAccountResponse> => {
+    const response = await api.delete<DeleteAccountResponse>('/auth/delete-account');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+    }
+    return response.data;
   },
 
-  updateFavoriteCategory: async (categoryId: string | null) => {
-    const response = await api.put('/auth/update-favorite-category', { categoryId });
-    return response.data as any
+  updateFavoriteCategory: async (
+    categoryId: string | null
+  ): Promise<UpdateFavoriteCategoryResponse> => {
+    const response = await api.put<UpdateFavoriteCategoryResponse>(
+      '/auth/update-favorite-category',
+      { categoryId }
+    );
+    return response.data;
   },
 };
 
@@ -104,86 +169,75 @@ export const puzzleAPI = {
     puzzle: DailyPuzzle;
     progress: UserProgress;
   }> => {
-    const response = await api.get('/puzzle/today');
-    return response.data as any;
+    const response = await api.get<TodayPuzzleResponse>('/puzzle/today');
+    return response.data;
   },
 
   validateAnswers: async (data: {
     answers: { [clueNumber: string]: string };
     puzzleDate: string;
   }): Promise<ValidationResult> => {
-    const response = await api.post('/puzzle/validate', data);
-    return response.data as any;
+    const response = await api.post<ValidationResult>('/puzzle/validate', data);
+    return response.data;
   },
 
   validateGridAnswers: async (data: {
-    gridData: Array<Array<{letter: string, activeDirection?: 'across' | 'down'}>>;
+    gridData: Array<Array<{ letter: string; activeDirection?: 'across' | 'down' }>>;
     puzzleDate: string;
   }): Promise<ValidationResult> => {
-    const response = await api.post('/puzzle/validate-grid', data);
-    return response.data as any;
+    const response = await api.post<ValidationResult>('/puzzle/validate-grid', data);
+    return response.data;
   },
 
   getProgress: async (date: string): Promise<UserProgress> => {
-    const response = await api.get(`/puzzle/progress/${date}`);
-    return response.data as any;
+    const response = await api.get<UserProgress>(`/puzzle/progress/${date}`);
+    return response.data;
   },
 
-  autoSolve: async (puzzleDate: string): Promise<{
-    answers: { [clueNumber: string]: string };
-    completedClues: number[];
-    isCompleted: boolean;
-    autoSolved: boolean;
-  }> => {
-    const response = await api.post('/puzzle/auto-solve', { puzzleDate });
-    return response.data as any;
+  autoSolve: async (puzzleDate: string): Promise<AutoSolveResponse> => {
+    const response = await api.post<AutoSolveResponse>('/puzzle/auto-solve', { puzzleDate });
+    return response.data;
   },
 
-  generateCategoryPuzzle: async (categoryName: string): Promise<{
-    success: boolean;
-    message: string;
-    puzzleDate: string;
-    wordCount: number;
-  }> => {
-    const response = await api.post('/puzzle/generate-category', { categoryName });
-    return response.data as any
+  generateCategoryPuzzle: async (
+    categoryName: string
+  ): Promise<GenerateCategoryPuzzleResponse> => {
+    const response = await api.post<GenerateCategoryPuzzleResponse>(
+      '/puzzle/generate-category',
+      { categoryName }
+    );
+    return response.data;
   },
 
-  getRecentCategoryPuzzles: async (): Promise<{
-    recentPuzzles: Array<{
-      puzzleDate: string;
-      categoryName: string;
-      wordCount: number;
-    }>;
-  }> => {
-    const response = await api.get('/puzzle/recent-category');
-    return response.data as any
+  getRecentCategoryPuzzles: async (): Promise<RecentCategoryPuzzlesResponse> => {
+    const response = await api.get<RecentCategoryPuzzlesResponse>('/puzzle/recent-category');
+    return response.data;
   },
 
   getSpecificPuzzle: async (date: string): Promise<{
     puzzle: DailyPuzzle;
     progress: UserProgress;
   }> => {
-    const response = await api.get(`/puzzle/specific/${date}`);
-    return response.data as any
+    const response = await api.get<SpecificPuzzleResponse>(`/puzzle/specific/${date}`);
+    return response.data;
   },
 };
 
 // Achievement API
 export const achievementAPI = {
-  getUserAchievements: async () => {
-    const response = await api.get('/achievement/user');
-    return response.data as any
+  getUserAchievements: async (): Promise<UserAchievementsResponse> => {
+    const response = await api.get<UserAchievementsResponse>('/achievement/user');
+    return response.data;
   },
 
   getAvailableAchievements: async (): Promise<{ achievements: Achievement[] }> => {
-    const response = await api.get('/achievement/available');
-    return response.data as any
+    const response = await api.get<AvailableAchievementsResponse>('/achievement/available');
+    return response.data;
   },
 
-  getAchievementStats: async () => {
-    const response = await api.get('/achievement/stats');
-    return response.data as any
+  getAchievementStats: async (): Promise<AchievementStatsResponse> => {
+    const response = await api.get<AchievementStatsResponse>('/achievement/stats');
+    return response.data;
   },
 };
 
@@ -193,13 +247,17 @@ export const leaderboardAPI = {
     leaderboard: LeaderboardEntry[];
     userRank?: LeaderboardEntry;
   }> => {
-    const response = await api.get('/leaderboard/top100');
-    return response.data as any
+    const response = await api.get<Top100Response>('/leaderboard/top100');
+    // Normalize null to undefined for the public contract
+    return {
+      leaderboard: response.data.leaderboard,
+      userRank: response.data.userRank ?? undefined,
+    };
   },
 
-  getUserRank: async () => {
-    const response = await api.get('/leaderboard/user-rank');
-    return response.data as any
+  getUserRank: async (): Promise<UserRankResponse> => {
+    const response = await api.get<UserRankResponse>('/leaderboard/user-rank');
+    return response.data;
   },
 };
 
@@ -213,23 +271,23 @@ export const suggestionAPI = {
     suggestedClue?: string;
     suggestedAnswer?: string;
     comments?: string;
-  }) => {
-    const response = await api.post('/suggestion/submit', data);
-    return response.data as any
+  }): Promise<SubmitSuggestionResponse> => {
+    const response = await api.post<SubmitSuggestionResponse>('/suggestion/submit', data);
+    return response.data;
   },
 
-  getMySuggestions: async () => {
-    const response = await api.get('/suggestion/my-suggestions');
-    return response.data as any
+  getMySuggestions: async (): Promise<MySuggestionsResponse> => {
+    const response = await api.get<MySuggestionsResponse>('/suggestion/my-suggestions');
+    return response.data;
   },
 
   getAllSuggestions: async (params?: {
     status?: string;
     limit?: number;
     offset?: number;
-  }) => {
-    const response = await api.get('/suggestion/all', { params });
-    return response.data as any
+  }): Promise<AllSuggestionsResponse> => {
+    const response = await api.get<AllSuggestionsResponse>('/suggestion/all', { params });
+    return response.data;
   },
 };
 
@@ -242,89 +300,65 @@ export const categoriesAPI = {
     search?: string;
     activeOnly?: boolean;
   }): Promise<{ data: PuzzleCategory[]; total: number }> => {
-    const response = await api.get('/categories', { params });
-    return response.data as any
+    const response = await api.get<CategoriesResponse>('/categories', { params });
+    return { data: response.data.data, total: response.data.total };
   },
 
-  getPopularCategories: async (limit: number = 10): Promise<{ data: PuzzleCategory[] }> => {
-    const response = await api.get('/categories/popular', { params: { limit } });
-    return response.data as any
+  getPopularCategories: async (
+    limit: number = 10
+  ): Promise<{ data: PuzzleCategory[] }> => {
+    const response = await api.get<PopularCategoriesResponse>('/categories/popular', {
+      params: { limit },
+    });
+    return { data: response.data.data };
   },
 
   getCategoryStats: async (): Promise<{ data: CategoryStats }> => {
-    const response = await api.get('/categories/stats');
-    return response.data as any
+    const response = await api.get<CategoryStatsResponse>('/categories/stats');
+    return { data: response.data.data };
   },
 
-  toggleFavoriteCategory: async (categoryId: string): Promise<{
-    isFavorite: boolean;
-    categoryId: string | null;
-    message: string;
-  }> => {
-    const response = await api.put(`/categories/${categoryId}/favorite`);
-    return response.data as any
+  toggleFavoriteCategory: async (
+    categoryId: string
+  ): Promise<ToggleFavoriteCategoryResponse> => {
+    const response = await api.put<ToggleFavoriteCategoryResponse>(
+      `/categories/${categoryId}/favorite`
+    );
+    return response.data;
   },
 
-  getUserFavoriteCategory: async (): Promise<{
-    data: { favoriteCategory: PuzzleCategory | null };
-  }> => {
-    const response = await api.get('/categories/user/favorite');
-    return response.data as any
+  getUserFavoriteCategory: async (): Promise<UserFavoriteCategoryResponse> => {
+    const response = await api.get<UserFavoriteCategoryResponse>('/categories/user/favorite');
+    return response.data;
   },
 
-  getUserFavoriteCategories: async (): Promise<{
-    data: { 
-      favoriteCategories: PuzzleCategory[];
-      favoriteIds: string[];
-    };
-  }> => {
-    const response = await api.get('/categories/user/favorites');
-    return response.data as any
+  getUserFavoriteCategories: async (): Promise<UserFavoriteCategoriesResponse> => {
+    const response = await api.get<UserFavoriteCategoriesResponse>(
+      '/categories/user/favorites'
+    );
+    return response.data;
   },
 
-  getCategoryWords: async (categoryId: string, limit?: number, offset?: number): Promise<{
-    success: boolean;
-    data: {
-      category: string;
-      totalWords: number;
-      words: Array<{
-        word: string;
-        clue: string;
-        isCommon: boolean;
-        length: number;
-      }>;
-      pagination: {
-        offset: number;
-        limit: number;
-        hasMore: boolean;
-      };
-    };
-  }> => {
+  getCategoryWords: async (
+    categoryId: string,
+    limit?: number,
+    offset?: number
+  ): Promise<CategoryWordsResponse> => {
     const params = new URLSearchParams();
     if (limit) params.set('limit', limit.toString());
     if (offset) params.set('offset', offset.toString());
-    
-    const response = await api.get(`/categories/${categoryId}/words?${params}`);
-    return response.data as any
+
+    const response = await api.get<CategoryWordsResponse>(
+      `/categories/${categoryId}/words?${params}`
+    );
+    return response.data;
   },
 
-  getCategoryPuzzles: async (categoryId: string): Promise<{
-    success: boolean;
-    data: {
-      category: string;
-      puzzles: Array<{
-        date: string;
-        size: string;
-        acrossClues: number;
-        downClues: number;
-        totalClues: number;
-        createdAt: string;
-        displayName: string;
-      }>;
-    };
-  }> => {
-    const response = await api.get(`/categories/${categoryId}/puzzles`);
-    return response.data as any
+  getCategoryPuzzles: async (categoryId: string): Promise<CategoryPuzzlesResponse> => {
+    const response = await api.get<CategoryPuzzlesResponse>(
+      `/categories/${categoryId}/puzzles`
+    );
+    return response.data;
   },
 };
 

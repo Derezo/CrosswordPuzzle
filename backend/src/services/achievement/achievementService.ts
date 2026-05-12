@@ -1,5 +1,6 @@
 import { prisma } from '../../lib/prisma';
 import { Achievement, UserAchievement, User, UserProgress } from '@prisma/client';
+import { safeJsonParse } from '../../utils/json';
 
 export interface AchievementCheckContext {
   user: User;
@@ -159,7 +160,7 @@ export class AchievementService {
     achievement: Achievement,
     context: AchievementCheckContext
   ): Promise<{ metadata?: any } | null> {
-    const condition = JSON.parse(achievement.conditionData);
+    const condition = safeJsonParse<Record<string, any>>(achievement.conditionData, {}, 'achievement.conditionData');
     
     switch (achievement.conditionType) {
       case 'first_word_ever':
@@ -215,7 +216,7 @@ export class AchievementService {
     context: AchievementCheckContext
   ): Promise<{ metadata?: any } | null> {
     if (context.progress.isCompleted && context.solveTime) {
-      const condition = JSON.parse(achievement.conditionData);
+      const condition = safeJsonParse<Record<string, any>>(achievement.conditionData, {}, 'achievement.conditionData');
       const maxTime = condition.maxTime;
       if (context.solveTime <= maxTime) {
         return { metadata: { solveTime: context.solveTime } };
@@ -229,7 +230,7 @@ export class AchievementService {
     context: AchievementCheckContext
   ): Promise<{ metadata?: any } | null> {
     if (context.firstWordTime && context.newCompletedClues.length > 0) {
-      const condition = JSON.parse(achievement.conditionData);
+      const condition = safeJsonParse<Record<string, any>>(achievement.conditionData, {}, 'achievement.conditionData');
       const maxTime = condition.maxTime;
       if (context.firstWordTime <= maxTime) {
         return { metadata: { firstWordTime: context.firstWordTime } };
@@ -245,9 +246,9 @@ export class AchievementService {
     if (context.newCompletedClues.length > 0) {
       const puzzle = await prisma.dailyPuzzle.findUnique({ where: { date: context.puzzleDate } });
       if (puzzle) {
-        const cluesData = JSON.parse(puzzle.cluesData);
+        const cluesData = safeJsonParse<any[]>(puzzle.cluesData, [], 'puzzle.cluesData');
         const firstClue = cluesData.find((c: any) => c.number === context.newCompletedClues[0]);
-        const condition = JSON.parse(achievement.conditionData);
+        const condition = safeJsonParse<Record<string, any>>(achievement.conditionData, {}, 'achievement.conditionData');
         if (firstClue && firstClue.length >= condition.minLength) {
           return { metadata: { wordLength: firstClue.length, word: firstClue.answer } };
         }
@@ -287,7 +288,7 @@ export class AchievementService {
     context: AchievementCheckContext
   ): Promise<{ metadata?: any } | null> {
     if (context.progress.isCompleted) {
-      const condition = JSON.parse(achievement.conditionData);
+      const condition = safeJsonParse<Record<string, any>>(achievement.conditionData, {}, 'achievement.conditionData');
       const streakLength = condition.streakLength;
       const streak = await this.calculateSolveStreak(context.user.id, context.puzzleDate);
       
@@ -303,7 +304,7 @@ export class AchievementService {
     context: AchievementCheckContext
   ): Promise<{ metadata?: any } | null> {
     if (context.progress.isCompleted && context.progress.completedAt) {
-      const condition = JSON.parse(achievement.conditionData);
+      const condition = safeJsonParse<Record<string, any>>(achievement.conditionData, {}, 'achievement.conditionData');
       const hour = context.progress.completedAt.getHours();
       if (hour < condition.maxHour) {
         return { metadata: { completionHour: hour } };
@@ -317,7 +318,7 @@ export class AchievementService {
     context: AchievementCheckContext
   ): Promise<{ metadata?: any } | null> {
     if (context.progress.isCompleted && context.progress.completedAt) {
-      const condition = JSON.parse(achievement.conditionData);
+      const condition = safeJsonParse<Record<string, any>>(achievement.conditionData, {}, 'achievement.conditionData');
       const hour = context.progress.completedAt.getHours();
       if (hour >= condition.minHour) {
         return { metadata: { completionHour: hour } };
@@ -338,7 +339,7 @@ export class AchievementService {
         }
       });
       
-      const condition = JSON.parse(achievement.conditionData);
+      const condition = safeJsonParse<Record<string, any>>(achievement.conditionData, {}, 'achievement.conditionData');
       if (totalCompleted >= condition.count) {
         return { metadata: { totalPuzzles: totalCompleted } };
       }

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { PuzzleCell, CrosswordClue, UserProgress } from '@/types';
 import clsx from 'clsx';
 
@@ -365,42 +365,102 @@ export const CrosswordGrid: React.FC<CrosswordGridProps> = ({
     );
   };
 
+  // Memoize the rendered cell list. We deliberately scope the dependencies
+  // to the values the rendering actually reads (grid, gridData, focusedCell,
+  // cellValidation, readOnly) so unrelated state changes (e.g. the achievement
+  // modal in the parent) do not force a full grid re-render on every keystroke.
+  const cellList = useMemo(() => {
+    if (grid.length === 0) return null;
+    return grid.map((row, rowIndex) =>
+      row.map((cell, colIndex) => {
+        const cluesAtPosition = getClueAtPosition(rowIndex, colIndex);
+        const isEffectivelyBlocked =
+          cell.isBlocked || cluesAtPosition.length === 0;
+        const letter = getLetterAtPosition(rowIndex, colIndex);
+
+        const cellKey = `${rowIndex},${colIndex}`;
+        const validationState = cellValidation?.[cellKey];
+
+        const labelParts = [`Row ${rowIndex + 1}, column ${colIndex + 1}`];
+        if (isEffectivelyBlocked) {
+          labelParts.push('blocked');
+        } else if (letter) {
+          labelParts.push(`letter ${letter}`);
+        } else {
+          labelParts.push('empty');
+        }
+        if (validationState === true) labelParts.push('correct');
+        else if (validationState === false) labelParts.push('incorrect');
+
+        return (
+          <div
+            key={`${rowIndex}-${colIndex}`}
+            role="gridcell"
+            aria-label={labelParts.join(', ')}
+            aria-disabled={isEffectivelyBlocked || readOnly ? true : undefined}
+            data-row={rowIndex}
+            data-col={colIndex}
+            className={getCellClasses(rowIndex, colIndex)}
+            onClick={() => handleCellClick(rowIndex, colIndex)}
+          >
+            {cell.number && !isEffectivelyBlocked && (
+              <span className="absolute top-0 left-0 text-xs text-black leading-none p-0.5 font-semibold">
+                {cell.number}
+              </span>
+            )}
+            {!isEffectivelyBlocked && (
+              <span className="mt-1 font-bold text-center">{letter}</span>
+            )}
+          </div>
+        );
+      }),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [grid, gridData, focusedCell, cellValidation, readOnly, clues, onCellFocus]);
+
+  // Summary for the aria-live region — fires whenever validation results
+  // change so screen readers announce the outcome of a "check answers" run.
+  const validationSummary = useMemo(() => {
+    if (!cellValidation) return '';
+    const entries = Object.values(cellValidation);
+    if (entries.length === 0) return '';
+    const correct = entries.filter((v) => v === true).length;
+    const incorrect = entries.filter((v) => v === false).length;
+    if (incorrect === 0 && correct > 0) {
+      return `All ${correct} validated cells are correct.`;
+    }
+    return `Validation complete: ${correct} correct, ${incorrect} incorrect.`;
+  }, [cellValidation]);
+
   return (
-    <div 
+    <div
       className="flex flex-col items-center w-full"
     >
-      <div 
+      {/* Screen-reader-only announcement region for validation results. */}
+      <div
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {validationSummary}
+      </div>
+      <div
         className="inline-block cosmic-card p-4 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
         tabIndex={0}
         onKeyDown={handleKeyDown}
         ref={gridRef}
       >
-        <div className="grid gap-px rounded-lg overflow-hidden shadow-2xl mx-auto" style={{ gridTemplateColumns: `repeat(${grid[0]?.length || 0}, minmax(0, 1fr))` }}>
-        {grid.map((row, rowIndex) =>
-          row.map((cell, colIndex) => {
-            const cluesAtPosition = getClueAtPosition(rowIndex, colIndex);
-            const isEffectivelyBlocked = cell.isBlocked || cluesAtPosition.length === 0;
-            
-            return (
-              <div
-                key={`${rowIndex}-${colIndex}`}
-                className={getCellClasses(rowIndex, colIndex)}
-                onClick={() => handleCellClick(rowIndex, colIndex)}
-              >
-                {cell.number && !isEffectivelyBlocked && (
-                  <span className="absolute top-0 left-0 text-xs text-black leading-none p-0.5 font-semibold">
-                    {cell.number}
-                  </span>
-                )}
-                {!isEffectivelyBlocked && (
-                  <span className="mt-1 font-bold text-center">
-                    {getLetterAtPosition(rowIndex, colIndex)}
-                  </span>
-                )}
-              </div>
-            );
-          })
-        )}
+        <div
+          role="grid"
+          aria-rowcount={grid.length}
+          aria-colcount={grid[0]?.length || 0}
+          aria-label="Crossword puzzle grid"
+          className="grid gap-px rounded-lg overflow-hidden shadow-2xl mx-auto"
+          style={{
+            gridTemplateColumns: `repeat(${grid[0]?.length || 0}, minmax(0, 1fr))`,
+          }}
+        >
+          {cellList}
         </div>
       </div>
       

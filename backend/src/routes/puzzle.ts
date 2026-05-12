@@ -1,11 +1,13 @@
 import { Router } from 'express';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 import { puzzleValidationSchemas, commonValidations, handleValidationErrors } from '../middleware/validation';
+import { rateLimiters } from '../middleware/security';
 import { prisma } from '../lib/prisma';
 import puzzleCronService from '../services/puzzle/cronService';
 import achievementService from '../services/achievement/achievementService';
 import { validateGrid, createSolutionGrid } from '../services/puzzle/gridValidator';
 import { generateStrictPuzzle } from '../services/puzzle/strictCrosswordGenerator';
+import { safeJsonParse } from '../utils/json';
 import { User } from '@prisma/client';
 import * as jwt from 'jsonwebtoken';
 
@@ -53,8 +55,8 @@ router.get('/today', authenticateToken, async (req: AuthenticatedRequest, res) =
     });
 
     // Parse puzzle data
-    const gridData = JSON.parse(puzzle.gridData);
-    const cluesData = JSON.parse(puzzle.cluesData);
+    const gridData = safeJsonParse<any[][]>(puzzle.gridData, [], 'puzzle.gridData');
+    const cluesData = safeJsonParse<any[]>(puzzle.cluesData, [], 'puzzle.cluesData');
 
     // Don't send the actual answers in the puzzle data
     const puzzleData = {
@@ -81,9 +83,9 @@ router.get('/today', authenticateToken, async (req: AuthenticatedRequest, res) =
     };
 
     const progressData = {
-      answers: JSON.parse(progress.answersData),
-      gridData: progress.gridData ? JSON.parse(progress.gridData) : null,
-      completedClues: JSON.parse(progress.completedClues),
+      answers: safeJsonParse<Record<string, string>>(progress.answersData, {}, 'progress.answersData'),
+      gridData: progress.gridData ? safeJsonParse<any[][] | null>(progress.gridData, null, 'progress.gridData') : null,
+      completedClues: safeJsonParse<number[]>(progress.completedClues, [], 'progress.completedClues'),
       isCompleted: progress.isCompleted,
       completedAt: progress.completedAt,
       solveTime: progress.solveTime,
@@ -137,9 +139,9 @@ router.post('/validate', authenticateToken, puzzleValidationSchemas.validateAnsw
     });
 
     // Parse puzzle clues and current progress
-    const cluesData = JSON.parse(puzzle.cluesData);
-    const currentAnswers = JSON.parse(progress.answersData);
-    const currentCompletedClues = JSON.parse(progress.completedClues);
+    const cluesData = safeJsonParse<any[]>(puzzle.cluesData, [], 'puzzle.cluesData');
+    const currentAnswers = safeJsonParse<Record<string, string>>(progress.answersData, {}, 'progress.answersData');
+    const currentCompletedClues = safeJsonParse<number[]>(progress.completedClues, [], 'progress.completedClues');
 
     // Validate answers and update progress
     const results: { [key: number]: boolean } = {};
@@ -179,7 +181,8 @@ router.post('/validate', authenticateToken, puzzleValidationSchemas.validateAnsw
     if (allCluesCompleted && !progress.isCompleted) {
       updateData.isCompleted = true;
       updateData.completedAt = new Date();
-      updateData.solveTime = Math.floor((new Date().getTime() - progress.startedAt.getTime()) / 1000);
+      const startedAtMs = progress.startedAt?.getTime() ?? new Date().getTime();
+      updateData.solveTime = Math.floor((new Date().getTime() - startedAtMs) / 1000);
     }
 
     progress = await prisma.userProgress.update({
@@ -205,7 +208,7 @@ router.post('/validate', authenticateToken, puzzleValidationSchemas.validateAnsw
         id: ua.id,
         achievement: ua.achievementId,
         earnedAt: ua.earnedAt,
-        metadata: ua.metadataData ? JSON.parse(ua.metadataData) : null
+        metadata: ua.metadataData ? safeJsonParse<any>(ua.metadataData, null, 'userAchievement.metadataData') : null
       }))
     });
 
@@ -257,9 +260,9 @@ router.post('/validate-grid', authenticateToken, puzzleValidationSchemas.validat
     });
 
     // Parse puzzle data
-    const cluesData = JSON.parse(puzzle.cluesData);
-    const solutionGrid = JSON.parse(puzzle.gridData);
-    const currentCompletedClues = JSON.parse(progress.completedClues);
+    const cluesData = safeJsonParse<any[]>(puzzle.cluesData, [], 'puzzle.cluesData');
+    const solutionGrid = safeJsonParse<any[][]>(puzzle.gridData, [], 'puzzle.gridData');
+    const currentCompletedClues = safeJsonParse<number[]>(progress.completedClues, [], 'progress.completedClues');
 
     // Use shared validation logic
     const validationResult = validateGrid(gridData, solutionGrid, cluesData, currentCompletedClues);
@@ -283,7 +286,8 @@ router.post('/validate-grid', authenticateToken, puzzleValidationSchemas.validat
     if (allCluesCompleted && !progress.isCompleted) {
       updateData.isCompleted = true;
       updateData.completedAt = new Date();
-      updateData.solveTime = Math.floor((new Date().getTime() - progress.startedAt.getTime()) / 1000);
+      const startedAtMs = progress.startedAt?.getTime() ?? new Date().getTime();
+      updateData.solveTime = Math.floor((new Date().getTime() - startedAtMs) / 1000);
     }
 
     progress = await prisma.userProgress.update({
@@ -313,7 +317,7 @@ router.post('/validate-grid', authenticateToken, puzzleValidationSchemas.validat
         id: ua.id,
         achievement: ua.achievementId,
         earnedAt: ua.earnedAt,
-        metadata: ua.metadataData ? JSON.parse(ua.metadataData) : null
+        metadata: ua.metadataData ? safeJsonParse<any>(ua.metadataData, null, 'userAchievement.metadataData') : null
       }))
     });
 
@@ -349,9 +353,9 @@ router.get('/progress/:date', authenticateToken, async (req: AuthenticatedReques
     }
 
     res.json({
-      answers: JSON.parse(progress.answersData),
-      gridData: progress.gridData ? JSON.parse(progress.gridData) : null,
-      completedClues: JSON.parse(progress.completedClues),
+      answers: safeJsonParse<Record<string, string>>(progress.answersData, {}, 'progress.answersData'),
+      gridData: progress.gridData ? safeJsonParse<any[][] | null>(progress.gridData, null, 'progress.gridData') : null,
+      completedClues: safeJsonParse<number[]>(progress.completedClues, [], 'progress.completedClues'),
       isCompleted: progress.isCompleted,
       completedAt: progress.completedAt,
       solveTime: progress.solveTime,
@@ -365,7 +369,7 @@ router.get('/progress/:date', authenticateToken, async (req: AuthenticatedReques
 });
 
 // Auto-solve puzzle (reveals all answers, no achievements/points)
-router.post('/auto-solve', authenticateToken, async (req: AuthenticatedRequest, res) => {
+router.post('/auto-solve', authenticateToken, rateLimiters.puzzleGeneration, async (req: AuthenticatedRequest, res) => {
   try {
     const { puzzleDate } = req.body;
     const user = req.user as User;
@@ -432,8 +436,8 @@ router.post('/auto-solve', authenticateToken, async (req: AuthenticatedRequest, 
     });
 
     // Parse puzzle data
-    const cluesData = JSON.parse(puzzle.cluesData);
-    const solutionGrid = JSON.parse(puzzle.gridData);
+    const cluesData = safeJsonParse<any[]>(puzzle.cluesData, [], 'puzzle.cluesData');
+    const solutionGrid = safeJsonParse<any[][]>(puzzle.gridData, [], 'puzzle.gridData');
     
     // Create solution grid using shared function
     const completeSolutionGrid = createSolutionGrid(solutionGrid, cluesData);
@@ -883,7 +887,7 @@ router.get('/generate-category-stream/:categoryName', async (req, res) => {
 });
 
 // Generate category-specific puzzle (non-streaming fallback)
-router.post('/generate-category', authenticateToken, puzzleValidationSchemas.generateCategoryPuzzle, async (req: AuthenticatedRequest, res) => {
+router.post('/generate-category', authenticateToken, rateLimiters.puzzleGeneration, puzzleValidationSchemas.generateCategoryPuzzle, async (req: AuthenticatedRequest, res) => {
   try {
     const { categoryName } = req.body;
     const user = req.user as User;
@@ -1005,8 +1009,8 @@ router.get('/specific/:date', authenticateToken, async (req: AuthenticatedReques
     });
 
     // Parse puzzle data
-    const gridData = JSON.parse(puzzle.gridData);
-    const cluesData = JSON.parse(puzzle.cluesData);
+    const gridData = safeJsonParse<any[][]>(puzzle.gridData, [], 'puzzle.gridData');
+    const cluesData = safeJsonParse<any[]>(puzzle.cluesData, [], 'puzzle.cluesData');
 
     res.json({
       puzzle: {
@@ -1015,9 +1019,9 @@ router.get('/specific/:date', authenticateToken, async (req: AuthenticatedReques
         clues: cluesData,
       },
       progress: {
-        answers: JSON.parse(progress.answersData),
-        gridData: progress.gridData ? JSON.parse(progress.gridData) : null,
-        completedClues: JSON.parse(progress.completedClues),
+        answers: safeJsonParse<Record<string, string>>(progress.answersData, {}, 'progress.answersData'),
+        gridData: progress.gridData ? safeJsonParse<any[][] | null>(progress.gridData, null, 'progress.gridData') : null,
+        completedClues: safeJsonParse<number[]>(progress.completedClues, [], 'progress.completedClues'),
         isCompleted: progress.isCompleted,
         completedAt: progress.completedAt,
         solveTime: progress.solveTime,
@@ -1057,7 +1061,7 @@ router.get('/recent-category', authenticateToken, async (req: AuthenticatedReque
         const categoryName = categoryMatch ? categoryMatch[1].replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Unknown';
         
         // Get word count from clues data
-        const cluesData = JSON.parse(puzzle.cluesData);
+        const cluesData = safeJsonParse<any[]>(puzzle.cluesData, [], 'puzzle.cluesData');
         const wordCount = cluesData.length;
 
         return {

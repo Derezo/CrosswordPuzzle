@@ -86,8 +86,14 @@ export function validateGrid(
     clueResults[clue.number] = allCellsCorrect && extractedAnswer.length === clue.length;
     solvedClues[clue.number.toString()] = extractedAnswer;
     
-    // Track newly completed clues
-    if (clueResults[clue.number] && !currentCompletedClues.includes(clue.number)) {
+    // Track newly completed clues. Across and down clues can share a number,
+    // so dedupe here so callers (achievementService, /validate response) don't
+    // see the same number twice.
+    if (
+      clueResults[clue.number] &&
+      !currentCompletedClues.includes(clue.number) &&
+      !newCompletedClues.includes(clue.number)
+    ) {
       newCompletedClues.push(clue.number);
     }
   }

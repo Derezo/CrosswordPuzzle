@@ -28,6 +28,35 @@ export const useAuth = () => {
   return context;
 };
 
+interface ApiErrorPayload {
+  error?: string;
+  message?: string;
+  errors?: Array<{ message?: string }>;
+}
+
+interface ApiErrorShape {
+  response?: { data?: ApiErrorPayload };
+}
+
+const extractErrorMessage = (error: unknown, fallback: string): string => {
+  const err = error as ApiErrorShape;
+  const errorData = err?.response?.data;
+  if (!errorData) return fallback;
+
+  if (errorData.error) {
+    // Old format
+    return errorData.error;
+  }
+  if (errorData.message) {
+    // New format with structured errors
+    if (errorData.errors && errorData.errors.length > 0) {
+      return errorData.errors[0].message || errorData.message;
+    }
+    return errorData.message;
+  }
+  return fallback;
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -35,21 +64,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      getCurrentUser();
-    } else {
-      setLoading(false);
+    // After a Google OAuth callback the backend now sets an HttpOnly cookie
+    // and redirects to `/?login=success`. Detect that, fetch the user via
+    // /api/auth/me (the cookie rides along thanks to withCredentials), and
+    // strip the query string so refreshes do not re-trigger.
+    let bootstrappedFromOAuth = false;
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('login') === 'success') {
+        bootstrappedFromOAuth = true;
+        getCurrentUser();
+        params.delete('login');
+        const newSearch = params.toString();
+        const newUrl =
+          window.location.pathname +
+          (newSearch ? `?${newSearch}` : '') +
+          window.location.hash;
+        window.history.replaceState({}, '', newUrl);
+      }
+    }
+
+    if (!bootstrappedFromOAuth) {
+      const token =
+        typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      if (token) {
+        getCurrentUser();
+      } else {
+        setLoading(false);
+      }
     }
   }, []);
 
   const getCurrentUser = async () => {
     try {
       const data = await authAPI.getCurrentUser();
-      setUser((data as any).user);
+      setUser(data.user);
     } catch (error) {
       console.error('Failed to get current user:', error);
-      localStorage.removeItem('token');
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('token');
+      }
     } finally {
       setLoading(false);
     }
@@ -58,28 +112,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const login = async (email: string, password: string) => {
     try {
       const data = await authAPI.login({ email, password });
-      localStorage.setItem('token', (data as any).token);
-      setUser((data as any).user);
-    } catch (error: unknown) {
-      // Handle both old and new error formats
-      const err = error as { response?: { data?: { error?: string; message?: string; errors?: Array<{ message?: string }> } } };
-      const errorData = err.response?.data;
-      let errorMessage = 'Login failed';
-      
-      if (errorData) {
-        if (errorData.error) {
-          // Old format
-          errorMessage = errorData.error;
-        } else if (errorData.message) {
-          // New format with structured errors
-          errorMessage = errorData.message;
-          if (errorData.errors && errorData.errors.length > 0) {
-            errorMessage = errorData.errors[0].message || errorMessage;
-          }
-        }
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('token', data.token);
       }
-      
-      throw new Error(errorMessage);
+      setUser(data.user);
+    } catch (error: unknown) {
+      throw new Error(extractErrorMessage(error, 'Login failed'));
     }
   };
 
@@ -91,28 +129,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }) => {
     try {
       const data = await authAPI.register(registerData);
-      localStorage.setItem('token', (data as any).token);
-      setUser((data as any).user);
-    } catch (error: unknown) {
-      // Handle both old and new error formats
-      const err = error as { response?: { data?: { error?: string; message?: string; errors?: Array<{ message?: string }> } } };
-      const errorData = err.response?.data;
-      let errorMessage = 'Registration failed';
-      
-      if (errorData) {
-        if (errorData.error) {
-          // Old format
-          errorMessage = errorData.error;
-        } else if (errorData.message) {
-          // New format with structured errors
-          errorMessage = errorData.message;
-          if (errorData.errors && errorData.errors.length > 0) {
-            errorMessage = errorData.errors[0].message || errorMessage;
-          }
-        }
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('token', data.token);
       }
-      
-      throw new Error(errorMessage);
+      setUser(data.user);
+    } catch (error: unknown) {
+      throw new Error(extractErrorMessage(error, 'Registration failed'));
     }
   };
 

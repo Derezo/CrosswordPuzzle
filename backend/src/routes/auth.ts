@@ -2,13 +2,15 @@ import { Router } from 'express';
 import passport from '../services/auth/passport';
 import { prisma } from '../lib/prisma';
 import { generateToken } from '../utils/jwt';
-import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
+import { authenticateToken, AuthenticatedRequest, AUTH_COOKIE_NAME } from '../middleware/auth';
 import { authValidationSchemas, validateWithJoi, joiSchemas } from '../middleware/validation';
 import { ConflictError, AuthenticationError, asyncHandler } from '../middleware/errorHandler';
 import bcrypt from 'bcryptjs';
 import { User } from '@prisma/client';
 
 const router = Router();
+
+const AUTH_COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7d, matches JWT_EXPIRE default
 
 // Register - with comprehensive validation
 router.post('/register', authValidationSchemas.register, asyncHandler(async (req, res) => {
@@ -51,8 +53,8 @@ router.post('/register', authValidationSchemas.register, asyncHandler(async (req
   });
 }));
 
-// Login - with validation  
-router.post('/login', async (req, res) => {
+// Login - with validation
+router.post('/login', authValidationSchemas.login, async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -101,9 +103,20 @@ router.get('/google/callback',
     const user = req.user as User;
     const token = generateToken(user);
 
-    // Redirect to frontend with token
+    // Set the JWT as an HttpOnly cookie rather than putting it in the URL
+    // (where it would be captured by browser history, proxy logs, and the
+    // Referer header). The frontend reads it back via /api/auth/me on next
+    // page load.
+    res.cookie(AUTH_COOKIE_NAME, token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: AUTH_COOKIE_MAX_AGE_MS,
+      path: '/',
+    });
+
     const frontendURL = process.env.FRONTEND_URL || 'http://localhost:3000';
-    res.redirect(`${frontendURL}/auth/callback?token=${token}`);
+    res.redirect(`${frontendURL}/?login=success`);
   }
 );
 
@@ -280,8 +293,10 @@ router.put('/update-favorite-category', authenticateToken, asyncHandler(async (r
   });
 }));
 
-// Logout (for session-based auth if needed)
+// Logout — clear the OAuth cookie. Bearer-token clients drop the token
+// client-side, but we always clear the cookie to be safe.
 router.post('/logout', (req, res) => {
+  res.clearCookie(AUTH_COOKIE_NAME, { path: '/' });
   res.json({ message: 'Logout successful' });
 });
 
