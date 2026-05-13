@@ -72,7 +72,11 @@ nginx:
   # frontend deploy.yaml to plugin: api-spa and merge backend+frontend into
   # one vhost served from crossword.mittonvillage.com. Filed as a follow-up
   # rather than a blocker for this migration.
-  server_name: api.crossword.mittonvillage.com
+  # TEMP 2026-05-12: api.crossword.mittonvillage.com has no DNS A record yet,
+  # so certbot can't validate it during cert.ensure. Using the wildcard
+  # *.lifestreamdynamics.com (resolves to this VPS) until the DNS lands.
+  # Switch back to api.crossword.mittonvillage.com once the A record exists.
+  server_name: crossword-api.lifestreamdynamics.com
   # vars.upstream is auto-derived from runtime.port by lsd
 
 hooks:
