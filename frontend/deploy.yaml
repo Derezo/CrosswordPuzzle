@@ -46,7 +46,13 @@ build:
   artifact_dir: "."
   include:
     - .next
-  env: {}
+  # NEXT_PUBLIC_* env vars are baked into the client bundle at compile time.
+  # lsd writes .env.production AFTER the build runs (post-stage), so secrets
+  # don't reach `npm run build`. Setting it here in build.env makes Turbopack
+  # inline the production URL into the static JS chunks. The URL is public
+  # anyway (it appears in every shipped chunk) so no secrecy is lost.
+  env:
+    NEXT_PUBLIC_API_URL: https://crossword-api.lifestreamdynamics.com/api
 
 services:
   - name: crossword-frontend
@@ -85,14 +91,7 @@ nginx:
   server_name: crossword.mittonvillage.com
   # vars.upstream is auto-derived from runtime.port by lsd
 
-secrets:
-  provider: lsd-vault
-  lsd_vault:
-    keys:
-      # NEXT_PUBLIC_API_URL is consumed at BOTH compile time (`npm run build`
-      # bakes it into the static JS bundle) AND runtime (Next reads .env on
-      # boot). lsd renders the vault secret to .env before the build step
-      # runs, so the same value flows into both. Set to:
-      #   https://crossword.mittonvillage.com/api
-      # to match the routing assumption in the nginx block above.
-      - NEXT_PUBLIC_API_URL
+# No secrets needed — NEXT_PUBLIC_API_URL is baked into the client bundle
+# via next.config.js (lsd renders .env.production after build, which is too
+# late for NEXT_PUBLIC_* vars). The URL is public-by-design (it appears in
+# every shipped JS chunk), so there's no secrecy benefit to vaulting it.
