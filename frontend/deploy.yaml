@@ -49,11 +49,13 @@ build:
 services:
   - name: crossword-frontend
     kind: pm2
-    # `next start` is the supported production entrypoint. node_modules/next/
-    # ships in the artifact (generic-node does not run `npm ci --omit=dev`
-    # inside the stage for this layout), so the binary resolves at runtime.
-    script: node_modules/next/dist/bin/next
-    args: ["start", "-p", "3001"]
+    # PM2 fork mode loads `script` via Node's require(), which can't resolve
+    # the extension-less node_modules/next/dist/bin/next shebang script. We
+    # ship a tiny server.js wrapper at the artifact root that calls Next's
+    # startServer() programmatically — same runtime as `next start` without
+    # spawning a child. The lsd Service schema has no `args`/`interpreter`
+    # field, so a JS entrypoint is the right shape.
+    script: server.js
     exec_mode: fork
     singleton: true
     max_memory: 512M
