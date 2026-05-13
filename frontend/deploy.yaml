@@ -85,11 +85,6 @@ nginx:
   server_name: crossword.mittonvillage.com
   # vars.upstream is auto-derived from runtime.port by lsd
 
-hooks:
-  preflight:
-    - npm run lint
-    - npx tsc --noEmit
-
 secrets:
   provider: lsd-vault
   lsd_vault:

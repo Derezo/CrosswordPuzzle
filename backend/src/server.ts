@@ -42,26 +42,24 @@ app.use(metricsMiddleware);
 // CORS origins — production reads FRONTEND_URL (required, set via lsd-vault);
 // dev allows localhost variants and honors ENABLE_CORS_ALL for tooling.
 const getCorsOrigins = (): string | string[] | boolean => {
-  if (process.env.NODE_ENV === 'production') {
-    const frontendUrl = process.env.FRONTEND_URL;
-    if (!frontendUrl) {
-      throw new Error('FRONTEND_URL is required in production for CORS configuration');
-    }
-    return frontendUrl;
+  // Prefer FRONTEND_URL whenever it's set — works in any environment.
+  // The previous NODE_ENV=production gate silently fell back to localhost
+  // origins on the VPS because lsd didn't inject NODE_ENV, which rejected
+  // every browser request from crossword.mittonvillage.com.
+  if (process.env.FRONTEND_URL) {
+    return process.env.FRONTEND_URL;
   }
-
-  const origins = [
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'http://127.0.0.1:3000',
-    'http://0.0.0.0:3000',
-  ];
 
   if (process.env.ENABLE_CORS_ALL === 'true') {
     return true;
   }
 
-  return origins;
+  return [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://127.0.0.1:3000',
+    'http://0.0.0.0:3000',
+  ];
 };
 
 // CORS with enhanced security configuration

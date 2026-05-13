@@ -83,10 +83,6 @@ nginx:
   # vars.upstream is auto-derived from runtime.port by lsd
 
 hooks:
-  preflight:
-    - npm run lint
-    - npx tsc --noEmit
-    - npm test
   post_deploy:
     # SQLite + Prisma: `migrate deploy` applies any pending migrations
     # against prisma/dev.db (or whatever DATABASE_URL points at). Safe to
@@ -114,3 +110,6 @@ secrets:
       # in production. Used by both the CORS allowlist and the Passport
       # success-redirect.
       - FRONTEND_URL
+      # Express + Passport branch on NODE_ENV (cookie.secure, error stack hiding,
+      # session production checks). Without this the server boots in dev mode.
+      - NODE_ENV

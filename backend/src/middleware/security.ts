@@ -90,6 +90,11 @@ export const helmetConfig = helmet({
     }
   },
   crossOriginEmbedderPolicy: false, // Needed for some frontend frameworks
+  // Allow the React app at crossword.mittonvillage.com to read API responses
+  // served from crossword-api.lifestreamdynamics.com. helmet defaults this to
+  // 'same-origin' which strips the response on cross-origin reads even when
+  // the CORS layer above approved them.
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
   hsts: {
     maxAge: 31536000, // 1 year
     includeSubDomains: true,
