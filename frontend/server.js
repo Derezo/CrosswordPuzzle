@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 // PM2 entrypoint for the production Next.js server.
 //
 // PM2 in fork mode loads `script` via `require()`. The actual `next` CLI
