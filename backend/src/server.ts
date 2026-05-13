@@ -27,6 +27,11 @@ requireEnv('JWT_SECRET');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// nginx terminates TLS in front of this process and forwards X-Forwarded-For.
+// express-rate-limit refuses to extract the real client IP unless we declare
+// the proxy hop count — 1 covers the single nginx hop on the VPS.
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmetConfig);
 app.use(securityHeaders);

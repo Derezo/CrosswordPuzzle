@@ -1001,10 +1001,26 @@ export interface GenerateOptions {
   async?: boolean;
 }
 
-const DEFAULT_CSV_PATH = path.join(
-  __dirname,
-  "../../../src/data/crossword_dictionary_with_clues.csv",
-);
+// Resolve the dictionary CSV in both dev (ts-node from src/) and prod
+// (compiled JS in dist/, with src/data shipped alongside via deploy.yaml's
+// build.include). The historical "__dirname + ../../../src/data/..." was
+// off-by-one in prod because dist/ doesn't add the extra layer that src/ has.
+// Walk up looking for the file instead of hardcoding hops.
+function resolveDictionaryCsv(): string {
+  const rel = "src/data/crossword_dictionary_with_clues.csv";
+  const candidates = [
+    path.join(__dirname, "../../../", rel), // dev: src/services/puzzle/ → up 3 → backend/src/data
+    path.join(__dirname, "../../", rel),    // prod: dist/services/puzzle/ → up 2 → release-root/src/data
+    path.join(process.cwd(), rel),          // PM2 cwd fallback
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  // Return the first candidate so the eventual ENOENT names a sensible path.
+  return candidates[0];
+}
+
+const DEFAULT_CSV_PATH = resolveDictionaryCsv();
 
 export function generateNytStyle(opts: GenerateOptions): GeneratedPuzzle {
   const csvPath = opts.dictionaryCsvPath || DEFAULT_CSV_PATH;
