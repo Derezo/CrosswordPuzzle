@@ -16,6 +16,16 @@
   --nebula-gradient: linear-gradient(135deg, #7c3aed 0%, #3b82f6 100%);
   --stellar-gradient: linear-gradient(135deg, #fb923c 0%, #dc2626 100%);
   --aurora-gradient: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
+
+  /* Safe-area insets — fall back to 0 on non-notched devices */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+
+  /* Coupled UI heights — consumed by the sticky current-clue banner so it stays
+     pinned below the nav even if the nav grows. */
+  --nav-h: 3rem;
 }
 
 /* Base styles */
@@ -27,11 +37,12 @@ html, body {
   height: 100%;
   margin: 0;
   padding: 0;
+  overscroll-behavior-y: none;
 }
 
 body {
   background: var(--deep-space);
-  background-image: 
+  background-image:
     radial-gradient(circle at 20% 20%, rgba(124, 58, 237, 0.1) 0%, transparent 50%),
     radial-gradient(circle at 80% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
     radial-gradient(circle at 40% 70%, rgba(16, 185, 129, 0.05) 0%, transparent 50%);
@@ -40,7 +51,16 @@ body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
   line-height: 1.6;
   min-height: 100vh;
+  min-height: 100dvh;
 }
+
+/* Safe-area padding utilities — use on fixed/sticky elements that
+   would otherwise sit under the iOS notch or home indicator. */
+.pt-safe { padding-top: var(--safe-top); }
+.pb-safe { padding-bottom: var(--safe-bottom); }
+.pl-safe { padding-left: var(--safe-left); }
+.pr-safe { padding-right: var(--safe-right); }
+.px-safe { padding-left: var(--safe-left); padding-right: var(--safe-right); }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
@@ -92,7 +112,10 @@ body {
 }
 
 .validation-shimmer {
-  animation: validation-shimmer 3s ease-in-out infinite;
+  /* Single play, holds final state. Validated cells used to animate forever,
+     which on a 15x15 grid burned hundreds of perpetual CSS animations per
+     session even after the user looked away. */
+  animation: validation-shimmer 3s ease-in-out forwards;
 }
 
 @keyframes twinkle {
@@ -397,6 +420,9 @@ body {
   @apply w-full px-4 py-3 bg-gray-900/50 border border-purple-500/30 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-400/50;
   backdrop-filter: blur(10px);
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  /* iOS Safari zooms when a focused input has font-size < 16px. Force 16px
+     so phone users don't get a jarring page-scale shift on every focus. */
+  font-size: 16px;
 }
 
 .cosmic-input:focus {
@@ -480,23 +506,44 @@ body {
   body {
     font-size: 14px;
   }
-  
+
   .cosmic-card {
     @apply mx-2 rounded-xl;
   }
-  
-  /* Mobile-specific grid adjustments */
-  .crossword-grid {
-    max-width: 90vw;
-    overflow-x: auto;
-  }
-  
+
   /* Adjust text sizes for mobile */
   .nebula-text,
   .stellar-text,
   .aurora-text {
     background-size: 200% 200%;
   }
+}
+
+/* Crossword grid: hidden input that captures keystrokes from the OS virtual
+   keyboard on mobile. Must be focusable (no display:none / visibility:hidden)
+   and font-size ≥ 16px to suppress iOS focus-zoom. */
+.cw-hidden-input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 1px;
+  height: 1px;
+  left: 0;
+  top: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font-size: 16px;
+  background: transparent;
+  color: transparent;
+  caret-color: transparent;
+}
+
+.cw-cell {
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 @media (min-width: 641px) and (max-width: 1024px) {

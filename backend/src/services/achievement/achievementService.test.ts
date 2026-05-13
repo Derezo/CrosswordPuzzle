@@ -30,7 +30,20 @@ vi.mock('../../lib/prisma', () => ({
 import achievementService from './achievementService';
 import { prisma } from '../../lib/prisma';
 
+import type { AchievementProgress } from './achievementService';
+
 const fakeUser = { id: 'user-1', email: 't@example.com' } as any;
+
+// Build a minimal AchievementProgress; tests override the fields they care about.
+const fakeUserProgress = (overrides: Partial<AchievementProgress> = {}): AchievementProgress => ({
+  isCompleted: false,
+  completedAt: null,
+  solveTime: null,
+  firstViewedAt: new Date(),
+  startedAt: new Date(),
+  ...overrides,
+});
+
 const fakeAchievement = (overrides: Partial<any> = {}) => ({
   id: 'ach-1',
   name: 'Test',
@@ -94,7 +107,7 @@ describe('AchievementService.checkAchievements (idempotency)', () => {
     const result = await achievementService.checkAchievements({
       user: fakeUser,
       puzzleDate: '2026-01-01',
-      progress: {},
+      progress: fakeUserProgress(),
       newCompletedClues: [1],
     });
 
@@ -114,7 +127,7 @@ describe('AchievementService.checkAchievements (idempotency)', () => {
     const result = await achievementService.checkAchievements({
       user: fakeUser,
       puzzleDate: '2026-01-01',
-      progress: {},
+      progress: fakeUserProgress(),
       newCompletedClues: [1],
     });
 
@@ -138,7 +151,7 @@ describe('AchievementService.checkAchievements (specific conditions)', () => {
     const result = await achievementService.checkAchievements({
       user: fakeUser,
       puzzleDate: '2026-01-01',
-      progress: { isCompleted: true },
+      progress: fakeUserProgress({ isCompleted: true }),
       newCompletedClues: [],
       solveTime: 200,
     });
@@ -160,7 +173,7 @@ describe('AchievementService.checkAchievements (specific conditions)', () => {
     const result = await achievementService.checkAchievements({
       user: fakeUser,
       puzzleDate: '2026-01-01',
-      progress: { isCompleted: true },
+      progress: fakeUserProgress({ isCompleted: true }),
       newCompletedClues: [],
       solveTime: 100,
     });
@@ -180,7 +193,7 @@ describe('AchievementService.checkAchievements (specific conditions)', () => {
     const result = await achievementService.checkAchievements({
       user: fakeUser,
       puzzleDate: '2026-01-01',
-      progress: { isCompleted: true },
+      progress: fakeUserProgress({ isCompleted: true }),
       newCompletedClues: [],
       solveTime: 5,
     });

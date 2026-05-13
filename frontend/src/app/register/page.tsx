@@ -121,6 +121,7 @@ export default function RegisterPage() {
                     id="email"
                     name="email"
                     type="email"
+                    inputMode="email"
                     autoComplete="email"
                     required
                     className="cosmic-input"

@@ -1,231 +1,79 @@
-name: Deploy to Production
+name: Deploy
 
 on:
   push:
-    branches: [ main ]
-    tags: [ 'v*' ]
+    tags:
+      - 'v*'
   workflow_dispatch:
     inputs:
-      environment:
-        description: 'Deployment environment'
-        required: true
-        default: 'staging'
+      service:
+        description: 'Which service to deploy'
+        required: false
+        default: 'both'
         type: choice
         options:
-        - staging
-        - production
-
-env:
-  NODE_VERSION: '20'
-  PNPM_VERSION: '8'
+          - both
+          - backend
+          - frontend
 
 jobs:
-  deploy-staging:
-    name: Deploy to Staging
+  deploy:
+    # TODO(lsd-runner): confirm install path with maintainer.
+    #
+    # `lsd` (Lifestream Dynamics deploy CLI) is a Go binary that needs:
+    #   1. SSH access to mittonvillage.com (operator key)
+    #   2. lsd-vault decryption material (age identity) to render secrets
+    #   3. The lsd binary itself on PATH
+    #   4. ~/.config/lsd/config.yaml pointing at a ledger directory
+    #
+    # The source repo (~/Projects/lifestream-deploy) has no public remote and
+    # no published release artifacts, so ubuntu-latest cannot `curl | sh` or
+    # `go install` it. The intended deploy host is the operator's laptop.
+    #
+    # Recommended: register a self-hosted runner (label `lsd`) on a machine
+    # that already has `lsd`, `~/.ssh/config` for mittonvillage.com, and the
+    # lsd-vault identity wired up. Then change `runs-on` to:
+    #     runs-on: [self-hosted, lsd]
+    # Until that runner exists this workflow will fail fast on the
+    # "Verify lsd available" step rather than half-deploying.
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
-    environment:
-      name: staging
-      url: https://staging.galactic-crossword.com
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - name: Install and build backend
-        working-directory: ./backend
+      - name: Verify lsd available
+        # Fails loudly if the runner does not have `lsd` installed. The new
+        # deploy path is `lsd deploy crossword-{backend,frontend}` — we will
+        # not fall back to the retired SSH+pm2 path.
         run: |
-          pnpm install --frozen-lockfile
-          npx prisma generate
-          pnpm run build
+          if ! command -v lsd >/dev/null 2>&1; then
+            echo "::error::lsd CLI not found on PATH. Configure a self-hosted runner with lsd installed (see TODO in this file)."
+            exit 1
+          fi
+          lsd --version
 
-      - name: Install and build frontend
-        working-directory: ./frontend
-        run: |
-          pnpm install --frozen-lockfile
-          pnpm run build
+      - name: Deploy backend
+        if: ${{ github.event_name == 'push' || inputs.service == 'both' || inputs.service == 'backend' }}
+        run: lsd deploy crossword-backend
         env:
-          NEXT_PUBLIC_API_URL: ${{ secrets.STAGING_API_URL }}
+          # Vault unlock material. Configure in repo Settings → Secrets:
+          #   LSD_VAULT_HOST  — e.g. mittonvillage.com
+          #   LSD_VAULT_TOKEN — vault agent token (if the runner is not pre-authed)
+          LSD_VAULT_HOST: ${{ secrets.LSD_VAULT_HOST }}
+          LSD_VAULT_TOKEN: ${{ secrets.LSD_VAULT_TOKEN }}
 
-      - name: Deploy to staging server
-        uses: easingthemes/ssh-deploy@v4.1.10
-        with:
-          SSH_PRIVATE_KEY: ${{ secrets.STAGING_SSH_KEY }}
-          ARGS: "-rlgoDzvc -i --delete"
-          SOURCE: "./"
-          REMOTE_HOST: ${{ secrets.STAGING_HOST }}
-          REMOTE_USER: ${{ secrets.STAGING_USER }}
-          TARGET: ${{ secrets.STAGING_PATH }}
-          EXCLUDE: "/node_modules/, /.git/, /backend/prisma/dev.db, /.env"
-
-      - name: Run deployment commands
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ secrets.STAGING_HOST }}
-          username: ${{ secrets.STAGING_USER }}
-          key: ${{ secrets.STAGING_SSH_KEY }}
-          script: |
-            cd ${{ secrets.STAGING_PATH }}
-            
-            # Setup environment
-            cp .env.staging .env || echo "No staging env file found"
-            
-            # Backend deployment
-            cd backend
-            pnpm install --frozen-lockfile --production
-            npx prisma generate
-            npx prisma db push
-            
-            # Restart backend service
-            pm2 restart galactic-crossword-backend || pm2 start dist/server.js --name galactic-crossword-backend
-            
-            # Frontend deployment
-            cd ../frontend
-            pnpm install --frozen-lockfile --production
-            
-            # Restart frontend service
-            pm2 restart galactic-crossword-frontend || pm2 start npm --name galactic-crossword-frontend -- start
-
-      - name: Run health checks
-        run: |
-          sleep 30
-          curl -f ${{ secrets.STAGING_API_URL }}/puzzle/today || exit 1
-          curl -f https://staging.galactic-crossword.com || exit 1
-
-  deploy-production:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
-    environment:
-      name: production
-      url: https://galactic-crossword.com
-    needs: deploy-staging
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - name: Install and build backend
-        working-directory: ./backend
-        run: |
-          pnpm install --frozen-lockfile
-          npx prisma generate
-          pnpm run build
-
-      - name: Install and build frontend
-        working-directory: ./frontend
-        run: |
-          pnpm install --frozen-lockfile
-          pnpm run build
+      - name: Deploy frontend
+        if: ${{ github.event_name == 'push' || inputs.service == 'both' || inputs.service == 'frontend' }}
+        run: lsd deploy crossword-frontend
         env:
-          NEXT_PUBLIC_API_URL: ${{ secrets.PRODUCTION_API_URL }}
+          LSD_VAULT_HOST: ${{ secrets.LSD_VAULT_HOST }}
+          LSD_VAULT_TOKEN: ${{ secrets.LSD_VAULT_TOKEN }}
 
-      - name: Create backup
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ secrets.PRODUCTION_HOST }}
-          username: ${{ secrets.PRODUCTION_USER }}
-          key: ${{ secrets.PRODUCTION_SSH_KEY }}
-          script: |
-            cd ${{ secrets.PRODUCTION_PATH }}
-            
-            # Backup database
-            timestamp=$(date +%Y%m%d_%H%M%S)
-            cp backend/prisma/dev.db "backups/db_backup_$timestamp.db" || mkdir -p backups && cp backend/prisma/dev.db "backups/db_backup_$timestamp.db"
-            
-            # Keep only last 10 backups
-            ls -t backups/db_backup_*.db | tail -n +11 | xargs -r rm
+      - name: Verify backend health
+        if: ${{ github.event_name == 'push' || inputs.service == 'both' || inputs.service == 'backend' }}
+        # URL matches backend/deploy.yaml `health.url`.
+        run: curl -fsS https://crossword.mittonvillage.com/api/health
 
-      - name: Deploy to production server
-        uses: easingthemes/ssh-deploy@v4.1.10
-        with:
-          SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_KEY }}
-          ARGS: "-rlgoDzvc -i --delete"
-          SOURCE: "./"
-          REMOTE_HOST: ${{ secrets.PRODUCTION_HOST }}
-          REMOTE_USER: ${{ secrets.PRODUCTION_USER }}
-          TARGET: ${{ secrets.PRODUCTION_PATH }}
-          EXCLUDE: "/node_modules/, /.git/, /backend/prisma/dev.db, /.env, /backups/"
-
-      - name: Run production deployment
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ secrets.PRODUCTION_HOST }}
-          username: ${{ secrets.PRODUCTION_USER }}
-          key: ${{ secrets.PRODUCTION_SSH_KEY }}
-          script: |
-            cd ${{ secrets.PRODUCTION_PATH }}
-            
-            # Setup environment
-            cp .env.production .env
-            
-            # Backend deployment
-            cd backend
-            pnpm install --frozen-lockfile --production
-            npx prisma generate
-            npx prisma db push
-            
-            # Graceful restart with zero downtime
-            pm2 reload galactic-crossword-backend
-            
-            # Frontend deployment
-            cd ../frontend
-            pnpm install --frozen-lockfile --production
-            pm2 reload galactic-crossword-frontend
-
-      - name: Run production health checks
-        run: |
-          sleep 60
-          for i in {1..5}; do
-            if curl -f ${{ secrets.PRODUCTION_API_URL }}/puzzle/today; then
-              echo "✅ API health check passed"
-              break
-            fi
-            echo "⏳ Waiting for API to be ready... ($i/5)"
-            sleep 10
-          done
-          
-          for i in {1..5}; do
-            if curl -f https://galactic-crossword.com; then
-              echo "✅ Frontend health check passed"
-              break
-            fi
-            echo "⏳ Waiting for frontend to be ready... ($i/5)"
-            sleep 10
-          done
-
-      - name: Notify deployment success
-        uses: 8398a7/action-slack@v3
-        if: success()
-        with:
-          status: success
-          text: '🚀 Production deployment successful!'
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-
-      - name: Notify deployment failure
-        uses: 8398a7/action-slack@v3
-        if: failure()
-        with:
-          status: failure
-          text: '❌ Production deployment failed!'
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      - name: Verify frontend
+        if: ${{ github.event_name == 'push' || inputs.service == 'both' || inputs.service == 'frontend' }}
+        # URL matches frontend/deploy.yaml `health.url`.
+        run: curl -fsS https://crossword.mittonvillage.com/

@@ -1,6 +1,6 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
-import { puzzleValidationSchemas, commonValidations, handleValidationErrors } from '../middleware/validation';
+import { puzzleValidationSchemas, commonValidations, handleValidationErrors, joiSchemas } from '../middleware/validation';
 import { rateLimiters } from '../middleware/security';
 import { prisma } from '../lib/prisma';
 import puzzleCronService from '../services/puzzle/cronService';
@@ -9,11 +9,27 @@ import { validateGrid, createSolutionGrid } from '../services/puzzle/gridValidat
 import { generateStrictPuzzle } from '../services/puzzle/strictCrosswordGenerator';
 import { safeJsonParse } from '../utils/json';
 import { User } from '@prisma/client';
-import * as jwt from 'jsonwebtoken';
+import { verifyToken } from '../utils/jwt';
+import { CrosswordClue as PuzzleClue } from '../types';
 
-interface JwtPayload {
-  userId: string;
+interface PuzzleGridCell {
+  letter: string;
+  isBlocked: boolean;
+  number?: number | null;
+  row?: number;
+  col?: number;
 }
+
+type PuzzleGrid = PuzzleGridCell[][];
+
+interface UserAnswerCell {
+  letter?: string;
+  acrossLetter?: string;
+  downLetter?: string;
+  lastActiveDirection?: 'across' | 'down';
+}
+
+type UserAnswerGrid = UserAnswerCell[][];
 
 const router = Router();
 
@@ -55,21 +71,21 @@ router.get('/today', authenticateToken, async (req: AuthenticatedRequest, res) =
     });
 
     // Parse puzzle data
-    const gridData = safeJsonParse<any[][]>(puzzle.gridData, [], 'puzzle.gridData');
-    const cluesData = safeJsonParse<any[]>(puzzle.cluesData, [], 'puzzle.cluesData');
+    const gridData = safeJsonParse<PuzzleGrid>(puzzle.gridData, [], 'puzzle.gridData');
+    const cluesData = safeJsonParse<PuzzleClue[]>(puzzle.cluesData, [], 'puzzle.cluesData');
 
     // Don't send the actual answers in the puzzle data
     const puzzleData = {
       id: puzzle.id,
       date: puzzle.date,
-      grid: gridData.map((row: any) => 
-        row.map((cell: any) => ({
+      grid: gridData.map((row: PuzzleGridCell[]) =>
+        row.map((cell: PuzzleGridCell) => ({
           letter: null, // Don't send the actual letters
           number: cell.number,
           isBlocked: cell.isBlocked
         }))
       ),
-      clues: cluesData.map((clue: any) => ({
+      clues: cluesData.map((clue: PuzzleClue) => ({
         number: clue.number,
         clue: clue.clue,
         direction: clue.direction,
@@ -84,7 +100,7 @@ router.get('/today', authenticateToken, async (req: AuthenticatedRequest, res) =
 
     const progressData = {
       answers: safeJsonParse<Record<string, string>>(progress.answersData, {}, 'progress.answersData'),
-      gridData: progress.gridData ? safeJsonParse<any[][] | null>(progress.gridData, null, 'progress.gridData') : null,
+      gridData: progress.gridData ? safeJsonParse<UserAnswerGrid | null>(progress.gridData, null, 'progress.gridData') : null,
       completedClues: safeJsonParse<number[]>(progress.completedClues, [], 'progress.completedClues'),
       isCompleted: progress.isCompleted,
       completedAt: progress.completedAt,
@@ -104,7 +120,7 @@ router.get('/today', authenticateToken, async (req: AuthenticatedRequest, res) =
 });
 
 // Validate answers
-router.post('/validate', authenticateToken, puzzleValidationSchemas.validateAnswers, async (req: AuthenticatedRequest, res) => {
+router.post('/validate', authenticateToken, puzzleValidationSchemas.validateAnswers, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { answers, puzzleDate } = req.body;
     const user = req.user as User;
@@ -139,7 +155,7 @@ router.post('/validate', authenticateToken, puzzleValidationSchemas.validateAnsw
     });
 
     // Parse puzzle clues and current progress
-    const cluesData = safeJsonParse<any[]>(puzzle.cluesData, [], 'puzzle.cluesData');
+    const cluesData = safeJsonParse<PuzzleClue[]>(puzzle.cluesData, [], 'puzzle.cluesData');
     const currentAnswers = safeJsonParse<Record<string, string>>(progress.answersData, {}, 'progress.answersData');
     const currentCompletedClues = safeJsonParse<number[]>(progress.completedClues, [], 'progress.completedClues');
 
@@ -149,12 +165,12 @@ router.post('/validate', authenticateToken, puzzleValidationSchemas.validateAnsw
 
     for (const [clueNumberStr, userAnswer] of Object.entries(answers)) {
       const clueNumber = parseInt(clueNumberStr);
-      const clue = cluesData.find((c: any) => c.number === clueNumber);
-      
+      const clue = cluesData.find((c: PuzzleClue) => c.number === clueNumber);
+
       if (clue) {
         const isCorrect = clue.answer.toUpperCase() === (userAnswer as string).toUpperCase();
         results[clueNumber] = isCorrect;
-        
+
         if (isCorrect && !currentCompletedClues.includes(clueNumber)) {
           newCompletedClues.push(clueNumber);
           currentCompletedClues.push(clueNumber);
@@ -168,11 +184,18 @@ router.post('/validate', authenticateToken, puzzleValidationSchemas.validateAnsw
     }
 
     // Check if puzzle is completed
-    const allCluesCompleted = cluesData.every((clue: any) => 
+    const allCluesCompleted = cluesData.every((clue: PuzzleClue) =>
       currentCompletedClues.includes(clue.number)
     );
 
-    const updateData: any = {
+    const updateData: {
+      answersData: string;
+      completedClues: string;
+      updatedAt: Date;
+      isCompleted?: boolean;
+      completedAt?: Date;
+      solveTime?: number;
+    } = {
       answersData: JSON.stringify(currentAnswers),
       completedClues: JSON.stringify(currentCompletedClues),
       updatedAt: new Date()
@@ -208,7 +231,7 @@ router.post('/validate', authenticateToken, puzzleValidationSchemas.validateAnsw
         id: ua.id,
         achievement: ua.achievementId,
         earnedAt: ua.earnedAt,
-        metadata: ua.metadataData ? safeJsonParse<any>(ua.metadataData, null, 'userAchievement.metadataData') : null
+        metadata: ua.metadataData ? safeJsonParse<Record<string, unknown> | null>(ua.metadataData, null, 'userAchievement.metadataData') : null
       }))
     });
 
@@ -219,7 +242,7 @@ router.post('/validate', authenticateToken, puzzleValidationSchemas.validateAnsw
 });
 
 // Pure grid-based validation endpoint
-router.post('/validate-grid', authenticateToken, puzzleValidationSchemas.validateGridAnswers, async (req: AuthenticatedRequest, res) => {
+router.post('/validate-grid', authenticateToken, puzzleValidationSchemas.validateGridAnswers, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { gridData, puzzleDate } = req.body;
     const user = req.user as User;
@@ -260,23 +283,31 @@ router.post('/validate-grid', authenticateToken, puzzleValidationSchemas.validat
     });
 
     // Parse puzzle data
-    const cluesData = safeJsonParse<any[]>(puzzle.cluesData, [], 'puzzle.cluesData');
-    const solutionGrid = safeJsonParse<any[][]>(puzzle.gridData, [], 'puzzle.gridData');
+    const cluesData = safeJsonParse<PuzzleClue[]>(puzzle.cluesData, [], 'puzzle.cluesData');
+    const solutionGrid = safeJsonParse<PuzzleGrid>(puzzle.gridData, [], 'puzzle.gridData');
     const currentCompletedClues = safeJsonParse<number[]>(progress.completedClues, [], 'progress.completedClues');
 
     // Use shared validation logic
     const validationResult = validateGrid(gridData, solutionGrid, cluesData, currentCompletedClues);
-    
+
     // Update completed clues list
     const allNewCompletedClues = [...currentCompletedClues, ...validationResult.newCompletedClues];
 
     // Check if puzzle is completed
-    const allCluesCompleted = cluesData.every((clue: any) => 
+    const allCluesCompleted = cluesData.every((clue: PuzzleClue) =>
       allNewCompletedClues.includes(clue.number)
     );
 
     // Update progress (store solved clues for UI compatibility and grid state)
-    const updateData: any = {
+    const updateData: {
+      answersData: string;
+      gridData: string;
+      completedClues: string;
+      updatedAt: Date;
+      isCompleted?: boolean;
+      completedAt?: Date;
+      solveTime?: number;
+    } = {
       answersData: JSON.stringify(validationResult.solvedClues),
       gridData: JSON.stringify(gridData), // Save current grid state
       completedClues: JSON.stringify(allNewCompletedClues),
@@ -317,7 +348,7 @@ router.post('/validate-grid', authenticateToken, puzzleValidationSchemas.validat
         id: ua.id,
         achievement: ua.achievementId,
         earnedAt: ua.earnedAt,
-        metadata: ua.metadataData ? safeJsonParse<any>(ua.metadataData, null, 'userAchievement.metadataData') : null
+        metadata: ua.metadataData ? safeJsonParse<Record<string, unknown> | null>(ua.metadataData, null, 'userAchievement.metadataData') : null
       }))
     });
 
@@ -354,7 +385,7 @@ router.get('/progress/:date', authenticateToken, async (req: AuthenticatedReques
 
     res.json({
       answers: safeJsonParse<Record<string, string>>(progress.answersData, {}, 'progress.answersData'),
-      gridData: progress.gridData ? safeJsonParse<any[][] | null>(progress.gridData, null, 'progress.gridData') : null,
+      gridData: progress.gridData ? safeJsonParse<UserAnswerGrid | null>(progress.gridData, null, 'progress.gridData') : null,
       completedClues: safeJsonParse<number[]>(progress.completedClues, [], 'progress.completedClues'),
       isCompleted: progress.isCompleted,
       completedAt: progress.completedAt,
@@ -436,9 +467,9 @@ router.post('/auto-solve', authenticateToken, rateLimiters.puzzleGeneration, asy
     });
 
     // Parse puzzle data
-    const cluesData = safeJsonParse<any[]>(puzzle.cluesData, [], 'puzzle.cluesData');
-    const solutionGrid = safeJsonParse<any[][]>(puzzle.gridData, [], 'puzzle.gridData');
-    
+    const cluesData = safeJsonParse<PuzzleClue[]>(puzzle.cluesData, [], 'puzzle.cluesData');
+    const solutionGrid = safeJsonParse<PuzzleGrid>(puzzle.gridData, [], 'puzzle.gridData');
+
     // Create solution grid using shared function
     const completeSolutionGrid = createSolutionGrid(solutionGrid, cluesData);
     
@@ -492,12 +523,12 @@ router.post('/auto-solve', authenticateToken, rateLimiters.puzzleGeneration, asy
 // Generate multi-category puzzle with streaming progress
 router.post('/generate-multi-category-stream', (req, res, next) => {
   // Manual validation using Joi for this special SSE endpoint
-  const { error } = require('../middleware/validation').joiSchemas.multiCategoryGeneration.validate(req.body);
+  const { error } = joiSchemas.multiCategoryGeneration.validate(req.body);
   if (error) {
     return res.status(400).json({
       success: false,
       message: 'Validation failed',
-      errors: error.details.map((detail: any) => ({
+      errors: error.details.map((detail) => ({
         field: detail.path.join('.'),
         message: detail.message
       }))
@@ -518,12 +549,12 @@ router.post('/generate-multi-category-stream', (req, res, next) => {
 
     let user: User | null = null;
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as JwtPayload;
+      const decoded = verifyToken(token);
       user = await prisma.user.findUnique({ where: { id: decoded.userId } });
       if (!user) {
         return res.status(401).json({ error: 'User not found' });
       }
-    } catch (err) {
+    } catch {
       return res.status(401).json({ error: 'Invalid or expired token' });
     }
 
@@ -539,7 +570,17 @@ router.post('/generate-multi-category-stream', (req, res, next) => {
       'Access-Control-Allow-Origin': '*',
     });
 
+    // Track client disconnect so the long-running generator can bail instead
+    // of burning CPU writing into a closed socket. The progressCallback below
+    // checks this flag; if a deeper abort is later wired into the generator
+    // itself, plumb an AbortController through here.
+    let clientDisconnected = false;
+    req.on('close', () => {
+      clientDisconnected = true;
+    });
+
     const sendUpdate = (stage: string, progress: number, attempt?: number) => {
+      if (clientDisconnected || res.writableEnded) return;
       const messages: Record<string, string> = {
         'initialization': `🚀 Combining ${categoryNames.length} categories into one cosmic puzzle...`,
         'loading_dictionary': `📚 Loading words from ${categoryNames.join(', ')}...`,
@@ -582,8 +623,14 @@ router.post('/generate-multi-category-stream', (req, res, next) => {
       // Progress tracking
       let lastProgress = 30;
       const progressCallback = async (stage: string, attempt: number, targetWords: number, phase: 'normal' | 'fallback') => {
+        if (clientDisconnected) {
+          // Bail out by throwing; the catch below cleans up. Without this the
+          // generator runs to completion (potentially seconds of CPU) for a
+          // client that's already gone.
+          throw new Error('client disconnected');
+        }
         let progress = lastProgress;
-        
+
         if (phase === 'normal') {
           if (attempt <= 50) {
             progress = 30 + (attempt / 50) * 20;
@@ -612,7 +659,14 @@ router.post('/generate-multi-category-stream', (req, res, next) => {
 
       // Generate the puzzle with progress tracking
       const generatedPuzzle = await generator.generateWithCallbackAsync(progressCallback);
-      
+
+      if (clientDisconnected) {
+        // Client left while the generator was still running. Don't persist
+        // the puzzle — the user can't see it and we have no way to associate
+        // it with their next session. Just clean up the response.
+        return;
+      }
+
       sendUpdate('finalizing', 95);
       sendUpdate('saving', 96);
       
@@ -686,15 +740,15 @@ router.get('/generate-category-stream/:categoryName', async (req, res) => {
     }
 
     // Verify the token manually
-    const jwt = require('jsonwebtoken');
     let user: User;
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET) as any;
-      user = await prisma.user.findUnique({ where: { id: decoded.userId } }) as User;
-      if (!user) {
+      const decoded = verifyToken(token);
+      const found = await prisma.user.findUnique({ where: { id: decoded.userId } });
+      if (!found) {
         return res.status(401).json({ error: 'Invalid token' });
       }
-    } catch (error) {
+      user = found;
+    } catch {
       return res.status(401).json({ error: 'Invalid token' });
     }
 
@@ -709,6 +763,11 @@ router.get('/generate-category-stream/:categoryName', async (req, res) => {
       'Connection': 'keep-alive',
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Headers': 'Cache-Control'
+    });
+
+    let clientDisconnected = false;
+    req.on('close', () => {
+      clientDisconnected = true;
     });
 
     // Cheeky messages that get progressively more pessimistic
@@ -735,15 +794,15 @@ router.get('/generate-category-stream/:categoryName', async (req, res) => {
     ];
 
     const sendUpdate = (stage: string, progress: number, attempt?: number) => {
+      if (clientDisconnected || res.writableEnded) return;
       const messageObj = progressMessages.find(m => m.stage === stage);
       let message = messageObj?.message || `Working on ${stage}...`;
-      
+
       if (attempt) {
         message = message.replace(/\.\.\.$/, ` (attempt ${attempt})...`);
       }
 
       const data = { stage, progress, message, attempt };
-      console.log(`📡 SSE Sending:`, data);
       res.write(`data: ${JSON.stringify(data)}\n\n`);
     };
 
@@ -767,8 +826,11 @@ router.get('/generate-category-stream/:categoryName', async (req, res) => {
       // Set up progress tracking
       let lastProgress = 30;
       const progressCallback = async (stage: string, attempt: number, targetWords: number, phase: 'normal' | 'fallback') => {
+        if (clientDisconnected) {
+          throw new Error('client disconnected');
+        }
         let progress = lastProgress;
-        
+
         if (phase === 'normal') {
           if (attempt <= 50) {
             progress = 30 + (attempt / 50) * 20; // 30-50%
@@ -809,6 +871,11 @@ router.get('/generate-category-stream/:categoryName', async (req, res) => {
 
       // Generate the puzzle with async progress callback
       const generatedPuzzle = await generator.generateWithCallbackAsync(progressCallback);
+
+      if (clientDisconnected) {
+        // Client disconnected during generation — skip persistence.
+        return;
+      }
 
       sendUpdate('success', 93);
 
@@ -887,7 +954,7 @@ router.get('/generate-category-stream/:categoryName', async (req, res) => {
 });
 
 // Generate category-specific puzzle (non-streaming fallback)
-router.post('/generate-category', authenticateToken, rateLimiters.puzzleGeneration, puzzleValidationSchemas.generateCategoryPuzzle, async (req: AuthenticatedRequest, res) => {
+router.post('/generate-category', authenticateToken, rateLimiters.puzzleGeneration, puzzleValidationSchemas.generateCategoryPuzzle, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { categoryName } = req.body;
     const user = req.user as User;
@@ -1009,8 +1076,8 @@ router.get('/specific/:date', authenticateToken, async (req: AuthenticatedReques
     });
 
     // Parse puzzle data
-    const gridData = safeJsonParse<any[][]>(puzzle.gridData, [], 'puzzle.gridData');
-    const cluesData = safeJsonParse<any[]>(puzzle.cluesData, [], 'puzzle.cluesData');
+    const gridData = safeJsonParse<PuzzleGrid>(puzzle.gridData, [], 'puzzle.gridData');
+    const cluesData = safeJsonParse<PuzzleClue[]>(puzzle.cluesData, [], 'puzzle.cluesData');
 
     res.json({
       puzzle: {
@@ -1020,7 +1087,7 @@ router.get('/specific/:date', authenticateToken, async (req: AuthenticatedReques
       },
       progress: {
         answers: safeJsonParse<Record<string, string>>(progress.answersData, {}, 'progress.answersData'),
-        gridData: progress.gridData ? safeJsonParse<any[][] | null>(progress.gridData, null, 'progress.gridData') : null,
+        gridData: progress.gridData ? safeJsonParse<UserAnswerGrid | null>(progress.gridData, null, 'progress.gridData') : null,
         completedClues: safeJsonParse<number[]>(progress.completedClues, [], 'progress.completedClues'),
         isCompleted: progress.isCompleted,
         completedAt: progress.completedAt,
@@ -1061,7 +1128,7 @@ router.get('/recent-category', authenticateToken, async (req: AuthenticatedReque
         const categoryName = categoryMatch ? categoryMatch[1].replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Unknown';
         
         // Get word count from clues data
-        const cluesData = safeJsonParse<any[]>(puzzle.cluesData, [], 'puzzle.cluesData');
+        const cluesData = safeJsonParse<PuzzleClue[]>(puzzle.cluesData, [], 'puzzle.cluesData');
         const wordCount = cluesData.length;
 
         return {

@@ -129,6 +129,7 @@ export default function LoginPage() {
                     id="email"
                     name="email"
                     type="email"
+                    inputMode="email"
                     autoComplete="email"
                     required
                     className="cosmic-input"

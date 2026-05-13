@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { authenticateToken, requireAdmin, AuthenticatedRequest } from '../middleware/auth';
 import { suggestionValidationSchemas, commonValidations } from '../middleware/validation';
 import { prisma } from '../lib/prisma';
@@ -7,7 +7,7 @@ import { User } from '@prisma/client';
 const router = Router();
 
 // Submit a new suggestion
-router.post('/submit', authenticateToken, suggestionValidationSchemas.submitSuggestion, async (req: AuthenticatedRequest, res) => {
+router.post('/submit', authenticateToken, suggestionValidationSchemas.submitSuggestion, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { 
       puzzleDate, 

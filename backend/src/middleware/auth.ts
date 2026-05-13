@@ -3,9 +3,9 @@ import { prisma } from '../lib/prisma';
 import { User } from '@prisma/client';
 import { verifyToken } from '../utils/jwt';
 
-export interface AuthenticatedRequest extends Request {
-  user?: User;
-}
+// Backward-compat alias. req.user is now exposed on the base Express Request
+// via module augmentation in src/types/express.d.ts.
+export type AuthenticatedRequest = Request;
 
 export const AUTH_COOKIE_NAME = 'auth_token';
 

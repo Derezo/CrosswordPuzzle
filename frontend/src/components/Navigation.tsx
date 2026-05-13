@@ -6,6 +6,8 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { puzzleAPI } from "@/lib/api";
 import clsx from "clsx";
+import { AnimatePresence, motion } from "framer-motion";
+import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 
 interface RecentPuzzle {
   puzzleDate: string;
@@ -18,7 +20,26 @@ export const Navigation: React.FC = () => {
   const { user, logout } = useAuth();
   const [showPuzzleDropdown, setShowPuzzleDropdown] = useState(false);
   const [recentPuzzles, setRecentPuzzles] = useState<RecentPuzzle[]>([]);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Lock body scroll while the mobile drawer is open so the page behind
+  // doesn't scroll under the user's finger. Restore on close/unmount.
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (mobileMenuOpen) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prev;
+      };
+    }
+  }, [mobileMenuOpen]);
+
+  // Close the drawer on route change.
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
   const navItems = [
     {
@@ -71,7 +92,7 @@ export const Navigation: React.FC = () => {
   }, []);
 
   return (
-    <nav className="cosmic-card border-0 border-b border-purple-500/30 backdrop-blur-lg sticky top-0 z-50">
+    <nav className="cosmic-card border-0 border-b border-purple-500/30 backdrop-blur-lg sticky top-0 z-50 pt-safe">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-12">
           {/* Logo */}
@@ -274,114 +295,165 @@ export const Navigation: React.FC = () => {
                 </button>
               </div>
             )}
+
+            {/* Hamburger toggle — mobile only. */}
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen((open) => !open)}
+              className="md:hidden p-2 rounded-lg text-purple-200 hover:bg-purple-500/20 transition-colors"
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileMenuOpen}
+            >
+              {mobileMenuOpen ? (
+                <XMarkIcon className="w-6 h-6" />
+              ) : (
+                <Bars3Icon className="w-6 h-6" />
+              )}
+            </button>
           </div>
         </div>
 
-        {/* Mobile Navigation */}
-        <div className="md:hidden border-t border-purple-500/20">
-          <div className="px-3 pt-2 pb-3 space-y-1">
-            {/* Mobile Puzzle Dropdown */}
-            <div>
-              <button
-                onClick={() => setShowPuzzleDropdown(!showPuzzleDropdown)}
-                className={clsx(
-                  "w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 relative overflow-hidden flex items-center justify-between",
-                  {
-                    "text-white font-semibold":
-                      pathname === "/puzzle" || showPuzzleDropdown,
-                    "text-gray-300 hover:text-white":
-                      pathname !== "/puzzle" && !showPuzzleDropdown,
-                  },
-                )}
-                style={{
-                  background:
-                    pathname === "/puzzle" || showPuzzleDropdown
-                      ? `linear-gradient(135deg, var(--cosmic-purple), var(--galaxy-blue))`
-                      : "rgba(124, 58, 237, 0.1)",
-                }}
-              >
-                <span className="flex items-center gap-2.5">
-                  <span className="text-lg">🧩</span>
-                  <span>Today&apos;s Puzzles</span>
-                </span>
-                <span className="text-xs">
-                  {showPuzzleDropdown ? "▲" : "▼"}
-                </span>
-              </button>
+      </div>
 
-              {/* Mobile Dropdown Content */}
-              {showPuzzleDropdown && (
-                <div className="mt-1 ml-4 space-y-1">
-                  <Link
-                    href="/puzzle"
-                    onClick={() => setShowPuzzleDropdown(false)}
-                    className="block px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-purple-500/20 rounded-lg transition-colors"
+      {/* Mobile drawer + backdrop. Sliding panel from the right, body scroll is
+          locked while it's open. Closes on backdrop tap or route change. */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <>
+            <motion.div
+              key="mobile-drawer-backdrop"
+              className="md:hidden fixed inset-0 z-40 bg-black/50"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setMobileMenuOpen(false)}
+              aria-hidden="true"
+            />
+            <motion.aside
+              key="mobile-drawer-panel"
+              className="md:hidden fixed right-0 z-50 w-72 max-w-[85vw] bg-[var(--dark-nebula)]/95 backdrop-blur-lg border-l border-purple-500/30 overflow-y-auto pl-4 pr-4 py-4"
+              style={{
+                top: 'calc(var(--nav-h, 3rem) + var(--safe-top, 0px))',
+                bottom: 'var(--safe-bottom, 0px)',
+              }}
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'tween', duration: 0.25 }}
+              role="dialog"
+              aria-label="Mobile navigation menu"
+            >
+              <div className="space-y-1">
+                {/* Mobile Puzzle Dropdown */}
+                <div>
+                  <button
+                    onClick={() => setShowPuzzleDropdown(!showPuzzleDropdown)}
+                    className={clsx(
+                      "w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 relative overflow-hidden flex items-center justify-between",
+                      {
+                        "text-white font-semibold":
+                          pathname === "/puzzle" || showPuzzleDropdown,
+                        "text-gray-300 hover:text-white":
+                          pathname !== "/puzzle" && !showPuzzleDropdown,
+                      },
+                    )}
+                    style={{
+                      background:
+                        pathname === "/puzzle" || showPuzzleDropdown
+                          ? `linear-gradient(135deg, var(--cosmic-purple), var(--galaxy-blue))`
+                          : "rgba(124, 58, 237, 0.1)",
+                    }}
                   >
-                    <div className="flex items-center gap-2">
-                      <span>📅</span>
-                      <span>Daily Puzzle</span>
-                    </div>
-                  </Link>
+                    <span className="flex items-center gap-2.5">
+                      <span className="text-lg">🧩</span>
+                      <span>Today&apos;s Puzzles</span>
+                    </span>
+                    <span className="text-xs">
+                      {showPuzzleDropdown ? "▲" : "▼"}
+                    </span>
+                  </button>
 
-                  {recentPuzzles.length > 0 && (
-                    <>
-                      <div className="px-3 py-1 text-xs text-purple-300 font-semibold">
-                        Recent Category Puzzles
-                      </div>
-                      {recentPuzzles.map((puzzle) => (
-                        <Link
-                          key={puzzle.puzzleDate}
-                          href={`/puzzle?date=${puzzle.puzzleDate}`}
-                          onClick={() => setShowPuzzleDropdown(false)}
-                          className="block px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-purple-500/20 rounded-lg transition-colors"
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2">
-                              <span>🎯</span>
-                              <span className="truncate">
-                                {puzzle.categoryName}
-                              </span>
-                            </div>
-                            <span className="text-xs text-purple-300">
-                              {puzzle.wordCount}w
-                            </span>
+                  {showPuzzleDropdown && (
+                    <div className="mt-1 ml-2 space-y-1">
+                      <Link
+                        href="/puzzle"
+                        onClick={() => {
+                          setShowPuzzleDropdown(false);
+                          setMobileMenuOpen(false);
+                        }}
+                        className="block px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-purple-500/20 rounded-lg transition-colors"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span>📅</span>
+                          <span>Daily Puzzle</span>
+                        </div>
+                      </Link>
+
+                      {recentPuzzles.length > 0 && (
+                        <>
+                          <div className="px-3 py-1 text-xs text-purple-300 font-semibold">
+                            Recent Category Puzzles
                           </div>
-                        </Link>
-                      ))}
-                    </>
+                          {recentPuzzles.map((puzzle) => (
+                            <Link
+                              key={puzzle.puzzleDate}
+                              href={`/puzzle?date=${puzzle.puzzleDate}`}
+                              onClick={() => {
+                                setShowPuzzleDropdown(false);
+                                setMobileMenuOpen(false);
+                              }}
+                              className="block px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-purple-500/20 rounded-lg transition-colors"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2">
+                                  <span>🎯</span>
+                                  <span className="truncate">
+                                    {puzzle.categoryName}
+                                  </span>
+                                </div>
+                                <span className="text-xs text-purple-300">
+                                  {puzzle.wordCount}w
+                                </span>
+                              </div>
+                            </Link>
+                          ))}
+                        </>
+                      )}
+                    </div>
                   )}
                 </div>
-              )}
-            </div>
 
-            {/* Other Mobile Nav Items */}
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={clsx(
-                  "block px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 relative overflow-hidden",
-                  {
-                    "text-white font-semibold": pathname === item.href,
-                    "text-gray-300 hover:text-white": pathname !== item.href,
-                  },
-                )}
-                style={{
-                  background:
-                    pathname === item.href
-                      ? `linear-gradient(135deg, var(--cosmic-purple), var(--galaxy-blue))`
-                      : "rgba(124, 58, 237, 0.1)",
-                }}
-              >
-                <span className="flex items-center gap-2.5">
-                  <span className="text-lg">{item.icon}</span>
-                  <span>{item.label}</span>
-                </span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </div>
+                {navItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={clsx(
+                      "block px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 relative overflow-hidden",
+                      {
+                        "text-white font-semibold": pathname === item.href,
+                        "text-gray-300 hover:text-white": pathname !== item.href,
+                      },
+                    )}
+                    style={{
+                      background:
+                        pathname === item.href
+                          ? `linear-gradient(135deg, var(--cosmic-purple), var(--galaxy-blue))`
+                          : "rgba(124, 58, 237, 0.1)",
+                    }}
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <span className="text-lg">{item.icon}</span>
+                      <span>{item.label}</span>
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
     </nav>
   );
 };

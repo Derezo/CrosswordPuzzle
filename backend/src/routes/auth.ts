@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import passport from '../services/auth/passport';
 import { prisma } from '../lib/prisma';
 import { generateToken } from '../utils/jwt';
@@ -54,7 +54,7 @@ router.post('/register', authValidationSchemas.register, asyncHandler(async (req
 }));
 
 // Login - with validation
-router.post('/login', authValidationSchemas.login, async (req, res) => {
+router.post('/login', authValidationSchemas.login, async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 

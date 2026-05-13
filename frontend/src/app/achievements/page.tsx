@@ -148,30 +148,30 @@ export default function AchievementsPage() {
               <span className="text-3xl">📊</span>
               <h2 className="text-2xl font-bold text-white">Achievement Statistics</h2>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              <div className="text-center bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/30 rounded-xl p-4">
-                <div className="text-4xl font-bold text-purple-300 mb-2">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
+              <div className="text-center bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/30 rounded-xl p-3 sm:p-4">
+                <div className="text-2xl sm:text-4xl font-bold text-purple-300 mb-2">
                   {stats.totalEarned}
                 </div>
                 <div className="text-sm text-purple-100 font-medium">Achievements Earned</div>
                 <div className="text-2xl mt-2">✨</div>
               </div>
-              <div className="text-center bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-500/30 rounded-xl p-4">
-                <div className="text-4xl font-bold text-blue-300 mb-2">
+              <div className="text-center bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-500/30 rounded-xl p-3 sm:p-4">
+                <div className="text-2xl sm:text-4xl font-bold text-blue-300 mb-2">
                   {stats.totalPoints}
                 </div>
                 <div className="text-sm text-blue-100 font-medium">Total Points</div>
                 <div className="text-2xl mt-2">🎯</div>
               </div>
-              <div className="text-center bg-gradient-to-br from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-xl p-4">
-                <div className="text-4xl font-bold text-green-300 mb-2">
+              <div className="text-center bg-gradient-to-br from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-xl p-3 sm:p-4">
+                <div className="text-2xl sm:text-4xl font-bold text-green-300 mb-2">
                   {stats.completionPercentage}%
                 </div>
                 <div className="text-sm text-green-100 font-medium">Completion</div>
                 <div className="text-2xl mt-2">🚀</div>
               </div>
-              <div className="text-center bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-xl p-4">
-                <div className="text-4xl font-bold text-yellow-300 mb-2">
+              <div className="text-center bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-xl p-3 sm:p-4">
+                <div className="text-2xl sm:text-4xl font-bold text-yellow-300 mb-2">
                   {stats.totalAvailable}
                 </div>
                 <div className="text-sm text-yellow-100 font-medium">Total Available</div>

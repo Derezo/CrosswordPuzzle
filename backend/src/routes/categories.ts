@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 import { categoryValidationSchemas } from '../middleware/validation';
@@ -9,60 +9,84 @@ import { parse } from 'csv-parse/sync';
 
 const router = Router();
 
+interface Category {
+  id: string;
+  name: string;
+  description: string;
+  wordCount: number;
+  favoritesCount: number;
+  isActive: boolean;
+  createdAt: string;
+}
+
+interface CategoryWord {
+  word: string;
+  clue: string;
+  isCommon: boolean;
+  length: number;
+}
+
 // CSV file path - use absolute path from project root
 const csvPath = path.join(process.cwd(), 'src/data/crossword_dictionary_with_clues.csv');
 
-// Cache for categories to avoid repeated CSV parsing. The cache is keyed on
-// the CSV file's mtime so editing the CSV invalidates the cache immediately;
-// the 5-minute TTL is the upper bound for stat misses (e.g. if mtime is
-// unchanged but the file is otherwise replaced).
-let categoriesCache: any[] = [];
+// Single source of truth for parsed CSV records. Both the category index and
+// the per-category word lookup consume this, so the file is parsed at most
+// once per cache window even if both endpoints are hit. Mtime-keyed so a
+// manual CSV edit invalidates immediately; the 5-min TTL is the upper bound
+// on staleness when mtime is unchanged.
+let parsedRecords: Record<string, string>[] = [];
+let categoriesCache: Category[] = [];
 let cacheTimestamp = 0;
 let cacheMtime = 0;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-// Helper function to load and parse categories from CSV
-const loadCategoriesFromCSV = () => {
+const loadParsedRecords = (): Record<string, string>[] => {
+  let currentMtime = 0;
   try {
-    let currentMtime = 0;
-    try {
-      currentMtime = fs.statSync(csvPath).mtimeMs;
-    } catch {
-      // Stat failed (file missing). Fall through; reading will throw a real error.
-    }
-    if (
-      categoriesCache.length > 0 &&
-      currentMtime === cacheMtime &&
-      Date.now() - cacheTimestamp < CACHE_DURATION
-    ) {
+    currentMtime = fs.statSync(csvPath).mtimeMs;
+  } catch {
+    // Stat failed (file missing). Fall through; reading will throw a real error.
+  }
+  if (
+    parsedRecords.length > 0 &&
+    currentMtime === cacheMtime &&
+    Date.now() - cacheTimestamp < CACHE_DURATION
+  ) {
+    return parsedRecords;
+  }
+
+  console.log('🔍 Parsing crossword dictionary CSV...');
+  const csvContent = fs.readFileSync(csvPath, 'utf-8');
+  parsedRecords = parse(csvContent, {
+    columns: true,
+    skip_empty_lines: true,
+    skip_records_with_error: true,
+    relax_column_count: true,
+  }) as Record<string, string>[];
+  // Invalidate derived caches so they get rebuilt on next read.
+  categoriesCache = [];
+  cacheMtime = currentMtime;
+  cacheTimestamp = Date.now();
+  console.log(`✅ Parsed ${parsedRecords.length} dictionary rows`);
+  return parsedRecords;
+};
+
+const loadCategoriesFromCSV = (): Category[] => {
+  try {
+    const records = loadParsedRecords();
+    if (categoriesCache.length > 0) {
       return categoriesCache;
     }
-    cacheMtime = currentMtime;
 
-    console.log('🔍 Loading categories from CSV...');
-    const csvContent = fs.readFileSync(csvPath, 'utf-8');
-    const records = parse(csvContent, { 
-      columns: true, 
-      skip_empty_lines: true,
-      skip_records_with_error: true,  // Skip invalid rows instead of failing
-      relax_column_count: true        // Allow rows with different column counts
-    });
-
-    // Count words per category
-    const categoryStats = new Map<string, { name: string; wordCount: number; words: any[] }>();
-    
-    records.forEach((record: any) => {
+    const categoryStats = new Map<string, { name: string; wordCount: number; words: CategoryWord[] }>();
+    records.forEach((record: Record<string, string>) => {
       if (record.categories && record.categories.trim()) {
         const categories = record.categories.split(',').map((cat: string) => cat.trim());
         categories.forEach((categoryName: string) => {
           if (categoryName) {
             const key = categoryName.toLowerCase();
             if (!categoryStats.has(key)) {
-              categoryStats.set(key, {
-                name: categoryName,
-                wordCount: 0,
-                words: []
-              });
+              categoryStats.set(key, { name: categoryName, wordCount: 0, words: [] });
             }
             const stats = categoryStats.get(key)!;
             stats.wordCount++;
@@ -70,31 +94,25 @@ const loadCategoriesFromCSV = () => {
               word: record.word,
               clue: record.clue,
               isCommon: record.is_common_english === 'True',
-              length: record.word.length
+              length: record.word.length,
             });
           }
         });
       }
     });
 
-    // Convert to array and create category objects
-    const categories = Array.from(categoryStats.entries()).map(([key, stats]) => ({
+    const categories: Category[] = Array.from(categoryStats.entries()).map(([key, stats]) => ({
       id: key,
       name: stats.name.charAt(0).toUpperCase() + stats.name.slice(1),
       description: `${stats.wordCount} crossword words related to ${stats.name}`,
       wordCount: stats.wordCount,
-      favoritesCount: Math.floor(Math.random() * 10), // Mock favorites for now
-      isActive: stats.wordCount > 5, // Only show categories with more than 5 words
-      createdAt: new Date().toISOString()
+      favoritesCount: Math.floor(Math.random() * 10),
+      isActive: stats.wordCount > 5,
+      createdAt: new Date().toISOString(),
     }));
-
-    // Sort by word count descending
     categories.sort((a, b) => b.wordCount - a.wordCount);
 
     categoriesCache = categories;
-    cacheTimestamp = Date.now();
-    console.log(`✅ Loaded ${categories.length} categories from CSV`);
-    
     return categories;
   } catch (error) {
     console.error('❌ Error loading categories from CSV:', error);
@@ -102,21 +120,13 @@ const loadCategoriesFromCSV = () => {
   }
 };
 
-// Helper function to get words for a specific category
 const getWordsForCategory = (categoryName: string, limit: number = 100, offset: number = 0) => {
   try {
-    const csvContent = fs.readFileSync(csvPath, 'utf-8');
-    const records = parse(csvContent, { 
-      columns: true, 
-      skip_empty_lines: true,
-      skip_records_with_error: true,  // Skip invalid rows instead of failing
-      relax_column_count: true        // Allow rows with different column counts
-    });
-
+    const records = loadParsedRecords();
     const categoryNameLower = categoryName.toLowerCase();
-    const words: any[] = [];
-    
-    records.forEach((record: any) => {
+    const words: CategoryWord[] = [];
+
+    records.forEach((record: Record<string, string>) => {
       if (record.categories && record.categories.trim()) {
         const categories = record.categories.split(',').map((cat: string) => cat.trim().toLowerCase());
         if (categories.includes(categoryNameLower)) {
@@ -124,7 +134,7 @@ const getWordsForCategory = (categoryName: string, limit: number = 100, offset: 
             word: record.word,
             clue: record.clue,
             isCommon: record.is_common_english === 'True',
-            length: record.word.length
+            length: record.word.length,
           });
         }
       }
@@ -158,7 +168,7 @@ const getWordsForCategory = (categoryName: string, limit: number = 100, offset: 
 };
 
 // GET /api/categories - Get all categories with optional sorting and filtering
-router.get('/', categoryValidationSchemas.getCategories, async (req, res) => {
+router.get('/', categoryValidationSchemas.getCategories, async (req: Request, res: Response) => {
   try {
     const { 
       sortBy = 'wordCount', 
@@ -392,10 +402,13 @@ router.get('/user/favorites', authenticateToken, async (req: AuthenticatedReques
 });
 
 // GET /api/categories/user/favorite - Get user's favorite category (backwards compatibility)
-router.get('/user/favorite', authenticateToken, async (req: AuthenticatedRequest, res) => {
+router.get('/user/favorite', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user = req.user;
-    
+    if (!user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
     // First check new favorites system
     const userFavorites = await prisma.userFavoriteCategory.findMany({
       where: { userId: user.id },
@@ -433,7 +446,7 @@ router.get('/user/favorite', authenticateToken, async (req: AuthenticatedRequest
 });
 
 // GET /api/categories/:id/words - Get all words for a specific category
-router.get('/:id/words', categoryValidationSchemas.getCategoryWords, async (req, res) => {
+router.get('/:id/words', categoryValidationSchemas.getCategoryWords, async (req: Request, res: Response) => {
   try {
     const { id: categoryId } = req.params;
     const { limit = '100', offset = '0' } = req.query;

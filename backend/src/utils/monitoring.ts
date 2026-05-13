@@ -98,7 +98,13 @@ class MetricsCollector {
 
   // Record authentication events
   recordAuthentication(event: 'login' | 'registration' | 'failure') {
-    this.metrics.authentication[event === 'failure' ? 'failures' : event + 's']++;
+    if (event === 'login') {
+      this.metrics.authentication.logins++;
+    } else if (event === 'registration') {
+      this.metrics.authentication.registrations++;
+    } else {
+      this.metrics.authentication.failures++;
+    }
   }
 
   // Record puzzle events

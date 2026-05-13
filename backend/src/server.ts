@@ -39,33 +39,28 @@ app.use(rateLimitLogger);
 
 // Metrics middleware
 app.use(metricsMiddleware);
-// Enhanced CORS configuration for Docker and local development
-const getCorsOrigins = () => {
+// CORS origins — production reads FRONTEND_URL (required, set via lsd-vault);
+// dev allows localhost variants and honors ENABLE_CORS_ALL for tooling.
+const getCorsOrigins = (): string | string[] | boolean => {
   if (process.env.NODE_ENV === 'production') {
-    return 'https://your-frontend-domain.com';
+    const frontendUrl = process.env.FRONTEND_URL;
+    if (!frontendUrl) {
+      throw new Error('FRONTEND_URL is required in production for CORS configuration');
+    }
+    return frontendUrl;
   }
-  
-  // Development origins - include both localhost and Docker network IPs
+
   const origins = [
     'http://localhost:3000',
     'http://localhost:3001',
     'http://127.0.0.1:3000',
-    'http://0.0.0.0:3000'
+    'http://0.0.0.0:3000',
   ];
-  
-  // Add Docker network origins if running in Docker
-  if (process.env.DOCKER_ENV || process.env.BUILD_TARGET === 'dev') {
-    origins.push(
-      'http://crossword-frontend:3000',
-      'http://frontend:3000'
-    );
-  }
-  
-  // Allow all origins in development if ENABLE_CORS_ALL is set
+
   if (process.env.ENABLE_CORS_ALL === 'true') {
     return true;
   }
-  
+
   return origins;
 };
 
@@ -169,7 +164,9 @@ app.use(errorHandler);
 // Setup global error handlers
 setupGlobalErrorHandlers();
 
-// Database connection
+// Database connection. In production we fail fast — a backend without a DB
+// can't serve puzzles, validate answers, or track achievements, so booting
+// in that state would just produce confusing 500s.
 const connectDB = async (): Promise<boolean> => {
   try {
     await prisma.$connect();
@@ -177,6 +174,9 @@ const connectDB = async (): Promise<boolean> => {
     return true;
   } catch (error) {
     logger.error('Database connection error', { error });
+    if (process.env.NODE_ENV === 'production') {
+      throw error;
+    }
     logger.warn('Continuing without database - some features will not work');
     return false;
   }

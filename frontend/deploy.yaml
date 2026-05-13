@@ -83,11 +83,7 @@ nginx:
 
 hooks:
   preflight:
-    # TODO: enable npm run lint once the eslint config has been re-tightened
-    # in Phase 6 of the remediation (frontend/eslint.config.mjs currently
-    # disables several strict rules; running lint would be misleading until
-    # those are flipped back on).
-    # - npm run lint
+    - npm run lint
     - npx tsc --noEmit
 
 secrets:

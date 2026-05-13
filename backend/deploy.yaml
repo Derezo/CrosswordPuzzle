@@ -77,14 +77,8 @@ nginx:
 
 hooks:
   preflight:
-    # TODO: enable once `npm run lint` exists in backend/package.json
-    # (no eslint config wired up yet; planned in Phase 6 of the remediation).
-    # - npm run lint
+    - npm run lint
     - npx tsc --noEmit
-    # `npm test` is currently `echo "Error: no test specified" && exit 1`.
-    # Phase 4 of the remediation wires this to `vitest run`. Leaving the
-    # hook in so it auto-activates once Phase 4 lands — a regression in the
-    # vitest suite will then block the deploy.
     - npm test
   post_deploy:
     # SQLite + Prisma: `migrate deploy` applies any pending migrations

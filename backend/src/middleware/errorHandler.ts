@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { PrismaClientKnownRequestError, PrismaClientValidationError } from '@prisma/client/runtime/library';
 import { logError, securityLogger } from '../utils/logger';
+import { prisma } from '../lib/prisma';
 
 // Custom error classes
 export class AppError extends Error {
@@ -193,7 +194,7 @@ export const errorHandler = (error: Error, req: Request, res: Response, next: Ne
 };
 
 // Async error wrapper
-export const asyncHandler = (fn: Function) => {
+export const asyncHandler = <T extends (req: Request, res: Response, next: NextFunction) => unknown>(fn: T) => {
   return (req: Request, res: Response, next: NextFunction) => {
     Promise.resolve(fn(req, res, next)).catch(next);
   };
@@ -279,7 +280,6 @@ export const performHealthCheck = async (): Promise<HealthCheckResult> => {
 
   // Database health check
   try {
-    const { prisma } = require('../lib/prisma');
     await prisma.$queryRaw`SELECT 1`;
     checks.database = true;
   } catch (error) {

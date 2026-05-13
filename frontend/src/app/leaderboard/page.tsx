@@ -51,7 +51,10 @@ export default function LeaderboardPage() {
   };
 
   const getRankClasses = (rank: number, isCurrentUser?: boolean) => {
-    let baseClasses = 'cosmic-card flex items-center justify-between p-4 transition-all duration-300 cursor-pointer';
+    // Stack the rank info above the points pill on phones — at 360px the
+    // single-row layout otherwise wraps name + "TOP 3" + "You" + points pill
+    // into a cramped flex line.
+    let baseClasses = 'cosmic-card flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 p-3 sm:p-4 transition-all duration-300 cursor-pointer';
     
     if (isCurrentUser) {
       baseClasses += ' border-2 border-purple-400/60 bg-gradient-to-br from-purple-500/30 to-blue-500/30 ring-2 ring-purple-400/50 shadow-lg';
@@ -190,12 +193,12 @@ export default function LeaderboardPage() {
                     className={getRankClasses(entry.rank, isCurrentUser)}
                   >
                     <div className="flex items-center gap-4">
-                      <span className="text-4xl">{getRankIcon(entry.rank)}</span>
+                      <span className="text-2xl sm:text-4xl">{getRankIcon(entry.rank)}</span>
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-1">
                           <span className="font-bold text-white text-xl">#{entry.rank}</span>
                           {entry.rank <= 3 && (
-                            <span className="text-xs font-bold bg-gradient-to-r from-yellow-400 to-orange-400 text-black px-2 py-1 rounded-full">
+                            <span className="text-[0.6rem] sm:text-xs font-bold bg-gradient-to-r from-yellow-400 to-orange-400 text-black px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full">
                               TOP 3
                             </span>
                           )}
@@ -210,9 +213,9 @@ export default function LeaderboardPage() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 bg-yellow-500/20 px-4 py-2 rounded-full">
-                      <span className="text-2xl">⭐</span>
-                      <span className="font-bold text-yellow-300 text-xl">{entry.points}</span>
+                    <div className="flex items-center gap-2 bg-yellow-500/20 px-3 py-1 sm:px-4 sm:py-2 rounded-full self-end sm:self-auto">
+                      <span className="text-xl sm:text-2xl">⭐</span>
+                      <span className="font-bold text-yellow-300 text-base sm:text-xl">{entry.points}</span>
                     </div>
                   </div>
                 );

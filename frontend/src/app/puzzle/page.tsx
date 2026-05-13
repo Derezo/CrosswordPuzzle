@@ -1,11 +1,14 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, Suspense } from "react";
+import React, { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Navigation } from "@/components/Navigation";
-import { CrosswordGrid, GridCellData } from "@/components/CrosswordGrid";
+import { CrosswordGrid, GridCellData, CrosswordGridHandle } from "@/components/CrosswordGrid";
 import { CrosswordClues } from "@/components/CrosswordClues";
+import { MobileActionBar } from "@/components/MobileActionBar";
+import { CurrentClueBanner } from "@/components/CurrentClueBanner";
+import { haptics } from "@/lib/haptics";
 import { PuzzleErrorBoundary } from "@/components/PuzzleErrorBoundary";
 import { puzzleAPI, suggestionAPI } from "@/lib/api";
 import {
@@ -185,8 +188,8 @@ const CooldownErrorModal: React.FC<CooldownErrorModalProps> = ({
   );
 
   useEffect(() => {
-    if (remainingSeconds <= 0) return;
-
+    // One interval per mount; the functional setter handles countdown so the
+    // effect doesn't tear down + restart every second.
     const timer = setInterval(() => {
       setRemainingSeconds((prev) => {
         if (prev <= 1) {
@@ -196,9 +199,8 @@ const CooldownErrorModal: React.FC<CooldownErrorModalProps> = ({
         return prev - 1;
       });
     }, 1000);
-
     return () => clearInterval(timer);
-  }, [remainingSeconds]);
+  }, []);
 
   const formatTime = (totalSeconds: number) => {
     const hours = Math.floor(totalSeconds / 3600);
@@ -256,6 +258,7 @@ function PuzzlePageContent() {
   const [puzzle, setPuzzle] = useState<DailyPuzzle | null>(null);
   const [progress, setProgress] = useState<UserProgress | null>(null);
   const [focusedClue, setFocusedClue] = useState<CrosswordClue | null>(null);
+  const gridRef = useRef<CrosswordGridHandle>(null);
   const [validationResults, setValidationResults] = useState<{
     [key: number]: boolean;
   }>({});
@@ -796,6 +799,16 @@ function PuzzlePageContent() {
       setValidationResults(result.results);
       setCellValidation(result.cellValidation || {});
 
+      // Tactile feedback mirrors the visual: success when every validated cell
+      // is correct, error otherwise. No-op on iOS Safari / desktop.
+      const cellMap = result.cellValidation || {};
+      const validatedValues = Object.values(cellMap);
+      if (validatedValues.length > 0) {
+        const anyIncorrect = validatedValues.some((v) => v === false);
+        if (anyIncorrect) haptics.error();
+        else haptics.success();
+      }
+
       // Update progress - ONLY use solvedClues for UI display, NOT for grid rendering
       setProgress((prev) =>
         prev
@@ -1064,15 +1077,31 @@ function PuzzlePageContent() {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-2 pb-2">
+      {/* Main Content
+          Bottom padding accounts for the fixed MobileActionBar on phones —
+          5rem (bar height) plus the device's safe-area inset. lg:pb-2 reverts
+          on desktop where the inline buttons sit under the grid. */}
+      <div
+        className="max-w-7xl mx-auto px-2 pb-2"
+        style={{
+          paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))',
+        }}
+      >
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-2">
           {/* Crossword Grid - Takes up more space */}
           <div className="lg:col-span-3">
+            {/* Sticky current-clue banner — mobile only, sits under the nav. */}
+            <CurrentClueBanner
+              clue={focusedClue}
+              onPrev={() => gridRef.current?.navigateClue('prev')}
+              onNext={() => gridRef.current?.navigateClue('next')}
+              onToggleDirection={() => gridRef.current?.toggleDirection()}
+            />
             <div className="cosmic-card p-2">
               <div className="flex justify-center">
                 <PuzzleErrorBoundary>
                   <CrosswordGrid
+                    ref={gridRef}
                     grid={puzzle.grid}
                     clues={puzzle.clues}
                     progress={progress}
@@ -1087,9 +1116,43 @@ function PuzzlePageContent() {
                     onAutoSolve={() => setShowAutoSolveModal(true)}
                     canCheckAnswers={canCheckAnswers()}
                     autoSolving={autoSolving}
+                    actionMode="none"
                   />
                 </PuzzleErrorBoundary>
               </div>
+
+              {/* Desktop-only inline action buttons (mobile uses MobileActionBar). */}
+              {!progress.isCompleted && (
+                <div className="hidden lg:flex gap-3 mt-4 w-full max-w-md mx-auto">
+                  <button
+                    onClick={handleCheckAnswers}
+                    disabled={!canCheckAnswers()}
+                    className={`flex-1 aurora-button text-sm py-2.5 px-4 ${!canCheckAnswers() ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    <span className="flex items-center justify-center gap-2">
+                      <span>✨</span>
+                      <span>Check &amp; Save</span>
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => setShowAutoSolveModal(true)}
+                    disabled={autoSolving}
+                    className="flex-1 stellar-button text-sm py-2.5 px-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {autoSolving ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent" />
+                        <span>Revealing...</span>
+                      </div>
+                    ) : (
+                      <span className="flex items-center justify-center gap-2">
+                        <span>🔍</span>
+                        <span>Auto-Solve</span>
+                      </span>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1373,6 +1436,15 @@ function PuzzlePageContent() {
           }}
         />
       ))}
+
+      {/* Sticky action bar — mobile only (hidden on lg+). */}
+      <MobileActionBar
+        onCheckAnswers={handleCheckAnswers}
+        onAutoSolve={() => setShowAutoSolveModal(true)}
+        canCheckAnswers={canCheckAnswers()}
+        autoSolving={autoSolving}
+        hidden={progress.isCompleted}
+      />
     </div>
   );
 }

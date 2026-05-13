@@ -1,14 +1,33 @@
 import { prisma } from '../../lib/prisma';
 import { Achievement, UserAchievement, User, UserProgress } from '@prisma/client';
 import { safeJsonParse } from '../../utils/json';
+import { CrosswordClue } from '../../types';
+
+// The service only reads a subset of UserProgress fields; this Pick documents
+// exactly which fields are touched so callers can supply minimal stand-ins.
+export type AchievementProgress = Pick<
+  UserProgress,
+  'isCompleted' | 'completedAt' | 'solveTime' | 'startedAt' | 'firstViewedAt'
+>;
 
 export interface AchievementCheckContext {
   user: User;
   puzzleDate: string;
-  progress: any;
+  progress: AchievementProgress;
   newCompletedClues: number[];
-  solveTime?: number;
-  firstWordTime?: number;
+  solveTime?: number | null;
+  firstWordTime?: number | null;
+}
+
+type AchievementMetadata = Record<string, unknown>;
+type AchievementCheckResult = { metadata?: AchievementMetadata } | null;
+
+// Narrow a condition value that is expected to be numeric. Returns undefined
+// if absent/non-numeric so comparisons collapse to false (matches prior `any`
+// semantics where `value <= undefined` was always false).
+function numericCondition(condition: Record<string, unknown>, key: string): number | undefined {
+  const value = condition[key];
+  return typeof value === 'number' ? value : undefined;
 }
 
 export class AchievementService {
@@ -159,8 +178,8 @@ export class AchievementService {
   private async checkAchievementCondition(
     achievement: Achievement,
     context: AchievementCheckContext
-  ): Promise<{ metadata?: any } | null> {
-    const condition = safeJsonParse<Record<string, any>>(achievement.conditionData, {}, 'achievement.conditionData');
+  ): Promise<AchievementCheckResult> {
+    const condition = safeJsonParse<Record<string, unknown>>(achievement.conditionData, {}, 'achievement.conditionData');
     
     switch (achievement.conditionType) {
       case 'first_word_ever':
@@ -198,7 +217,7 @@ export class AchievementService {
     }
   }
 
-  private async checkFirstWordEver(context: AchievementCheckContext): Promise<{ metadata?: any } | null> {
+  private async checkFirstWordEver(context: AchievementCheckContext): Promise<AchievementCheckResult> {
     if (context.newCompletedClues.length > 0) {
       const totalUserAchievements = await prisma.userAchievement.count({
         where: { userId: context.user.id }
@@ -214,11 +233,11 @@ export class AchievementService {
   private async checkPuzzleSolveSpeed(
     achievement: Achievement,
     context: AchievementCheckContext
-  ): Promise<{ metadata?: any } | null> {
+  ): Promise<AchievementCheckResult> {
     if (context.progress.isCompleted && context.solveTime) {
-      const condition = safeJsonParse<Record<string, any>>(achievement.conditionData, {}, 'achievement.conditionData');
-      const maxTime = condition.maxTime;
-      if (context.solveTime <= maxTime) {
+      const condition = safeJsonParse<Record<string, unknown>>(achievement.conditionData, {}, 'achievement.conditionData');
+      const maxTime = numericCondition(condition, 'maxTime');
+      if (maxTime !== undefined && context.solveTime <= maxTime) {
         return { metadata: { solveTime: context.solveTime } };
       }
     }
@@ -228,11 +247,11 @@ export class AchievementService {
   private async checkFirstWordSpeed(
     achievement: Achievement,
     context: AchievementCheckContext
-  ): Promise<{ metadata?: any } | null> {
+  ): Promise<AchievementCheckResult> {
     if (context.firstWordTime && context.newCompletedClues.length > 0) {
-      const condition = safeJsonParse<Record<string, any>>(achievement.conditionData, {}, 'achievement.conditionData');
-      const maxTime = condition.maxTime;
-      if (context.firstWordTime <= maxTime) {
+      const condition = safeJsonParse<Record<string, unknown>>(achievement.conditionData, {}, 'achievement.conditionData');
+      const maxTime = numericCondition(condition, 'maxTime');
+      if (maxTime !== undefined && context.firstWordTime <= maxTime) {
         return { metadata: { firstWordTime: context.firstWordTime } };
       }
     }
@@ -242,14 +261,15 @@ export class AchievementService {
   private async checkLongestFirstWord(
     achievement: Achievement,
     context: AchievementCheckContext
-  ): Promise<{ metadata?: any } | null> {
+  ): Promise<AchievementCheckResult> {
     if (context.newCompletedClues.length > 0) {
       const puzzle = await prisma.dailyPuzzle.findUnique({ where: { date: context.puzzleDate } });
       if (puzzle) {
-        const cluesData = safeJsonParse<any[]>(puzzle.cluesData, [], 'puzzle.cluesData');
-        const firstClue = cluesData.find((c: any) => c.number === context.newCompletedClues[0]);
-        const condition = safeJsonParse<Record<string, any>>(achievement.conditionData, {}, 'achievement.conditionData');
-        if (firstClue && firstClue.length >= condition.minLength) {
+        const cluesData = safeJsonParse<CrosswordClue[]>(puzzle.cluesData, [], 'puzzle.cluesData');
+        const firstClue = cluesData.find((c: CrosswordClue) => c.number === context.newCompletedClues[0]);
+        const condition = safeJsonParse<Record<string, unknown>>(achievement.conditionData, {}, 'achievement.conditionData');
+        const minLength = numericCondition(condition, 'minLength');
+        if (firstClue && minLength !== undefined && firstClue.length >= minLength) {
           return { metadata: { wordLength: firstClue.length, word: firstClue.answer } };
         }
       }
@@ -257,8 +277,8 @@ export class AchievementService {
     return null;
   }
 
-  private async checkFirstSolverDaily(context: AchievementCheckContext): Promise<{ metadata?: any } | null> {
-    if (context.progress.isCompleted) {
+  private async checkFirstSolverDaily(context: AchievementCheckContext): Promise<AchievementCheckResult> {
+    if (context.progress.isCompleted && context.progress.completedAt) {
       const earlierCompletion = await prisma.userProgress.findFirst({
         where: {
           puzzleDate: context.puzzleDate,
@@ -274,7 +294,7 @@ export class AchievementService {
     return null;
   }
 
-  private async checkPerfectPuzzle(context: AchievementCheckContext): Promise<{ metadata?: any } | null> {
+  private async checkPerfectPuzzle(context: AchievementCheckContext): Promise<AchievementCheckResult> {
     if (context.progress.isCompleted) {
       // This would require tracking wrong answers, which we'd need to implement
       // For now, assume perfect if completed
@@ -286,13 +306,13 @@ export class AchievementService {
   private async checkSolveStreak(
     achievement: Achievement,
     context: AchievementCheckContext
-  ): Promise<{ metadata?: any } | null> {
+  ): Promise<AchievementCheckResult> {
     if (context.progress.isCompleted) {
-      const condition = safeJsonParse<Record<string, any>>(achievement.conditionData, {}, 'achievement.conditionData');
-      const streakLength = condition.streakLength;
+      const condition = safeJsonParse<Record<string, unknown>>(achievement.conditionData, {}, 'achievement.conditionData');
+      const streakLength = numericCondition(condition, 'streakLength');
       const streak = await this.calculateSolveStreak(context.user.id, context.puzzleDate);
-      
-      if (streak >= streakLength) {
+
+      if (streakLength !== undefined && streak >= streakLength) {
         return { metadata: { streakLength: streak } };
       }
     }
@@ -302,11 +322,12 @@ export class AchievementService {
   private async checkEarlyBird(
     achievement: Achievement,
     context: AchievementCheckContext
-  ): Promise<{ metadata?: any } | null> {
+  ): Promise<AchievementCheckResult> {
     if (context.progress.isCompleted && context.progress.completedAt) {
-      const condition = safeJsonParse<Record<string, any>>(achievement.conditionData, {}, 'achievement.conditionData');
+      const condition = safeJsonParse<Record<string, unknown>>(achievement.conditionData, {}, 'achievement.conditionData');
       const hour = context.progress.completedAt.getHours();
-      if (hour < condition.maxHour) {
+      const maxHour = numericCondition(condition, 'maxHour');
+      if (maxHour !== undefined && hour < maxHour) {
         return { metadata: { completionHour: hour } };
       }
     }
@@ -316,11 +337,12 @@ export class AchievementService {
   private async checkNightOwl(
     achievement: Achievement,
     context: AchievementCheckContext
-  ): Promise<{ metadata?: any } | null> {
+  ): Promise<AchievementCheckResult> {
     if (context.progress.isCompleted && context.progress.completedAt) {
-      const condition = safeJsonParse<Record<string, any>>(achievement.conditionData, {}, 'achievement.conditionData');
+      const condition = safeJsonParse<Record<string, unknown>>(achievement.conditionData, {}, 'achievement.conditionData');
       const hour = context.progress.completedAt.getHours();
-      if (hour >= condition.minHour) {
+      const minHour = numericCondition(condition, 'minHour');
+      if (minHour !== undefined && hour >= minHour) {
         return { metadata: { completionHour: hour } };
       }
     }
@@ -330,7 +352,7 @@ export class AchievementService {
   private async checkTotalPuzzles(
     achievement: Achievement,
     context: AchievementCheckContext
-  ): Promise<{ metadata?: any } | null> {
+  ): Promise<AchievementCheckResult> {
     if (context.progress.isCompleted) {
       const totalCompleted = await prisma.userProgress.count({
         where: {
@@ -339,8 +361,9 @@ export class AchievementService {
         }
       });
       
-      const condition = safeJsonParse<Record<string, any>>(achievement.conditionData, {}, 'achievement.conditionData');
-      if (totalCompleted >= condition.count) {
+      const condition = safeJsonParse<Record<string, unknown>>(achievement.conditionData, {}, 'achievement.conditionData');
+      const count = numericCondition(condition, 'count');
+      if (count !== undefined && totalCompleted >= count) {
         return { metadata: { totalPuzzles: totalCompleted } };
       }
     }
@@ -358,7 +381,7 @@ export class AchievementService {
     });
     
     let streak = 0;
-    let currentDateObj = new Date(currentDate);
+    const currentDateObj = new Date(currentDate);
     
     for (const progress of progresses) {
       const progressDate = new Date(progress.puzzleDate);
@@ -379,7 +402,7 @@ export class AchievementService {
     userId: string,
     achievementId: string,
     puzzleDate: string,
-    metadata?: any
+    metadata?: AchievementMetadata
   ): Promise<UserAchievement> {
     const achievement = await prisma.achievement.findUnique({ where: { id: achievementId } });
     if (!achievement) {

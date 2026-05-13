@@ -22,11 +22,6 @@ This interactive script will help you choose the best development mode for your 
 ./scripts/dev.sh
 ```
 
-**For Docker Environment:**
-```bash
-./scripts/dev-utils.sh start
-```
-
 **For Troubleshooting:**
 ```bash
 ./scripts/dev-troubleshoot.sh
@@ -53,15 +48,7 @@ This interactive script will help you choose the best development mode for your 
 - **When to use**: For quick iterations when stability is less critical
 - **Note**: May experience HMR issues with Three.js components
 
-### 3. 🐳 Docker Mode (`dev-utils.sh`)
-- **Best for**: Production-like development
-- **Features**:
-  - Runs in isolated containers
-  - Includes full stack (frontend, backend, Redis)
-  - Consistent across different systems
-- **When to use**: When you need a production-like environment
-
-### 4. 🔧 Troubleshoot Mode (`dev-troubleshoot.sh`)
+### 3. 🔧 Troubleshoot Mode (`dev-troubleshoot.sh`)
 - **Best for**: Diagnosing and fixing issues
 - **Features**:
   - Comprehensive system diagnostics
@@ -260,7 +247,6 @@ If you're still experiencing issues after following this guide:
 ├── scripts/
 │   ├── dev-stable.sh           # Stable development mode
 │   ├── dev-troubleshoot.sh     # Comprehensive diagnostics
-│   ├── dev-utils.sh            # Docker development utilities
 │   └── dev.sh                  # Standard Turbopack mode
 ├── frontend/
 │   ├── next.config.js          # Enhanced Next.js config

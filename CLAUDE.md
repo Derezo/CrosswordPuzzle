@@ -105,13 +105,11 @@ Note: The .env.example file shows MONGODB_URI, but the actual Prisma schema uses
 ### Root Level Scripts
 ```bash
 # Development setup and utility scripts (run from project root)
-./scripts/dev-setup.sh          # Set up complete development environment with Docker
-./scripts/dev.sh                # Start full development environment with Docker Compose
+./scripts/dev.sh                # Start backend + frontend dev servers in parallel (no Docker)
 ./scripts/dev-backend.sh        # Start only backend development server
 ./scripts/dev-frontend.sh       # Start only frontend development server
 ./scripts/db-utils.sh           # Database utility commands (reset, studio, migrate, backup)
 ./scripts/test.sh               # Run all tests and type checking
-./scripts/production-deploy.sh  # Production deployment script
 ```
 
 ### Frontend (.env.local)
