@@ -49,7 +49,10 @@ services:
     script: server.js
 
 health:
-  url: https://crossword.mittonvillage.com/api/health
+  # Probe against the backend's own nginx vhost so the health check does not
+  # depend on the frontend being deployed. Both URLs hit the same backend
+  # process; the public probe additionally exercises nginx + TLS.
+  url: https://crossword-api.lifestreamdynamics.com/api/health
   localhost_url: http://127.0.0.1:5001/api/health
   expect_status: 200
   timeout_s: 30
