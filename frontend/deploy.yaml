@@ -40,10 +40,12 @@ build:
     - npm run build
   # Ship source verbatim ("."): Next.js needs the .next/ build output AND
   # node_modules/ AND public/ AND package.json all co-located at runtime.
-  # `next start` reads from .next/ relative to cwd. The plugin auto-excludes
-  # .git, .deploy-staging, data, logs, tests — none of which we need shipped.
+  # `next start` reads from .next/ relative to cwd. The generic-node plugin's
+  # default exclude list contains .next (assumed regen-on-target), so we
+  # re-include it via build.include below.
   artifact_dir: "."
-  include: []
+  include:
+    - .next
   env: {}
 
 services:
