@@ -199,7 +199,15 @@ export const puzzleValidationSchemas = {
       .matches(/^[a-zA-Z0-9\s_-]+$/)
       .withMessage('Category name must contain only letters, numbers, spaces, hyphens, and underscores'),
     handleValidationErrors
-  ]
+  ],
+
+  revealLetter: [
+    commonValidations.puzzleDate,
+    body('clueNumber')
+      .isInt({ min: 1 })
+      .withMessage('Clue number must be a positive integer'),
+    handleValidationErrors,
+  ],
 };
 
 // Suggestion validation schemas

@@ -5,9 +5,6 @@ import type { GridCellData } from '@/components/CrosswordGrid';
  * Reconstruct the per-cell display grid from a puzzle's clue list and the
  * user's recorded clue answers. Used after fetching a completed puzzle that
  * has no saved `gridData` so the UI can show the solution.
- *
- * Extracted from `loadTodaysPuzzle` / `loadSpecificPuzzle` in the puzzle page,
- * which had two near-identical ~200-line copies of this logic.
  */
 export function reconstructGrid(
   puzzle: DailyPuzzle,
@@ -16,15 +13,9 @@ export function reconstructGrid(
   return puzzle.grid.map((row: PuzzleCell[], rowIndex: number) =>
     row.map((cell: PuzzleCell, colIndex: number): GridCellData => {
       if (cell.isBlocked) {
-        return {
-          letter: '',
-          acrossLetter: undefined,
-          downLetter: undefined,
-          lastActiveDirection: undefined,
-        };
+        return { letter: '' };
       }
 
-      // All clues that include this cell.
       const cluesAtPosition = puzzle.clues.filter((clue: CrosswordClue) => {
         if (clue.direction === 'across') {
           return (
@@ -40,83 +31,109 @@ export function reconstructGrid(
         );
       });
 
-      let acrossLetter: string | undefined;
-      let downLetter: string | undefined;
       let displayLetter = '';
-      let lastActiveDirection: 'across' | 'down' | undefined;
-
       for (const clue of cluesAtPosition) {
         const answer = progress.answers?.[clue.number.toString()];
         if (!answer) continue;
-
         const positionInClue =
           clue.direction === 'across'
             ? colIndex - clue.startCol
             : rowIndex - clue.startRow;
         if (positionInClue < 0 || positionInClue >= answer.length) continue;
-
-        const letter = answer[positionInClue].toUpperCase();
-        if (clue.direction === 'across') {
-          acrossLetter = letter;
-        } else {
-          downLetter = letter;
-        }
-        displayLetter = letter;
-        lastActiveDirection = clue.direction;
+        displayLetter = answer[positionInClue].toUpperCase();
       }
 
-      return {
-        letter: displayLetter,
-        acrossLetter,
-        downLetter,
-        lastActiveDirection,
-      };
+      return { letter: displayLetter };
     }),
   );
 }
 
+export type CellWordStatus = 'correct' | 'incorrect' | 'revealed';
+
 /**
- * Build the `cellValidation` map for a fully-completed puzzle (every
- * non-blocked cell is correct). Used as a quick fill for already-solved
- * puzzles being re-displayed.
+ * Build the per-cell word status map. A cell is `correct` iff ANY clue it
+ * belongs to is in `completedClues`. Otherwise, `incorrect` iff some clue it
+ * belongs to is in `validatedClues` with value `false` AND every cell in that
+ * clue is currently filled in the user's grid. "Correct wins" — if a cell is
+ * on a completed correct word, it stays green even if a crossing word is wrong.
  */
-export function buildAllCorrectCellValidation(
+export function buildCellWordStatus(
   puzzle: DailyPuzzle,
-): { [cellKey: string]: boolean } {
-  const validation: { [cellKey: string]: boolean } = {};
-  for (let row = 0; row < puzzle.grid.length; row++) {
-    for (let col = 0; col < puzzle.grid[0].length; col++) {
-      const cell = puzzle.grid[row][col];
-      if (!cell.isBlocked) {
-        validation[`${row},${col}`] = true;
-      }
+  gridLetters: { letter: string }[][] | null | undefined,
+  completedClues: number[],
+  validatedClues: { [clueNumber: number]: boolean } | undefined,
+  revealedCells?: { [cellKey: string]: number },
+): { [cellKey: string]: CellWordStatus } {
+  const status: { [cellKey: string]: CellWordStatus } = {};
+  const completedSet = new Set(completedClues);
+  const validated = validatedClues ?? {};
+  const revealed = revealedCells ?? {};
+
+  // Pass 1: every cell on a completed-correct word goes green.
+  for (const clue of puzzle.clues) {
+    if (!completedSet.has(clue.number)) continue;
+    for (let i = 0; i < clue.length; i++) {
+      const row = clue.direction === 'across' ? clue.startRow : clue.startRow + i;
+      const col = clue.direction === 'across' ? clue.startCol + i : clue.startCol;
+      status[`${row},${col}`] = 'correct';
     }
   }
-  return validation;
+
+  // Pass 2: cells on fully-filled incorrect words go red, but green wins.
+  for (const clue of puzzle.clues) {
+    if (validated[clue.number] !== false) continue;
+
+    let fullyFilled = true;
+    if (gridLetters) {
+      for (let i = 0; i < clue.length; i++) {
+        const row = clue.direction === 'across' ? clue.startRow : clue.startRow + i;
+        const col = clue.direction === 'across' ? clue.startCol + i : clue.startCol;
+        const letter = gridLetters[row]?.[col]?.letter ?? '';
+        if (!letter) {
+          fullyFilled = false;
+          break;
+        }
+      }
+    }
+    if (!fullyFilled) continue;
+
+    for (let i = 0; i < clue.length; i++) {
+      const row = clue.direction === 'across' ? clue.startRow : clue.startRow + i;
+      const col = clue.direction === 'across' ? clue.startCol + i : clue.startCol;
+      const key = `${row},${col}`;
+      if (status[key] !== 'correct') status[key] = 'incorrect';
+    }
+  }
+
+  // Pass 3: individual revealed cells get their own 'revealed' style — only
+  // if they didn't already win a 'correct' from being on a completed word.
+  for (const key of Object.keys(revealed)) {
+    if (status[key] !== 'correct') status[key] = 'revealed';
+  }
+
+  return status;
 }
 
 /**
- * Build the `cellValidation` map from a saved gridData grid: each non-blocked
- * cell that has a letter is marked correct.
+ * Return every clue (across + down) that includes the given cell.
  */
-export function buildCellValidationFromSavedGrid(
+export function cluesAtCell(
   puzzle: DailyPuzzle,
-  savedGrid: unknown[][],
-): { [cellKey: string]: boolean } {
-  const validation: { [cellKey: string]: boolean } = {};
-  for (let row = 0; row < savedGrid.length; row++) {
-    const rowLen = savedGrid[0]?.length ?? 0;
-    for (let col = 0; col < rowLen; col++) {
-      const cell = savedGrid[row]?.[col] as { letter?: string } | undefined;
-      if (
-        cell &&
-        cell.letter &&
-        puzzle.grid[row]?.[col] &&
-        !puzzle.grid[row][col].isBlocked
-      ) {
-        validation[`${row},${col}`] = true;
-      }
+  row: number,
+  col: number,
+): CrosswordClue[] {
+  return puzzle.clues.filter((clue) => {
+    if (clue.direction === 'across') {
+      return (
+        row === clue.startRow &&
+        col >= clue.startCol &&
+        col < clue.startCol + clue.length
+      );
     }
-  }
-  return validation;
+    return (
+      col === clue.startCol &&
+      row >= clue.startRow &&
+      row < clue.startRow + clue.length
+    );
+  });
 }

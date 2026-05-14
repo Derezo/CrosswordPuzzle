@@ -24,15 +24,32 @@ function useMousePosition() {
   return mousePosition;
 }
 
+// Reflects the user's prefers-reduced-motion OS setting. When true, the globe
+// stops particle rotation and float bobs — the categories are still readable
+// (and clickable) but the canvas stops doing per-frame work.
+function usePrefersReducedMotion(): boolean {
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setReduced(mq.matches);
+    const onChange = () => setReduced(mq.matches);
+    mq.addEventListener?.('change', onChange);
+    return () => mq.removeEventListener?.('change', onChange);
+  }, []);
+  return reduced;
+}
+
 // Individual category text in 3D space
-function CategoryText({ 
-  category, 
-  position, 
-  scale, 
-  onHover, 
+function CategoryText({
+  category,
+  position,
+  scale,
+  onHover,
   onSelect,
   isHovered,
-  isFavorite 
+  isFavorite,
+  reduceMotion,
 }: {
   category: PuzzleCategory;
   position: [number, number, number];
@@ -41,24 +58,37 @@ function CategoryText({
   onSelect: (category: PuzzleCategory) => void;
   isHovered: boolean;
   isFavorite: boolean;
+  reduceMotion: boolean;
 }) {
   const textRef = useRef<THREE.Mesh>(null);
-  
+  const frameTickRef = useRef(0);
+
   useFrame((state) => {
-    if (textRef.current) {
-      // Reduce floating animation frequency for less flicker
+    if (!textRef.current) return;
+
+    if (reduceMotion) {
+      // Snap to base position, billboard once per render, no animation.
+      textRef.current.position.set(position[0], position[1], position[2]);
+      textRef.current.lookAt(state.camera.position);
+      const targetScale = isHovered ? scale * 1.3 : scale;
+      textRef.current.scale.setScalar(targetScale);
+      return;
+    }
+
+    // Float bob throttled to every other frame — visually equivalent at 30Hz.
+    frameTickRef.current = (frameTickRef.current + 1) & 1;
+    if (frameTickRef.current === 1) {
       const floatOffset = Math.sin(state.clock.elapsedTime * 0.5 + position[0]) * 0.015;
       textRef.current.position.set(position[0], position[1] + floatOffset, position[2]);
-      
-      // Face the camera less frequently to reduce flicker
-      if (state.clock.elapsedTime % 0.1 < 0.016) { // Update ~6 times per second instead of 60
-        textRef.current.lookAt(state.camera.position);
-      }
-      
-      // Smooth hover scaling effect
-      const targetScale = isHovered ? scale * 1.3 : scale;
-      textRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.08);
     }
+
+    // Face the camera ~6 times per second instead of 60.
+    if (state.clock.elapsedTime % 0.1 < 0.016) {
+      textRef.current.lookAt(state.camera.position);
+    }
+
+    const targetScale = isHovered ? scale * 1.3 : scale;
+    textRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.08);
   });
 
   const textColor = useMemo(() => {
@@ -107,18 +137,20 @@ function CategoryText({
 }
 
 // Main globe component with rotating categories
-function Globe({ 
-  categories, 
-  onCategoryHover, 
+function Globe({
+  categories,
+  onCategoryHover,
   onCategorySelect,
   hoveredCategory,
-  favoriteCategory 
+  favoriteCategory,
+  reduceMotion,
 }: {
   categories: PuzzleCategory[];
   onCategoryHover: (category: PuzzleCategory | null) => void;
   onCategorySelect: (category: PuzzleCategory) => void;
   hoveredCategory: PuzzleCategory | null;
   favoriteCategory: string | null;
+  reduceMotion: boolean;
 }) {
   const groupRef = useRef<THREE.Group>(null);
   const mousePos = useMousePosition();
@@ -131,28 +163,25 @@ function Globe({
     }
   };
   
-  // Auto-rotation with mouse influence
+  // Auto-rotation with mouse influence. When the user has prefers-reduced-motion
+  // enabled, the globe stays static (still rotatable via OrbitControls drag).
   useFrame(() => {
-    if (groupRef.current) {
-      // Base rotation
-      groupRef.current.rotation.y += 0.005;
-      
-      // Mouse influence
-      const mouseInfluenceX = (mousePos.x / window.innerWidth - 0.5) * 0.5;
-      const mouseInfluenceY = (mousePos.y / window.innerHeight - 0.5) * 0.5;
-      
-      groupRef.current.rotation.x = THREE.MathUtils.lerp(
-        groupRef.current.rotation.x,
-        mouseInfluenceY,
-        0.05
-      );
-      
-      groupRef.current.rotation.z = THREE.MathUtils.lerp(
-        groupRef.current.rotation.z,
-        mouseInfluenceX * 0.3,
-        0.05
-      );
-    }
+    if (!groupRef.current || reduceMotion) return;
+    groupRef.current.rotation.y += 0.005;
+
+    const mouseInfluenceX = (mousePos.x / window.innerWidth - 0.5) * 0.5;
+    const mouseInfluenceY = (mousePos.y / window.innerHeight - 0.5) * 0.5;
+
+    groupRef.current.rotation.x = THREE.MathUtils.lerp(
+      groupRef.current.rotation.x,
+      mouseInfluenceY,
+      0.05,
+    );
+    groupRef.current.rotation.z = THREE.MathUtils.lerp(
+      groupRef.current.rotation.z,
+      mouseInfluenceX * 0.3,
+      0.05,
+    );
   });
 
   // Calculate stable positions and scales with improved distribution based on word count
@@ -309,6 +338,7 @@ function Globe({
             onSelect={onCategorySelect}
             isHovered={hoveredCategory?.id === category.id}
             isFavorite={favoriteCategory === category.id}
+            reduceMotion={reduceMotion}
           />
         );
       })}
@@ -316,55 +346,56 @@ function Globe({
   );
 }
 
-// Particle background for space effect
-function ParticleField() {
+// Particle background for space effect. Roughly halved from 2000 vertices
+// down to 800 — visually indistinguishable but ~60% fewer points to transform.
+// Rotation runs every other frame (toggled via `frameTickRef`); particle
+// motion is imperceptible at 30Hz. `prefers-reduced-motion` pins everything.
+const PARTICLE_COUNT = 800;
+
+function ParticleField({ reduceMotion }: { reduceMotion: boolean }) {
   const pointsRef = useRef<THREE.Points>(null);
-  
+  const frameTickRef = useRef(0);
+
   const particles = useMemo(() => {
-    const positions = new Float32Array(2000 * 3);
-    const colors = new Float32Array(2000 * 3);
-    
-    for (let i = 0; i < 2000; i++) {
-      // Create a more spherical distribution around the enlarged sphere
-      const radius = 35 + Math.random() * 25; // Increased to match larger sphere
+    const positions = new Float32Array(PARTICLE_COUNT * 3);
+    const colors = new Float32Array(PARTICLE_COUNT * 3);
+
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const radius = 35 + Math.random() * 25;
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(2 * Math.random() - 1);
-      
+
       positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
       positions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
       positions[i * 3 + 2] = radius * Math.cos(phi);
-      
-      // Vary colors - purples, blues, and pinks
+
       const colorChoice = Math.random();
       if (colorChoice < 0.4) {
-        // Purple
-        colors[i * 3] = 0.5 + Math.random() * 0.3; // R
-        colors[i * 3 + 1] = 0.2 + Math.random() * 0.3; // G
-        colors[i * 3 + 2] = 0.8 + Math.random() * 0.2; // B
+        colors[i * 3] = 0.5 + Math.random() * 0.3;
+        colors[i * 3 + 1] = 0.2 + Math.random() * 0.3;
+        colors[i * 3 + 2] = 0.8 + Math.random() * 0.2;
       } else if (colorChoice < 0.7) {
-        // Blue
-        colors[i * 3] = 0.2 + Math.random() * 0.3; // R
-        colors[i * 3 + 1] = 0.4 + Math.random() * 0.3; // G
-        colors[i * 3 + 2] = 0.8 + Math.random() * 0.2; // B
+        colors[i * 3] = 0.2 + Math.random() * 0.3;
+        colors[i * 3 + 1] = 0.4 + Math.random() * 0.3;
+        colors[i * 3 + 2] = 0.8 + Math.random() * 0.2;
       } else {
-        // Pink
-        colors[i * 3] = 0.8 + Math.random() * 0.2; // R
-        colors[i * 3 + 1] = 0.3 + Math.random() * 0.3; // G
-        colors[i * 3 + 2] = 0.7 + Math.random() * 0.3; // B
+        colors[i * 3] = 0.8 + Math.random() * 0.2;
+        colors[i * 3 + 1] = 0.3 + Math.random() * 0.3;
+        colors[i * 3 + 2] = 0.7 + Math.random() * 0.3;
       }
     }
     return { positions, colors };
   }, []);
 
   useFrame((state) => {
-    if (pointsRef.current) {
-      pointsRef.current.rotation.y += 0.0005;
-      pointsRef.current.rotation.x += 0.0002;
-      
-      // Gentle pulsing effect
-      const scale = 1 + Math.sin(state.clock.elapsedTime * 0.5) * 0.1;
-      pointsRef.current.scale.setScalar(scale);
-    }
+    if (!pointsRef.current || reduceMotion) return;
+    frameTickRef.current = (frameTickRef.current + 1) & 1;
+    if (frameTickRef.current === 0) return; // every other frame
+
+    pointsRef.current.rotation.y += 0.001;
+    pointsRef.current.rotation.x += 0.0004;
+    const scale = 1 + Math.sin(state.clock.elapsedTime * 0.5) * 0.1;
+    pointsRef.current.scale.setScalar(scale);
   });
 
   return (
@@ -470,6 +501,7 @@ const ThemeGlobe = ({ onCategorySelect }: ThemeGlobeProps) => {
   const [error, setError] = useState<string | null>(null);
   const [hoveredCategory, setHoveredCategory] = useState<PuzzleCategory | null>(null);
   const [favoriteCategory, setFavoriteCategory] = useState<string | null>(null);
+  const reduceMotion = usePrefersReducedMotion();
 
 
   const loadCategories = useCallback(async () => {
@@ -636,8 +668,8 @@ const ThemeGlobe = ({ onCategorySelect }: ThemeGlobeProps) => {
         />
         
         {/* Background particles */}
-        <ParticleField />
-        
+        <ParticleField reduceMotion={reduceMotion} />
+
         {/* Main content */}
         <Suspense fallback={<LoadingGlobe />}>
           {loading ? (
@@ -651,6 +683,7 @@ const ThemeGlobe = ({ onCategorySelect }: ThemeGlobeProps) => {
                 onCategorySelect={handleCategorySelect}
                 hoveredCategory={hoveredCategory}
                 favoriteCategory={favoriteCategory}
+                reduceMotion={reduceMotion}
               />
             </>
           )}

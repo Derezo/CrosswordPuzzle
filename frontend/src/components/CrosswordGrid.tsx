@@ -16,8 +16,13 @@ interface CrosswordGridProps {
   progress: UserProgress;
   onCellFocus: (clue: CrosswordClue) => void;
   onGridDataChange?: (gridData: GridCellData[][]) => void;
-  onCellEdit?: () => void; // Callback when user edits a cell
-  cellValidation?: { [cellKey: string]: boolean }; // "row,col": boolean
+  // Called whenever the user edits a cell. Receives the (row, col) of the
+  // cell so the parent can invalidate just the words that touch it.
+  onCellEdit?: (row: number, col: number) => void;
+  // Per-cell word status. 'correct' (green) iff the cell is on a completed
+  // word; 'incorrect' (red) iff some word the cell is on is fully filled
+  // but wrong; 'revealed' (amber) iff a per-clue hint exposed this cell.
+  cellWordStatus?: { [cellKey: string]: 'correct' | 'incorrect' | 'revealed' };
   isCompleted?: boolean;
   readOnly?: boolean;
   initialGridData?: GridCellData[][]; // Pre-populated grid data for solved puzzles
@@ -41,11 +46,6 @@ interface FocusedCell {
 
 export interface GridCellData {
   letter: string;
-  // Store letters for both directions in intersecting cells
-  acrossLetter?: string;
-  downLetter?: string;
-  // Track which direction was last active for display purposes
-  lastActiveDirection?: 'across' | 'down';
 }
 
 export const CrosswordGrid = forwardRef<CrosswordGridHandle, CrosswordGridProps>(function CrosswordGrid({
@@ -55,7 +55,7 @@ export const CrosswordGrid = forwardRef<CrosswordGridHandle, CrosswordGridProps>
   onCellFocus,
   onGridDataChange,
   onCellEdit,
-  cellValidation,
+  cellWordStatus,
   isCompleted,
   readOnly = false,
   initialGridData,
@@ -76,17 +76,16 @@ export const CrosswordGrid = forwardRef<CrosswordGridHandle, CrosswordGridProps>
   useEffect(() => {
     if (grid.length > 0 && grid[0].length > 0) {
       if (initialGridData && initialGridData.length > 0) {
-        // Use pre-populated grid data for solved puzzles
-        setGridData(initialGridData);
+        // Normalize incoming grid: previous releases stored acrossLetter /
+        // downLetter / lastActiveDirection per cell. Drop them — single
+        // `letter` is the source of truth now. Persisted data still loads.
+        const normalized: GridCellData[][] = initialGridData.map((row) =>
+          row.map((cell) => ({ letter: cell?.letter ?? '' })),
+        );
+        setGridData(normalized);
       } else if (gridData.length === 0) {
-        // Create empty grid for new puzzles
-        const newGridData: GridCellData[][] = grid.map(row => 
-          row.map(() => ({ 
-            letter: '', 
-            acrossLetter: undefined, 
-            downLetter: undefined, 
-            lastActiveDirection: undefined 
-          }))
+        const newGridData: GridCellData[][] = grid.map((row) =>
+          row.map(() => ({ letter: '' })),
         );
         setGridData(newGridData);
       }
@@ -162,9 +161,45 @@ export const CrosswordGrid = forwardRef<CrosswordGridHandle, CrosswordGridProps>
   const getLetterAtPosition = (row: number, col: number): string => {
     // Pure grid-based approach - always show the actual letter in the cell
     if (row >= gridData.length || col >= gridData[0]?.length) return '';
-    
+
     const cellData = gridData[row][col];
     return cellData.letter || '';
+  };
+
+  // A cell is locked iff (a) it belongs to any completed-correct clue, or
+  // (b) it was revealed via the per-clue letter hint. Locked cells can't be
+  // edited and the cursor skips over them on click / arrow / type-advance.
+  const completedSet = useMemo(
+    () => new Set(progress.completedClues),
+    [progress.completedClues],
+  );
+  const revealedSet = useMemo(
+    () => new Set(Object.keys(progress.revealedCells ?? {})),
+    [progress.revealedCells],
+  );
+  const isCellLocked = (row: number, col: number): boolean => {
+    if (grid[row]?.[col]?.isBlocked) return false;
+    if (revealedSet.has(`${row},${col}`)) return true;
+    const cluesHere = getClueAtPosition(row, col);
+    if (cluesHere.length === 0) return false;
+    return cluesHere.some((c) => completedSet.has(c.number));
+  };
+
+  // Walk along a clue starting from (startRow, startCol) — but NOT including
+  // it — looking for the first non-locked cell. Direction-aware. Returns null
+  // if every other cell of that clue is locked.
+  const findNextEditableInClue = (
+    clue: CrosswordClue,
+    startRow: number,
+    startCol: number,
+  ): { row: number; col: number } | null => {
+    for (let i = 0; i < clue.length; i++) {
+      const row = clue.direction === 'across' ? clue.startRow : clue.startRow + i;
+      const col = clue.direction === 'across' ? clue.startCol + i : clue.startCol;
+      if (row === startRow && col === startCol) continue;
+      if (!isCellLocked(row, col)) return { row, col };
+    }
+    return null;
   };
 
   const handleCellClick = (row: number, col: number) => {
@@ -173,11 +208,10 @@ export const CrosswordGrid = forwardRef<CrosswordGridHandle, CrosswordGridProps>
     const cluesAtPosition = getClueAtPosition(row, col);
     if (cluesAtPosition.length === 0) return;
 
-    // If there's already a focused cell and multiple clues, cycle through them
+    // Pick the active direction (cycle on same-cell re-tap; otherwise prefer
+    // the current direction).
     let selectedClue = cluesAtPosition[0];
     if (focusedCell && focusedCell.row === row && focusedCell.col === col && cluesAtPosition.length > 1) {
-      // Only cycle direction when re-tapping the SAME cell; tapping a new cell
-      // should keep the current direction if available.
       const currentIndex = cluesAtPosition.findIndex(c =>
         c.number === focusedCell.clue.number && c.direction === focusedCell.direction
       );
@@ -187,68 +221,82 @@ export const CrosswordGrid = forwardRef<CrosswordGridHandle, CrosswordGridProps>
       if (sameDirection) selectedClue = sameDirection;
     }
 
+    // If the clicked cell is locked, redirect focus to the next editable
+    // cell in that clue's direction. Visual signal stays on the clue
+    // (CurrentClueBanner) so the user still sees what they clicked.
+    let targetRow = row;
+    let targetCol = col;
+    if (isCellLocked(row, col)) {
+      const next = findNextEditableInClue(selectedClue, row, col);
+      if (next) {
+        targetRow = next.row;
+        targetCol = next.col;
+      } else {
+        // Every other cell in this direction is locked too. Try the opposite
+        // direction at the same cell; if that's locked or unavailable, just
+        // focus the clue without landing on an editable cell.
+        const opposite = cluesAtPosition.find((c) => c.direction !== selectedClue.direction);
+        if (opposite) {
+          const altNext = findNextEditableInClue(opposite, row, col);
+          if (altNext && !isCellLocked(altNext.row, altNext.col)) {
+            selectedClue = opposite;
+            targetRow = altNext.row;
+            targetCol = altNext.col;
+          }
+        }
+      }
+    }
+
     setFocusedCell({
-      row,
-      col,
+      row: targetRow,
+      col: targetCol,
       clue: selectedClue,
       direction: selectedClue.direction,
     });
 
     onCellFocus(selectedClue);
     haptics.tap();
-
-    // Focus the hidden input so the mobile OS raises its virtual keyboard.
-    // preventScroll keeps iOS from yanking the page when the input gets focus
-    // (otherwise it would scroll the input into view and fight any sticky UI).
     hiddenInputRef.current?.focus({ preventScroll: true });
   };
 
   const performLetter = (letter: string) => {
     if (!focusedCell || readOnly) return;
-    const { row, col, direction } = focusedCell;
+    const { row, col } = focusedCell;
+    // Locked (completed-correct) cells are read-only.
+    if (isCellLocked(row, col)) {
+      moveToNextCell();
+      return;
+    }
 
-    setGridData(prevGrid => {
-      const newGrid = prevGrid.map(gridRow => gridRow.map(cell => ({ ...cell })));
+    setGridData((prevGrid) => {
+      const newGrid = prevGrid.map((gridRow) => gridRow.map((cell) => ({ ...cell })));
       if (row < newGrid.length && col < newGrid[0].length) {
-        if (direction === 'across') {
-          newGrid[row][col].acrossLetter = letter;
-        } else {
-          newGrid[row][col].downLetter = letter;
-        }
         newGrid[row][col].letter = letter;
-        newGrid[row][col].lastActiveDirection = direction;
       }
       return newGrid;
     });
 
-    if (onCellEdit) onCellEdit();
+    if (onCellEdit) onCellEdit(row, col);
     moveToNextCell();
   };
 
   const performBackspace = () => {
     if (!focusedCell || readOnly) return;
-    const { row, col, direction } = focusedCell;
+    const { row, col } = focusedCell;
+    if (isCellLocked(row, col)) {
+      moveToPreviousCell();
+      return;
+    }
 
-    setGridData(prevGrid => {
-      const newGrid = prevGrid.map(gridRow => gridRow.map(cell => ({ ...cell })));
+    setGridData((prevGrid) => {
+      const newGrid = prevGrid.map((gridRow) => gridRow.map((cell) => ({ ...cell })));
       if (row < newGrid.length && col < newGrid[0].length) {
-        if (direction === 'across') {
-          newGrid[row][col].acrossLetter = undefined;
-        } else {
-          newGrid[row][col].downLetter = undefined;
-        }
-        const remainingLetter = newGrid[row][col].acrossLetter || newGrid[row][col].downLetter;
-        newGrid[row][col].letter = remainingLetter || '';
-        if (remainingLetter) {
-          newGrid[row][col].lastActiveDirection = newGrid[row][col].acrossLetter ? 'across' : 'down';
-        } else {
-          newGrid[row][col].lastActiveDirection = undefined;
-        }
+        newGrid[row][col].letter = '';
       }
       return newGrid;
     });
 
-    if (onCellEdit) onCellEdit();
+    if (onCellEdit) onCellEdit(row, col);
     moveToPreviousCell();
   };
 
@@ -305,17 +353,23 @@ export const CrosswordGrid = forwardRef<CrosswordGridHandle, CrosswordGridProps>
     if (!focusedCell) return;
 
     const { row, col, clue, direction } = focusedCell;
-    let newRow = row;
-    let newCol = col;
+    let curRow = row;
+    let curCol = col;
+    const endRow = direction === 'across' ? clue.startRow : clue.startRow + clue.length - 1;
+    const endCol = direction === 'across' ? clue.startCol + clue.length - 1 : clue.startCol;
 
-    if (direction === 'across') {
-      newCol = Math.min(col + 1, clue.startCol + clue.length - 1);
-    } else {
-      newRow = Math.min(row + 1, clue.startRow + clue.length - 1);
-    }
-
-    if (newRow !== row || newCol !== col) {
-      setFocusedCell({ row: newRow, col: newCol, clue, direction });
+    while (true) {
+      if (direction === 'across') {
+        if (curCol >= endCol) return; // already at clue end
+        curCol += 1;
+      } else {
+        if (curRow >= endRow) return;
+        curRow += 1;
+      }
+      if (!isCellLocked(curRow, curCol)) {
+        setFocusedCell({ row: curRow, col: curCol, clue, direction });
+        return;
+      }
     }
   };
 
@@ -323,17 +377,23 @@ export const CrosswordGrid = forwardRef<CrosswordGridHandle, CrosswordGridProps>
     if (!focusedCell) return;
 
     const { row, col, clue, direction } = focusedCell;
-    let newRow = row;
-    let newCol = col;
+    let curRow = row;
+    let curCol = col;
+    const startRow = direction === 'across' ? clue.startRow : clue.startRow;
+    const startCol = direction === 'across' ? clue.startCol : clue.startCol;
 
-    if (direction === 'across') {
-      newCol = Math.max(col - 1, clue.startCol);
-    } else {
-      newRow = Math.max(row - 1, clue.startRow);
-    }
-
-    if (newRow !== row || newCol !== col) {
-      setFocusedCell({ row: newRow, col: newCol, clue, direction });
+    while (true) {
+      if (direction === 'across') {
+        if (curCol <= startCol) return;
+        curCol -= 1;
+      } else {
+        if (curRow <= startRow) return;
+        curRow -= 1;
+      }
+      if (!isCellLocked(curRow, curCol)) {
+        setFocusedCell({ row: curRow, col: curCol, clue, direction });
+        return;
+      }
     }
   };
 
@@ -341,35 +401,43 @@ export const CrosswordGrid = forwardRef<CrosswordGridHandle, CrosswordGridProps>
     if (!focusedCell) return;
 
     const { row, col } = focusedCell;
-    let newRow = row;
-    let newCol = col;
-
+    let dRow = 0;
+    let dCol = 0;
     switch (key) {
-      case 'ArrowRight':
-        newCol = Math.min(col + 1, grid[0].length - 1);
-        break;
-      case 'ArrowLeft':
-        newCol = Math.max(col - 1, 0);
-        break;
-      case 'ArrowDown':
-        newRow = Math.min(row + 1, grid.length - 1);
-        break;
-      case 'ArrowUp':
-        newRow = Math.max(row - 1, 0);
-        break;
+      case 'ArrowRight': dCol = 1; break;
+      case 'ArrowLeft':  dCol = -1; break;
+      case 'ArrowDown':  dRow = 1; break;
+      case 'ArrowUp':    dRow = -1; break;
     }
 
-    // Find a valid clue at the new position
-    const cluesAtNewPosition = getClueAtPosition(newRow, newCol);
-    if (cluesAtNewPosition.length > 0 && !grid[newRow][newCol].isBlocked) {
-      const newClue = cluesAtNewPosition[0];
-      setFocusedCell({
-        row: newRow,
-        col: newCol,
-        clue: newClue,
-        direction: newClue.direction,
-      });
-      onCellFocus(newClue);
+    // Walk in the chosen direction until we land on an editable, non-blocked
+    // cell. Stops at grid boundary.
+    let newRow = row + dRow;
+    let newCol = col + dCol;
+    while (
+      newRow >= 0 && newRow < grid.length &&
+      newCol >= 0 && newCol < grid[0].length
+    ) {
+      const cluesAtNewPosition = getClueAtPosition(newRow, newCol);
+      if (
+        cluesAtNewPosition.length > 0 &&
+        !grid[newRow][newCol].isBlocked &&
+        !isCellLocked(newRow, newCol)
+      ) {
+        const newClue =
+          cluesAtNewPosition.find((c) => c.direction === focusedCell.direction) ??
+          cluesAtNewPosition[0];
+        setFocusedCell({
+          row: newRow,
+          col: newCol,
+          clue: newClue,
+          direction: newClue.direction,
+        });
+        onCellFocus(newClue);
+        return;
+      }
+      newRow += dRow;
+      newCol += dCol;
     }
   };
 
@@ -442,37 +510,52 @@ export const CrosswordGrid = forwardRef<CrosswordGridHandle, CrosswordGridProps>
     const isFocused = focusedCell?.row === row && focusedCell?.col === col;
     
     let validationClass = '';
-    if (cellValidation && !isEffectivelyBlocked) {
-      // PURE GRID-BASED VALIDATION - check this specific cell's validation status
-      const cellKey = `${row},${col}`;
-      
-      if (cellValidation[cellKey] !== undefined) {
-        if (cellValidation[cellKey] === true) {
-          validationClass = '!bg-gradient-to-br !from-green-400 !to-emerald-500 !border-green-400 !text-black !shadow-lg validation-shimmer';
-        } else if (cellValidation[cellKey] === false) {
-          validationClass = '!bg-gradient-to-br !from-red-400 !to-pink-500 !border-red-400 !text-black !shadow-lg validation-shimmer';
-        }
+    if (cellWordStatus && !isEffectivelyBlocked) {
+      const status = cellWordStatus[`${row},${col}`];
+      if (status === 'correct') {
+        validationClass = '!bg-gradient-to-br !from-green-400 !to-emerald-500 !border-green-400 !text-black !shadow-lg validation-shimmer';
+      } else if (status === 'incorrect') {
+        validationClass = '!bg-gradient-to-br !from-red-400 !to-pink-500 !border-red-400 !text-black !shadow-lg validation-shimmer';
+      } else if (status === 'revealed') {
+        // Soft amber tint with a dotted border — reads as "hint used, locked"
+        // without claiming the word is complete.
+        validationClass = '!bg-gradient-to-br !from-amber-200 !to-yellow-300 !border-amber-500 !border-dashed !text-gray-900 !shadow-md';
       }
     }
+
+    // The focused/active cell is yellow and gently pulses — clearly signals
+    // "this is where typing will land." Green (correct) wins over yellow so
+    // locked completed cells never look editable.
+    const cellIsLocked = !isEffectivelyBlocked && isCellLocked(row, col);
+    const activeCellClass =
+      isFocused && !cellIsLocked && !readOnly
+        ? '!bg-gradient-to-br !from-yellow-300 !to-amber-400 !border-amber-500 !text-gray-900 !shadow-xl ring-2 ring-amber-400/70 animate-pulse'
+        : '';
 
     return clsx(
       'cw-cell aspect-square border flex items-center justify-center font-bold relative text-black',
       {
         'bg-gradient-to-br from-gray-900 to-black border-gray-700': isEffectivelyBlocked,
-        'bg-gradient-to-br from-white via-gray-50 to-purple-50 border-purple-200 cursor-pointer backdrop-blur-sm': !isEffectivelyBlocked && !readOnly && !validationClass,
-        'bg-gradient-to-br from-blue-500/40 to-purple-500/40 border-blue-400/50 shadow-lg': isInFocusedClue && !isEffectivelyBlocked && !validationClass,
-        'bg-gradient-to-br from-purple-500/80 to-blue-500/80 border-purple-400 ring-2 ring-purple-400/50 shadow-xl': isFocused && !validationClass,
-        'bg-gradient-to-br from-white via-gray-50 to-purple-50 border-purple-200': readOnly && !isEffectivelyBlocked && !validationClass,
+        'bg-gradient-to-br from-white via-gray-50 to-purple-50 border-purple-200 cursor-pointer backdrop-blur-sm':
+          !isEffectivelyBlocked && !readOnly && !validationClass && !activeCellClass,
+        'bg-gradient-to-br from-blue-500/40 to-purple-500/40 border-blue-400/50 shadow-lg':
+          isInFocusedClue && !isFocused && !isEffectivelyBlocked && !validationClass,
+        'bg-gradient-to-br from-white via-gray-50 to-purple-50 border-purple-200':
+          readOnly && !isEffectivelyBlocked && !validationClass && !activeCellClass,
       },
-      // Apply validation classes with higher priority
-      validationClass
+      // Word-status (green/red) wins when present.
+      validationClass,
+      // Active cell wins over everything except a 'correct' word-status
+      // (which means the cell is locked anyway and activeCellClass is empty).
+      activeCellClass,
     );
   };
 
   // Memoize the rendered cell list. We deliberately scope the dependencies
   // to the values the rendering actually reads (grid, gridData, focusedCell,
-  // cellValidation, readOnly) so unrelated state changes (e.g. the achievement
-  // modal in the parent) do not force a full grid re-render on every keystroke.
+  // cellWordStatus, readOnly, completedClues, revealedCells) so unrelated state
+  // changes (e.g. the achievement modal in the parent) do not force a full
+  // grid re-render on every keystroke.
   const cellList = useMemo(() => {
     if (grid.length === 0) return null;
     return grid.map((row, rowIndex) =>
@@ -483,7 +566,7 @@ export const CrosswordGrid = forwardRef<CrosswordGridHandle, CrosswordGridProps>
         const letter = getLetterAtPosition(rowIndex, colIndex);
 
         const cellKey = `${rowIndex},${colIndex}`;
-        const validationState = cellValidation?.[cellKey];
+        const validationState = cellWordStatus?.[cellKey];
 
         const labelParts = [`Row ${rowIndex + 1}, column ${colIndex + 1}`];
         if (isEffectivelyBlocked) {
@@ -493,8 +576,8 @@ export const CrosswordGrid = forwardRef<CrosswordGridHandle, CrosswordGridProps>
         } else {
           labelParts.push('empty');
         }
-        if (validationState === true) labelParts.push('correct');
-        else if (validationState === false) labelParts.push('incorrect');
+        if (validationState === 'correct') labelParts.push('correct');
+        else if (validationState === 'incorrect') labelParts.push('incorrect');
 
         return (
           <div
@@ -528,21 +611,21 @@ export const CrosswordGrid = forwardRef<CrosswordGridHandle, CrosswordGridProps>
       }),
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [grid, gridData, focusedCell, cellValidation, readOnly, clues, onCellFocus]);
+  }, [grid, gridData, focusedCell, cellWordStatus, readOnly, clues, onCellFocus, progress.completedClues, progress.revealedCells]);
 
-  // Summary for the aria-live region — fires whenever validation results
-  // change so screen readers announce the outcome of a "check answers" run.
+  // Summary for the aria-live region — fires whenever word status changes so
+  // screen readers announce the outcome of a "check answers" run.
   const validationSummary = useMemo(() => {
-    if (!cellValidation) return '';
-    const entries = Object.values(cellValidation);
+    if (!cellWordStatus) return '';
+    const entries = Object.values(cellWordStatus);
     if (entries.length === 0) return '';
-    const correct = entries.filter((v) => v === true).length;
-    const incorrect = entries.filter((v) => v === false).length;
+    const correct = entries.filter((v) => v === 'correct').length;
+    const incorrect = entries.filter((v) => v === 'incorrect').length;
     if (incorrect === 0 && correct > 0) {
-      return `All ${correct} validated cells are correct.`;
+      return `All ${correct} cells are part of correctly completed words.`;
     }
-    return `Validation complete: ${correct} correct, ${incorrect} incorrect.`;
-  }, [cellValidation]);
+    return `Validation complete: ${correct} cells in correct words, ${incorrect} cells in incorrect words.`;
+  }, [cellWordStatus]);
 
   return (
     <div

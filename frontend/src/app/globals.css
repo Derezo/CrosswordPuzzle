@@ -118,6 +118,20 @@ body {
   animation: validation-shimmer 3s ease-in-out forwards;
 }
 
+@keyframes direction-toggle-flash {
+  0%   { transform: scale(1);    filter: brightness(1); }
+  35%  { transform: scale(1.18); filter: brightness(1.6); }
+  100% { transform: scale(1);    filter: brightness(1); }
+}
+
+.direction-toggle-flash {
+  animation: direction-toggle-flash 300ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .direction-toggle-flash { animation: none; }
+}
+
 @keyframes twinkle {
   0%, 100% { opacity: 0.3; }
   50% { opacity: 1; }

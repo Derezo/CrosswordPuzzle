@@ -34,10 +34,44 @@ show_help() {
     echo "  $0 status"
 }
 
+resolve_db_path() {
+    # Resolve the SQLite DB path from DATABASE_URL (file:...). Prisma resolves
+    # relative paths against the directory containing schema.prisma (prisma/),
+    # so a URL like "file:./prisma/dev.db" lives at prisma/prisma/dev.db from
+    # the backend root. Fall back to the documented default if DATABASE_URL is
+    # missing or non-file.
+    local url
+    if [[ -f .env ]]; then
+        url=$(grep -E '^DATABASE_URL=' .env | head -1 | cut -d= -f2-)
+        url=${url%\"}
+        url=${url#\"}
+        url=${url%\'}
+        url=${url#\'}
+    fi
+    if [[ -z "$url" || "$url" != file:* ]]; then
+        echo "prisma/prisma/dev.db"
+        return
+    fi
+    local path=${url#file:}
+    if [[ "$path" = /* ]]; then
+        echo "$path"
+    else
+        # Strip leading ./ for cleanliness, then resolve relative to prisma/.
+        path=${path#./}
+        echo "prisma/$path"
+    fi
+}
+
 create_backup() {
+    local db_path
+    db_path=$(resolve_db_path)
+    if [[ ! -f "$db_path" ]]; then
+        echo -e "${YELLOW}⚠️  No existing database at $db_path — skipping backup (fresh setup).${NC}"
+        return
+    fi
     local backup_name="migration_backup_$(date +%Y%m%d_%H%M%S).db"
     mkdir -p backups
-    cp prisma/dev.db "backups/$backup_name"
+    cp "$db_path" "backups/$backup_name"
     echo -e "${GREEN}✅ Database backed up to: backups/$backup_name${NC}"
 }
 
@@ -85,12 +119,15 @@ reset_database() {
 rollback_migration() {
     echo -e "${RED}⚠️  Rolling back last migration${NC}"
     echo -e "${YELLOW}Note: This will require manual intervention for SQLite${NC}"
-    
+
     # For SQLite, we need to restore from backup
-    local latest_backup=$(ls -t backups/*.db | head -1)
+    local latest_backup
+    latest_backup=$(ls -t backups/*.db 2>/dev/null | head -1)
     if [[ -n "$latest_backup" ]]; then
-        echo -e "${YELLOW}Restoring from latest backup: $latest_backup${NC}"
-        cp "$latest_backup" prisma/dev.db
+        local db_path
+        db_path=$(resolve_db_path)
+        echo -e "${YELLOW}Restoring $db_path from latest backup: $latest_backup${NC}"
+        cp "$latest_backup" "$db_path"
         echo -e "${GREEN}✅ Database restored from backup${NC}"
     else
         echo -e "${RED}❌ No backup found for rollback${NC}"

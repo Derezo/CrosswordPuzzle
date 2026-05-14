@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef, Suspense } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Navigation } from "@/components/Navigation";
@@ -13,8 +13,9 @@ import { PuzzleErrorBoundary } from "@/components/PuzzleErrorBoundary";
 import { puzzleAPI, suggestionAPI } from "@/lib/api";
 import {
   reconstructGrid,
-  buildAllCorrectCellValidation,
-  buildCellValidationFromSavedGrid,
+  buildCellWordStatus,
+  cluesAtCell,
+  type CellWordStatus,
 } from "@/lib/puzzle";
 import {
   DailyPuzzle,
@@ -259,12 +260,6 @@ function PuzzlePageContent() {
   const [progress, setProgress] = useState<UserProgress | null>(null);
   const [focusedClue, setFocusedClue] = useState<CrosswordClue | null>(null);
   const gridRef = useRef<CrosswordGridHandle>(null);
-  const [validationResults, setValidationResults] = useState<{
-    [key: number]: boolean;
-  }>({});
-  const [cellValidation, setCellValidation] = useState<{
-    [cellKey: string]: boolean;
-  }>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [newAchievements, setNewAchievements] = useState<UserAchievement[]>([]);
@@ -307,6 +302,26 @@ function PuzzlePageContent() {
   // Easter egg for development mode only
   const [keySequence, setKeySequence] = useState<string[]>([]);
   const [isDevMode] = useState(() => process.env.NODE_ENV === 'development');
+
+  // Derive the per-cell word status (correct / incorrect / absent) the grid
+  // paints from. Single source of truth: progress.completedClues drives green;
+  // progress.validatedClues=false + a fully-filled word drives red. Correct
+  // wins ties — a cell on a completed correct word stays green even if the
+  // crossing word is wrong.
+  const cellWordStatus = useMemo<{ [cellKey: string]: CellWordStatus }>(() => {
+    if (!puzzle || !progress) return {};
+    const gridForFill =
+      currentGridData.length > 0
+        ? currentGridData
+        : (initialGridData as { letter: string }[][]);
+    return buildCellWordStatus(
+      puzzle,
+      gridForFill && gridForFill.length > 0 ? gridForFill : null,
+      progress.completedClues,
+      progress.validatedClues,
+      progress.revealedCells,
+    );
+  }, [puzzle, progress, currentGridData, initialGridData]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -643,61 +658,53 @@ function PuzzlePageContent() {
     }, 1200);
   };
 
+  const applyPuzzleData = (data: {
+    puzzle: DailyPuzzle;
+    progress: UserProgress;
+  }) => {
+    setPuzzle(data.puzzle);
+    setProgress(data.progress);
+
+    // Check if puzzle was auto-solved (no solve time indicates auto-solve)
+    setAutoSolved(data.progress.isCompleted && !data.progress.solveTime);
+
+    if (!data.progress.isCompleted) {
+      // Timer will start from firstViewedAt (handled by useEffect)
+      setSolveTime(0);
+    } else {
+      setSolveTime(data.progress.solveTime || 0);
+    }
+
+    // Use saved gridData if available, otherwise reconstruct if completed.
+    // cellWordStatus is derived from progress + the grid, so we don't set it
+    // imperatively here.
+    if (data.progress.gridData) {
+      setInitialGridData(
+        (data.progress.gridData as { letter?: string }[][]).map((row) =>
+          row.map((cell) => ({ letter: cell?.letter ?? '' })),
+        ),
+      );
+    } else if (data.progress.isCompleted && data.progress.answers) {
+      setInitialGridData(reconstructGrid(data.puzzle, data.progress));
+    }
+  };
+
+  const resetPuzzleState = () => {
+    setPuzzle(null);
+    setProgress(null);
+    setCurrentGridData([]);
+    setInitialGridData([]);
+    setAutoSolved(false);
+    setSolveTime(0);
+    setError(null);
+  };
+
   const loadTodaysPuzzle = async () => {
     try {
       setLoading(true);
-      
-      // Clear previous puzzle state
-      setPuzzle(null);
-      setProgress(null);
-      setValidationResults({});
-      setCellValidation({});
-      setCurrentGridData([]);
-      setInitialGridData([]);
-      setAutoSolved(false);
-      setSolveTime(0);
-      setError(null);
-      
+      resetPuzzleState();
       const data = await puzzleAPI.getTodaysPuzzle();
-      setPuzzle(data.puzzle);
-      setProgress(data.progress);
-
-      // Check if puzzle was auto-solved (no solve time indicates auto-solve)
-      setAutoSolved(data.progress.isCompleted && !data.progress.solveTime);
-
-      // Initialize timer if puzzle is not completed
-      if (!data.progress.isCompleted) {
-        // Timer will start from firstViewedAt (handled by useEffect)
-        setSolveTime(0);
-      } else {
-        // For completed puzzles, use their actual solve time
-        setSolveTime(data.progress.solveTime || 0);
-      }
-
-      // Use saved gridData if available, otherwise reconstruct if completed
-      if (data.progress.gridData) {
-        // Use saved grid state directly
-        setInitialGridData(data.progress.gridData as GridCellData[][]);
-
-        const completedValidations: { [key: number]: boolean } = {};
-        data.progress.completedClues.forEach((clueNumber) => {
-          completedValidations[clueNumber] = true;
-        });
-        setValidationResults(completedValidations);
-
-        setCellValidation(
-          buildCellValidationFromSavedGrid(data.puzzle, data.progress.gridData),
-        );
-      } else if (data.progress.isCompleted && data.progress.answers) {
-        const completedValidations: { [key: number]: boolean } = {};
-        data.progress.completedClues.forEach((clueNumber) => {
-          completedValidations[clueNumber] = true;
-        });
-        setValidationResults(completedValidations);
-
-        setCellValidation(buildAllCorrectCellValidation(data.puzzle));
-        setInitialGridData(reconstructGrid(data.puzzle, data.progress));
-      }
+      applyPuzzleData(data);
     } catch (error) {
       console.error("Error loading puzzle:", error);
       setError("Failed to load today's puzzle");
@@ -709,55 +716,9 @@ function PuzzlePageContent() {
   const loadSpecificPuzzle = async (puzzleDate: string) => {
     try {
       setLoading(true);
-      
-      // Clear previous puzzle state
-      setPuzzle(null);
-      setProgress(null);
-      setValidationResults({});
-      setCellValidation({});
-      setCurrentGridData([]);
-      setInitialGridData([]);
-      setAutoSolved(false);
-      setSolveTime(0);
-      setError(null);
-      
+      resetPuzzleState();
       const data = await puzzleAPI.getSpecificPuzzle(puzzleDate);
-      setPuzzle(data.puzzle);
-      setProgress(data.progress);
-
-      // Check if puzzle was auto-solved (no solve time indicates auto-solve)
-      setAutoSolved(data.progress.isCompleted && !data.progress.solveTime);
-
-      // Initialize timer if puzzle is not completed
-      if (!data.progress.isCompleted) {
-        setSolveTime(0);
-      } else {
-        setSolveTime(data.progress.solveTime || 0);
-      }
-
-      // Use saved gridData if available, otherwise reconstruct if completed
-      if (data.progress.gridData) {
-        setInitialGridData(data.progress.gridData as GridCellData[][]);
-
-        const completedValidations: { [key: number]: boolean } = {};
-        data.progress.completedClues.forEach((clueNumber) => {
-          completedValidations[clueNumber] = true;
-        });
-        setValidationResults(completedValidations);
-
-        setCellValidation(
-          buildCellValidationFromSavedGrid(data.puzzle, data.progress.gridData),
-        );
-      } else if (data.progress.isCompleted && data.progress.answers) {
-        const completedValidations: { [key: number]: boolean } = {};
-        data.progress.completedClues.forEach((clueNumber) => {
-          completedValidations[clueNumber] = true;
-        });
-        setValidationResults(completedValidations);
-
-        setCellValidation(buildAllCorrectCellValidation(data.puzzle));
-        setInitialGridData(reconstructGrid(data.puzzle, data.progress));
-      }
+      applyPuzzleData(data);
     } catch (error) {
       console.error("Error loading specific puzzle:", error);
       setError("Failed to load the requested puzzle");
@@ -770,88 +731,56 @@ function PuzzlePageContent() {
   // Grid updates happen internally in CrosswordGrid component
 
   const handleCheckAnswers = async () => {
-    console.log("handleCheckAnswers called");
-    console.log(
-      "currentGridData:",
-      currentGridData.length > 0
-        ? `${currentGridData.length}x${currentGridData[0]?.length || 0}`
-        : "empty",
-    );
-    console.log("currentGridData sample:", currentGridData[0]?.[0]);
-
-    if (!puzzle || !progress || currentGridData.length === 0) {
-      console.log("Early return - missing data");
-      return;
-    }
+    if (!puzzle || !progress || currentGridData.length === 0) return;
 
     try {
-      // PURE GRID-BASED VALIDATION
       const payload = {
         gridData: currentGridData,
         puzzleDate: currentPuzzleDate || puzzle.date,
       };
-      console.log("Sending to validateGridAnswers:", payload);
+      const result: ValidationResult = await puzzleAPI.validateGridAnswers(payload);
 
-      const result: ValidationResult =
-        await puzzleAPI.validateGridAnswers(payload);
-
-      // Update validation results for visual feedback
-      setValidationResults(result.results);
-      setCellValidation(result.cellValidation || {});
-
-      // Tactile feedback mirrors the visual: success when every validated cell
-      // is correct, error otherwise. No-op on iOS Safari / desktop.
-      const cellMap = result.cellValidation || {};
-      const validatedValues = Object.values(cellMap);
-      if (validatedValues.length > 0) {
-        const anyIncorrect = validatedValues.some((v) => v === false);
+      // Tactile feedback: success only if every clue in this check is correct.
+      const checkedResults = Object.values(result.results ?? {});
+      if (checkedResults.length > 0) {
+        const anyIncorrect = checkedResults.some((v) => v === false);
         if (anyIncorrect) haptics.error();
         else haptics.success();
       }
 
-      // Update progress - ONLY use solvedClues for UI display, NOT for grid rendering
       setProgress((prev) =>
         prev
           ? {
               ...prev,
-              answers: result.solvedClues, // Clue answers for UI display only
-              completedClues: [
-                ...new Set([
-                  ...prev.completedClues,
-                  ...result.newCompletedClues,
-                ]),
-              ],
+              answers: result.solvedClues,
+              completedClues:
+                result.completedClues ?? [
+                  ...new Set([
+                    ...prev.completedClues,
+                    ...(result.newCompletedClues ?? []),
+                  ]),
+                ],
+              validatedClues: {
+                ...(prev.validatedClues ?? {}),
+                ...(result.validatedClues ?? result.results ?? {}),
+              },
               isCompleted: result.isCompleted,
               solveTime: result.solveTime,
             }
           : null,
       );
 
-      // Grid validation is handled internally - do NOT update currentGridData
-      // The grid rendering uses its own state and direction-specific storage
-
-      // Create energy orbs animation for new completed clues
+      // Energy orbs / fireworks fire for newly completed words.
       if (result.newCompletedClues && result.newCompletedClues.length > 0) {
-        // Small delay to ensure DOM is updated with validation classes
         setTimeout(() => {
           createEnergyOrbs(result.newCompletedClues);
         }, 100);
       }
-
-      // Show new achievements
       if (result.newAchievements && result.newAchievements.length > 0) {
         setNewAchievements(result.newAchievements);
         setShowAchievements(true);
-        // Trigger fireworks celebration
         setTimeout(() => createFireworks(), 500);
       }
-
-      console.log("Validation complete:", {
-        clueResults: result.results,
-        cellValidation:
-          Object.keys(result.cellValidation).length + " cells validated",
-        solvedClues: result.solvedClues,
-      });
     } catch (error) {
       console.error("Error validating answers:", error);
     }
@@ -869,16 +798,93 @@ function PuzzlePageContent() {
     setFireworks([]);
   };
 
-  const handleCellEdit = () => {
-    // Clear validation results when user edits a cell
-    setValidationResults({});
-    setCellValidation({});
-  };
+  const handleCellEdit = useCallback(
+    (row: number, col: number) => {
+      // Only invalidate the words that include this cell, not the entire
+      // validation state. A cell on an unrelated completed word should stay
+      // green; only the words touched by the edit lose their validated state.
+      if (!puzzle) return;
+      const touchedClues = cluesAtCell(puzzle, row, col);
+      if (touchedClues.length === 0) return;
+      const touchedNumbers = new Set(touchedClues.map((c) => c.number));
 
-  const handleFeedbackClick = (clue: CrosswordClue) => {
+      setProgress((prev) => {
+        if (!prev) return prev;
+        const nextCompleted = prev.completedClues.filter(
+          (n) => !touchedNumbers.has(n),
+        );
+        const nextValidated = { ...(prev.validatedClues ?? {}) };
+        for (const n of touchedNumbers) delete nextValidated[n];
+        return {
+          ...prev,
+          completedClues: nextCompleted,
+          validatedClues: nextValidated,
+        };
+      });
+    },
+    [puzzle],
+  );
+
+  const handleFeedbackClick = useCallback((clue: CrosswordClue) => {
     setFeedbackClue(clue);
     setShowFeedbackModal(true);
-  };
+  }, []);
+
+  const handleRevealClick = useCallback(
+    async (clue: CrosswordClue) => {
+      if (!puzzle || !progress) return;
+      try {
+        const data = await puzzleAPI.revealLetter({
+          puzzleDate: currentPuzzleDate || puzzle.date,
+          clueNumber: clue.number,
+        });
+
+        // Write the revealed letter into the live grid so it's part of the
+        // next Check & Save and shows immediately.
+        setCurrentGridData((prev) => {
+          if (prev.length === 0) return prev;
+          const next = prev.map((row) => row.map((cell) => ({ ...cell })));
+          if (next[data.row]?.[data.col]) {
+            next[data.row][data.col] = { letter: data.letter };
+          }
+          return next;
+        });
+        setInitialGridData((prev) => {
+          // Initial grid is the source of truth on remount. Keep it in sync.
+          if (prev.length === 0) return prev;
+          const next = prev.map((row) => row.map((cell) => ({ ...cell })));
+          if (next[data.row]?.[data.col]) {
+            next[data.row][data.col] = { letter: data.letter };
+          }
+          return next;
+        });
+
+        setProgress((prevProgress) =>
+          prevProgress
+            ? {
+                ...prevProgress,
+                revealedCells: data.revealedCells,
+                usedHints: true,
+              }
+            : prevProgress,
+        );
+        haptics.tap();
+      } catch (error: unknown) {
+        const err = error as {
+          response?: { status?: number; data?: { error?: string; message?: string } };
+        };
+        const code = err.response?.data?.error;
+        if (code === 'REVEAL_COOLDOWN' || code === 'REVEAL_LIMIT') {
+          // Soft fail — could surface a toast; for now log so the lightbulb
+          // disabled state is the only visible indicator.
+          console.warn(err.response?.data?.message || 'Reveal blocked');
+        } else {
+          console.error('Error revealing letter:', error);
+        }
+      }
+    },
+    [puzzle, progress, currentPuzzleDate],
+  );
 
   const handleConfirmAutoSolve = async () => {
     setShowAutoSolveModal(false);
@@ -894,26 +900,30 @@ function PuzzlePageContent() {
 
       setAutoSolved(true);
 
-      // Update progress
+      // Update progress: every clue is now correct (validatedClues all true).
       setProgress((prev) =>
         prev
           ? {
               ...prev,
               answers: result.answers,
               completedClues: result.completedClues,
+              validatedClues:
+                result.validatedClues ??
+                Object.fromEntries(
+                  result.completedClues.map((n: number) => [n, true]),
+                ),
               isCompleted: result.isCompleted,
-              solveTime: undefined, // No solve time for auto-solved
+              solveTime: undefined,
             }
           : null,
       );
 
-      // Update validation results - both clue and cell level
-      setValidationResults(result.results ?? {});
-      setCellValidation(result.cellValidation ?? {});
-
-      // Update initial grid data to reflect the solved grid
       if (result.validatedGrid) {
-        setInitialGridData(result.validatedGrid as GridCellData[][]);
+        setInitialGridData(
+          (result.validatedGrid as { letter?: string }[][]).map((row) =>
+            row.map((cell) => ({ letter: (cell?.letter ?? '').toUpperCase() })),
+          ),
+        );
       }
 
       // Trigger energy orbs animation for all completed clues
@@ -1038,6 +1048,14 @@ function PuzzlePageContent() {
                 <span className="text-green-400 font-bold">
                   {progress.completedClues?.length || 0}/{puzzle.clues.length}
                 </span>
+                {progress.usedHints && (
+                  <span
+                    className="px-1.5 py-0.5 rounded text-xs font-semibold bg-amber-500/20 text-amber-200 border border-amber-500/40"
+                    title="Hints used — this puzzle won't award achievements"
+                  >
+                    💡 hints used
+                  </span>
+                )}
               </div>
               
               {/* Enhanced Progress Bar with Charging Animation */}
@@ -1108,7 +1126,7 @@ function PuzzlePageContent() {
                     onCellFocus={setFocusedClue}
                     onGridDataChange={setCurrentGridData}
                     onCellEdit={handleCellEdit}
-                    cellValidation={cellValidation}
+                    cellWordStatus={cellWordStatus}
                     isCompleted={progress.isCompleted}
                     readOnly={progress.isCompleted}
                     initialGridData={initialGridData}
@@ -1163,9 +1181,19 @@ function PuzzlePageContent() {
               <div className="md:hidden cosmic-card p-3">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-purple-200 text-sm">Progress:</span>
-                  <span className="text-green-400 font-bold">
-                    {progress.completedClues?.length || 0}/{puzzle.clues.length}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {progress.usedHints && (
+                      <span
+                        className="px-1.5 py-0.5 rounded text-xs font-semibold bg-amber-500/20 text-amber-200 border border-amber-500/40"
+                        title="Hints used — this puzzle won't award achievements"
+                      >
+                        💡
+                      </span>
+                    )}
+                    <span className="text-green-400 font-bold">
+                      {progress.completedClues?.length || 0}/{puzzle.clues.length}
+                    </span>
+                  </div>
                 </div>
                 
                 {/* Enhanced Mobile Progress Bar */}
@@ -1208,8 +1236,8 @@ function PuzzlePageContent() {
                   progress={progress}
                   focusedClue={focusedClue}
                   onClueClick={setFocusedClue}
-                  validationResults={validationResults}
                   onFeedbackClick={handleFeedbackClick}
+                  onRevealClick={handleRevealClick}
                 />
               </div>
             </div>

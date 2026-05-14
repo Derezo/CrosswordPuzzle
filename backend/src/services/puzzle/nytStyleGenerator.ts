@@ -44,21 +44,33 @@ interface Slot {
   crosses: Array<{ slotId: number; offset: number } | null>;
 }
 
-interface ProgressCallback {
+export interface ProgressCallback {
   (
     stage: string,
     attempt: number,
     targetWords: number,
     phase: "normal" | "fallback",
+    tier?: number,
   ): void | Promise<void>;
+}
+
+// Constraints that can be relaxed across generation tiers when a tight
+// category vocabulary makes the strict ladder unable to fill.
+export interface TemplateConstraints {
+  minBlackSquares: number;
+  maxBlackSquares: number;
+  maxSlotLength: number;
+  minShortSlots: number;
 }
 
 export const GRID_SIZE = 15;
 export const MIN_WORD_LENGTH = 3;
-const MIN_BLACK_SQUARES = 44; // ~19.5%
-const MAX_BLACK_SQUARES = 58; // ~25.8%
-const MAX_SLOT_LENGTH = 8; // Cap slots at 8; longer entries make fill brittle with our dictionary.
-const MIN_SHORT_SLOTS = 32; // Most slots should be 3..5 letters.
+export const DEFAULT_TEMPLATE_CONSTRAINTS: TemplateConstraints = {
+  minBlackSquares: 44, // ~19.5%
+  maxBlackSquares: 58, // ~25.8%
+  maxSlotLength: 8,    // Longer entries make fill brittle.
+  minShortSlots: 32,   // Most slots should be 3..5 letters.
+};
 const MAX_TEMPLATE_ATTEMPTS = 8000;
 const MAX_FILL_BACKTRACKS = 150000;
 
@@ -184,11 +196,46 @@ export class Dictionary {
   }
 }
 
+// Dictionary cache. Keyed by `${absoluteCsvPath}|${maxWordLength}|${sortedLowercaseCategories}`,
+// invalidated by the CSV's mtime so a file edit is picked up automatically.
+// Without this, every puzzle generation re-parses the 43k-row CSV and rebuilds
+// the 3-level letter index — measurable seconds for SSE category generation.
+interface CachedDictionary {
+  dict: Dictionary;
+  mtimeMs: number;
+}
+const dictionaryCache: Map<string, CachedDictionary> = new Map();
+
+function dictionaryCacheKey(
+  csvPath: string,
+  categoryFilters: string[],
+  maxWordLength: number,
+): string {
+  const cats = [...categoryFilters].map((c) => c.toLowerCase().trim()).sort();
+  return `${path.resolve(csvPath)}|${maxWordLength}|${cats.join(",")}`;
+}
+
+export function clearDictionaryCache(): void {
+  dictionaryCache.clear();
+}
+
 export function loadDictionaryFromCsv(
   csvPath: string,
   categoryFilters: string[] = [],
   maxWordLength: number = GRID_SIZE,
 ): Dictionary {
+  const key = dictionaryCacheKey(csvPath, categoryFilters, maxWordLength);
+  let mtimeMs = 0;
+  try {
+    mtimeMs = fs.statSync(csvPath).mtimeMs;
+  } catch {
+    // Fall through to readFileSync below for a proper ENOENT.
+  }
+  const cached = dictionaryCache.get(key);
+  if (cached && cached.mtimeMs === mtimeMs) {
+    return cached.dict;
+  }
+
   const csvContent = fs.readFileSync(csvPath, "utf-8");
   const records: any[] = parse(csvContent, {
     columns: true,
@@ -237,7 +284,9 @@ export function loadDictionaryFromCsv(
       if (upgrade) seen.set(word, entry);
     }
   }
-  return new Dictionary(Array.from(seen.values()));
+  const dict = new Dictionary(Array.from(seen.values()));
+  dictionaryCache.set(key, { dict, mtimeMs });
+  return dict;
 }
 
 // ---------------------------------------------------------------------------
@@ -394,11 +443,16 @@ function tentativePlacementOK(t: Template, r: number, c: number): boolean {
 }
 
 // Try to construct one valid template. Returns null on failure.
-function tryBuildTemplate(rng: () => number, size: number): Template | null {
+function tryBuildTemplate(
+  rng: () => number,
+  size: number,
+  constraints: TemplateConstraints,
+): Template | null {
   const t: Template = Array.from({ length: size }, () => new Array(size).fill(false));
 
   const targetBlack =
-    MIN_BLACK_SQUARES + Math.floor(rng() * (MAX_BLACK_SQUARES - MIN_BLACK_SQUARES + 1));
+    constraints.minBlackSquares +
+    Math.floor(rng() * (constraints.maxBlackSquares - constraints.minBlackSquares + 1));
 
   // Candidate cells: only the "first half" (lexicographically before the center under symmetry).
   const candidates: Array<[number, number]> = [];
@@ -438,34 +492,31 @@ function tryBuildTemplate(rng: () => number, size: number): Template | null {
       continue;
     }
 
-    // Also enforce the MAX_SLOT_LENGTH cap by checking max run lengths on these rows/cols.
-    if (maxRunInRow(t, r) > MAX_SLOT_LENGTH || maxRunInCol(t, c) > MAX_SLOT_LENGTH) {
-      // Keep this placement only if it doesn't push us over.
-    }
+    // Maximum run length is enforced in Phase 2 (breakLongRuns).
   }
 
-  // Phase 2: break runs that exceed MAX_SLOT_LENGTH by inserting symmetric
-  // black-square pairs into the middle of long runs.
-  breakLongRuns(t, rng);
+  // Phase 2: break runs that exceed constraints.maxSlotLength by inserting
+  // symmetric black-square pairs into the middle of long runs.
+  breakLongRuns(t, rng, constraints.maxSlotLength);
 
-  // Final validation.
-  if (countBlack(t) < MIN_BLACK_SQUARES) return null;
+  // Final validation against this tier's constraints.
+  if (countBlack(t) < constraints.minBlackSquares) return null;
   if (!allRunsValid(t)) return null;
   if (!allCellsFullyChecked(t)) return null;
   if (!whiteCellsConnected(t)) return null;
 
   const lens = slotLengths(t);
-  if (lens.some((l) => l > MAX_SLOT_LENGTH)) return null;
+  if (lens.some((l) => l > constraints.maxSlotLength)) return null;
   const shortCount = lens.filter((l) => l >= 3 && l <= 5).length;
-  if (shortCount < MIN_SHORT_SLOTS) return null;
+  if (shortCount < constraints.minShortSlots) return null;
 
   return t;
 }
 
-// After initial placement, find any white run longer than MAX_SLOT_LENGTH and
+// After initial placement, find any white run longer than maxSlotLength and
 // try to insert a black square (with its symmetric pair) that breaks it cleanly,
 // without creating a short run on either side.
-function breakLongRuns(t: Template, rng: () => number): void {
+function breakLongRuns(t: Template, rng: () => number, maxSlotLength: number): void {
   const n = t.length;
   let safety = 0;
   while (safety++ < 50) {
@@ -476,7 +527,7 @@ function breakLongRuns(t: Template, rng: () => number): void {
       for (let c = 0; c <= n; c++) {
         const black = c === n || t[r][c];
         if (black) {
-          if (run > MAX_SLOT_LENGTH) {
+          if (run > maxSlotLength) {
             if (!target || run > target.len) target = { kind: "row", index: r, start: runStart, len: run };
           }
           run = 0; runStart = c + 1;
@@ -488,7 +539,7 @@ function breakLongRuns(t: Template, rng: () => number): void {
       for (let r = 0; r <= n; r++) {
         const black = r === n || t[r][c];
         if (black) {
-          if (run > MAX_SLOT_LENGTH) {
+          if (run > maxSlotLength) {
             if (!target || run > target.len) target = { kind: "col", index: c, start: runStart, len: run };
           }
           run = 0; runStart = r + 1;
@@ -531,31 +582,6 @@ function breakLongRuns(t: Template, rng: () => number): void {
   }
 }
 
-function maxRunInRow(t: Template, r: number): number {
-  const n = t.length;
-  let best = 0, run = 0;
-  for (let c = 0; c <= n; c++) {
-    const black = c === n || t[r][c];
-    if (black) {
-      if (run > best) best = run;
-      run = 0;
-    } else run++;
-  }
-  return best;
-}
-function maxRunInCol(t: Template, c: number): number {
-  const n = t.length;
-  let best = 0, run = 0;
-  for (let r = 0; r <= n; r++) {
-    const black = r === n || t[r][c];
-    if (black) {
-      if (run > best) best = run;
-      run = 0;
-    } else run++;
-  }
-  return best;
-}
-
 function slotLengths(t: Template): number[] {
   const n = t.length;
   const lens: number[] = [];
@@ -582,10 +608,14 @@ function slotLengths(t: Template): number[] {
   return lens;
 }
 
-export function generateTemplate(seed: string, size: number = GRID_SIZE): Template {
+export function generateTemplate(
+  seed: string,
+  size: number = GRID_SIZE,
+  constraints: TemplateConstraints = DEFAULT_TEMPLATE_CONSTRAINTS,
+): Template {
   const rng = makeRng("template:" + seed);
   for (let attempt = 0; attempt < MAX_TEMPLATE_ATTEMPTS; attempt++) {
-    const t = tryBuildTemplate(rng, size);
+    const t = tryBuildTemplate(rng, size, constraints);
     if (t) return t;
   }
   throw new Error(`Failed to build a valid template after ${MAX_TEMPLATE_ATTEMPTS} attempts`);
@@ -995,8 +1025,14 @@ export interface GenerateOptions {
   maxTemplateAttempts?: number;
   maxFillBacktracksPerTemplate?: number;
   // Wall-clock budget per template fill (ms). When exceeded, abandon that
-  // template and try the next. Default is 12 seconds.
+  // template and try the next. Default is 5 seconds.
   fillTimeoutMsPerTemplate?: number;
+  // Optional override for the template's black-square / slot-length / short-slot
+  // constraints. Used by the tier ladder in strictCrosswordGenerator to relax
+  // generation when a tight category vocabulary fails the strict tier.
+  templateConstraints?: Partial<TemplateConstraints>;
+  // Forwarded to the progress callback when set (e.g. 2 = relaxed tier).
+  tier?: number;
   progress?: ProgressCallback;
   async?: boolean;
 }
@@ -1022,26 +1058,37 @@ function resolveDictionaryCsv(): string {
 
 const DEFAULT_CSV_PATH = resolveDictionaryCsv();
 
+function resolveConstraints(opts: GenerateOptions): TemplateConstraints {
+  return { ...DEFAULT_TEMPLATE_CONSTRAINTS, ...(opts.templateConstraints || {}) };
+}
+
 export function generateNytStyle(opts: GenerateOptions): GeneratedPuzzle {
   const csvPath = opts.dictionaryCsvPath || DEFAULT_CSV_PATH;
   const dict = loadDictionaryFromCsv(csvPath, opts.categoryFilters || [], GRID_SIZE);
   console.log(
     `📚 Loaded ${dict.entries.length} words${
       opts.categoryFilters?.length ? ` for categories: ${opts.categoryFilters.join(", ")}` : ""
-    }`,
+    }${opts.tier && opts.tier > 1 ? ` [tier ${opts.tier}]` : ""}`,
   );
 
+  const constraints = resolveConstraints(opts);
   const maxTemplateAttempts = opts.maxTemplateAttempts ?? 80;
   const maxBack = opts.maxFillBacktracksPerTemplate ?? MAX_FILL_BACKTRACKS;
   const fillTimeoutMs = opts.fillTimeoutMsPerTemplate ?? 5000;
 
   for (let attempt = 0; attempt < maxTemplateAttempts; attempt++) {
     const tplSeed = `${opts.seed}|tpl|${attempt}`;
-    const template = generateTemplate(tplSeed);
+    const template = generateTemplate(tplSeed, GRID_SIZE, constraints);
     const fillSeed = `${opts.seed}|fill|${attempt}`;
 
     if (opts.progress) {
-      const cb = opts.progress("generation", attempt + 1, extractSlots(template).length, "normal");
+      const cb = opts.progress(
+        "generation",
+        attempt + 1,
+        extractSlots(template).length,
+        "normal",
+        opts.tier,
+      );
       void cb;
     }
 
@@ -1049,7 +1096,7 @@ export function generateNytStyle(opts: GenerateOptions): GeneratedPuzzle {
     const result = fillTemplate(template, dict, fillSeed, maxBack, undefined, false, deadline);
     if (result) {
       console.log(
-        `✅ Generated 15x15 puzzle on template attempt ${attempt + 1} (${result.slots.length} words)`,
+        `✅ Generated 15x15 puzzle on template attempt ${attempt + 1} (${result.slots.length} words)${opts.tier && opts.tier > 1 ? ` [tier ${opts.tier}]` : ""}`,
       );
       return buildPuzzleFromFill(template, result.letterGrid, result.slots, result.assignments, dict);
     }
@@ -1066,9 +1113,10 @@ export async function generateNytStyleAsync(opts: GenerateOptions): Promise<Gene
   console.log(
     `📚 Loaded ${dict.entries.length} words${
       opts.categoryFilters?.length ? ` for categories: ${opts.categoryFilters.join(", ")}` : ""
-    }`,
+    }${opts.tier && opts.tier > 1 ? ` [tier ${opts.tier}]` : ""}`,
   );
 
+  const constraints = resolveConstraints(opts);
   const maxTemplateAttempts = opts.maxTemplateAttempts ?? 80;
   const maxBack = opts.maxFillBacktracksPerTemplate ?? MAX_FILL_BACKTRACKS;
   const fillTimeoutMs = opts.fillTimeoutMsPerTemplate ?? 5000;
@@ -1077,11 +1125,17 @@ export async function generateNytStyleAsync(opts: GenerateOptions): Promise<Gene
     if (attempt % 2 === 0) await new Promise((res) => setImmediate(res));
 
     const tplSeed = `${opts.seed}|tpl|${attempt}`;
-    const template = generateTemplate(tplSeed);
+    const template = generateTemplate(tplSeed, GRID_SIZE, constraints);
     const slotsPreview = extractSlots(template);
 
     if (opts.progress) {
-      const res = opts.progress("generation", attempt + 1, slotsPreview.length, "normal");
+      const res = opts.progress(
+        "generation",
+        attempt + 1,
+        slotsPreview.length,
+        "normal",
+        opts.tier,
+      );
       if (res && typeof (res as Promise<void>).then === "function") await res;
     }
 
@@ -1090,7 +1144,7 @@ export async function generateNytStyleAsync(opts: GenerateOptions): Promise<Gene
     const result = fillTemplate(template, dict, fillSeed, maxBack, undefined, false, deadline);
     if (result) {
       console.log(
-        `✅ Generated 15x15 puzzle on template attempt ${attempt + 1} (${result.slots.length} words)`,
+        `✅ Generated 15x15 puzzle on template attempt ${attempt + 1} (${result.slots.length} words)${opts.tier && opts.tier > 1 ? ` [tier ${opts.tier}]` : ""}`,
       );
       return buildPuzzleFromFill(template, result.letterGrid, result.slots, result.assignments, dict);
     }

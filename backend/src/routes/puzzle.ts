@@ -24,12 +24,22 @@ type PuzzleGrid = PuzzleGridCell[][];
 
 interface UserAnswerCell {
   letter?: string;
+  // Legacy fields from earlier dual-direction cache. Still read-through for old
+  // persisted grids; new writes only use `letter`.
   acrossLetter?: string;
   downLetter?: string;
   lastActiveDirection?: 'across' | 'down';
 }
 
 type UserAnswerGrid = UserAnswerCell[][];
+
+function sanitizeGridForPersistence(grid: UserAnswerGrid): UserAnswerGrid {
+  return grid.map((row) =>
+    row.map((cell) => ({
+      letter: cell?.letter ?? '',
+    })),
+  );
+}
 
 const router = Router();
 
@@ -102,6 +112,9 @@ router.get('/today', authenticateToken, async (req: AuthenticatedRequest, res) =
       answers: safeJsonParse<Record<string, string>>(progress.answersData, {}, 'progress.answersData'),
       gridData: progress.gridData ? safeJsonParse<UserAnswerGrid | null>(progress.gridData, null, 'progress.gridData') : null,
       completedClues: safeJsonParse<number[]>(progress.completedClues, [], 'progress.completedClues'),
+      validatedClues: safeJsonParse<Record<number, boolean>>(progress.validatedClues, {}, 'progress.validatedClues'),
+      revealedCells: safeJsonParse<Record<string, number>>(progress.revealedCells, {}, 'progress.revealedCells'),
+      usedHints: progress.usedHints,
       isCompleted: progress.isCompleted,
       completedAt: progress.completedAt,
       solveTime: progress.solveTime,
@@ -298,19 +311,34 @@ router.post('/validate-grid', authenticateToken, puzzleValidationSchemas.validat
       allNewCompletedClues.includes(clue.number)
     );
 
+    // Merge new validation results into the persisted validatedClues map so
+    // the previous Check & Save state (incorrect words highlighted in red) is
+    // restored on reload. completedClues stays the union of all green pills.
+    const previousValidatedClues = safeJsonParse<Record<string, boolean>>(
+      progress.validatedClues,
+      {},
+      'progress.validatedClues',
+    );
+    const mergedValidatedClues: Record<string, boolean> = { ...previousValidatedClues };
+    for (const [clueNumberStr, isCorrect] of Object.entries(validationResult.clueResults)) {
+      mergedValidatedClues[clueNumberStr] = isCorrect;
+    }
+
     // Update progress (store solved clues for UI compatibility and grid state)
     const updateData: {
       answersData: string;
       gridData: string;
       completedClues: string;
+      validatedClues: string;
       updatedAt: Date;
       isCompleted?: boolean;
       completedAt?: Date;
       solveTime?: number;
     } = {
       answersData: JSON.stringify(validationResult.solvedClues),
-      gridData: JSON.stringify(gridData), // Save current grid state
+      gridData: JSON.stringify(sanitizeGridForPersistence(gridData)),
       completedClues: JSON.stringify(allNewCompletedClues),
+      validatedClues: JSON.stringify(mergedValidatedClues),
       updatedAt: new Date()
     };
 
@@ -337,9 +365,11 @@ router.post('/validate-grid', authenticateToken, puzzleValidationSchemas.validat
 
     // Return both grid validation and solved clues (for UI only)
     res.json({
-      results: validationResult.clueResults,     // Per-clue validation results
-      cellValidation: validationResult.cellValidation, // Per-cell validation results
+      results: validationResult.clueResults,     // Per-clue validation results from this check
+      validatedClues: mergedValidatedClues,      // Persisted union of all checks so far
+      cellValidation: validationResult.cellValidation, // Per-cell (kept for back-compat / dev tools)
       newCompletedClues: validationResult.newCompletedClues,
+      completedClues: allNewCompletedClues,
       isCompleted: progress.isCompleted,
       solveTime: progress.solveTime,
       solvedClues: validationResult.solvedClues, // Extracted clue answers for UI display only
@@ -378,6 +408,9 @@ router.get('/progress/:date', authenticateToken, async (req: AuthenticatedReques
         answers: {},
         gridData: null,
         completedClues: [],
+        validatedClues: {},
+        revealedCells: {},
+        usedHints: false,
         isCompleted: false,
         firstViewedAt: null
       });
@@ -387,6 +420,9 @@ router.get('/progress/:date', authenticateToken, async (req: AuthenticatedReques
       answers: safeJsonParse<Record<string, string>>(progress.answersData, {}, 'progress.answersData'),
       gridData: progress.gridData ? safeJsonParse<UserAnswerGrid | null>(progress.gridData, null, 'progress.gridData') : null,
       completedClues: safeJsonParse<number[]>(progress.completedClues, [], 'progress.completedClues'),
+      validatedClues: safeJsonParse<Record<number, boolean>>(progress.validatedClues, {}, 'progress.validatedClues'),
+      revealedCells: safeJsonParse<Record<string, number>>(progress.revealedCells, {}, 'progress.revealedCells'),
+      usedHints: progress.usedHints,
       isCompleted: progress.isCompleted,
       completedAt: progress.completedAt,
       solveTime: progress.solveTime,
@@ -398,6 +434,142 @@ router.get('/progress/:date', authenticateToken, async (req: AuthenticatedReques
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// Reveal one letter from a clue's answer. Each reveal:
+//   * locks the revealed cell (frontend treats it as completed-correct so the
+//     locked-cell navigation rules apply automatically).
+//   * sets UserProgress.usedHints = true — this puzzle is no longer eligible
+//     for any achievement awards (mirrors auto-solve).
+//   * is rate-limited per puzzle: REVEAL_LETTER_COOLDOWN_SECONDS between
+//     reveals, REVEAL_LETTER_DAILY_CAP total reveals.
+router.post(
+  '/reveal-letter',
+  authenticateToken,
+  puzzleValidationSchemas.revealLetter,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { puzzleDate, clueNumber } = req.body as {
+        puzzleDate: string;
+        clueNumber: number;
+      };
+      const user = req.user as User;
+
+      const puzzle = await prisma.dailyPuzzle.findUnique({ where: { date: puzzleDate } });
+      if (!puzzle) return res.status(404).json({ error: 'Puzzle not found' });
+
+      const cluesData = safeJsonParse<PuzzleClue[]>(puzzle.cluesData, [], 'puzzle.cluesData');
+      const solutionGrid = safeJsonParse<PuzzleGrid>(puzzle.gridData, [], 'puzzle.gridData');
+      const clue = cluesData.find((c) => c.number === clueNumber);
+      if (!clue) return res.status(404).json({ error: 'Clue not found' });
+
+      let progress = await prisma.userProgress.upsert({
+        where: {
+          userId_puzzleDate: { userId: user.id, puzzleDate },
+        },
+        update: {},
+        create: {
+          userId: user.id,
+          puzzleDate,
+          answersData: '{}',
+          gridData: null,
+          completedClues: '[]',
+          isCompleted: false,
+        },
+      });
+
+      // Cooldown + daily cap.
+      const cooldownSeconds = parseInt(process.env.REVEAL_LETTER_COOLDOWN_SECONDS || '60', 10);
+      const dailyCap = parseInt(process.env.REVEAL_LETTER_DAILY_CAP || '5', 10);
+
+      if (progress.dailyRevealCount >= dailyCap) {
+        return res.status(429).json({
+          error: 'REVEAL_LIMIT',
+          message: `You've already revealed ${dailyCap} letters on this puzzle.`,
+        });
+      }
+      if (progress.lastRevealAt) {
+        const elapsedMs = Date.now() - new Date(progress.lastRevealAt).getTime();
+        if (elapsedMs < cooldownSeconds * 1000) {
+          const remainingSeconds = Math.ceil((cooldownSeconds * 1000 - elapsedMs) / 1000);
+          return res.status(429).json({
+            error: 'REVEAL_COOLDOWN',
+            message: `Wait ${remainingSeconds}s before another reveal.`,
+            remainingSeconds,
+          });
+        }
+      }
+
+      // Find the first cell of this clue that isn't already revealed AND
+      // doesn't already have the correct letter typed by the user. If every
+      // cell is already correct (the user effectively solved the word), we
+      // bail rather than waste a hint.
+      const revealedCells = safeJsonParse<Record<string, number>>(
+        progress.revealedCells,
+        {},
+        'progress.revealedCells',
+      );
+      const userGrid = progress.gridData
+        ? safeJsonParse<UserAnswerGrid | null>(progress.gridData, null, 'progress.gridData')
+        : null;
+
+      let target: { row: number; col: number; letter: string } | null = null;
+      for (let i = 0; i < clue.length; i++) {
+        const row = clue.direction === 'across' ? clue.startRow : clue.startRow + i;
+        const col = clue.direction === 'across' ? clue.startCol + i : clue.startCol;
+        const key = `${row},${col}`;
+        if (revealedCells[key] !== undefined) continue;
+        const solutionLetter = (solutionGrid[row]?.[col]?.letter || '').toUpperCase();
+        if (!solutionLetter) continue;
+        const userLetter = (userGrid?.[row]?.[col]?.letter || '').toUpperCase();
+        if (userLetter === solutionLetter) continue;
+        target = { row, col, letter: solutionLetter };
+        break;
+      }
+
+      if (!target) {
+        return res.status(400).json({
+          error: 'NO_CELL_TO_REVEAL',
+          message: 'Every cell in this word is already filled correctly or revealed.',
+        });
+      }
+
+      // Persist: bump usedHints, write the revealed letter into gridData so
+      // it's there on reload, and grow the revealedCells map.
+      revealedCells[`${target.row},${target.col}`] = clueNumber;
+      const baseGrid: UserAnswerGrid =
+        userGrid && userGrid.length === solutionGrid.length
+          ? userGrid.map((row) => row.map((cell) => ({ letter: cell?.letter ?? '' })))
+          : solutionGrid.map((row) => row.map(() => ({ letter: '' })));
+      baseGrid[target.row][target.col] = { letter: target.letter };
+
+      progress = await prisma.userProgress.update({
+        where: { id: progress.id },
+        data: {
+          gridData: JSON.stringify(baseGrid),
+          revealedCells: JSON.stringify(revealedCells),
+          usedHints: true,
+          lastRevealAt: new Date(),
+          dailyRevealCount: progress.dailyRevealCount + 1,
+          updatedAt: new Date(),
+        },
+      });
+
+      res.json({
+        row: target.row,
+        col: target.col,
+        letter: target.letter,
+        clueNumber,
+        revealedCells,
+        usedHints: true,
+        dailyRevealCount: progress.dailyRevealCount,
+        dailyCap,
+      });
+    } catch (error) {
+      console.error('Error revealing letter:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  },
+);
 
 // Auto-solve puzzle (reveals all answers, no achievements/points)
 router.post('/auto-solve', authenticateToken, rateLimiters.puzzleGeneration, async (req: AuthenticatedRequest, res) => {
@@ -421,10 +593,10 @@ router.post('/auto-solve', authenticateToken, rateLimiters.puzzleGeneration, asy
     const timeDifference = currentTime.getTime() - puzzleCreatedAt.getTime();
     
     // Use environment variable for cooldown duration
-    // 5 minutes (0.083 hours) in dev, 12 hours in production
-    const cooldownHours = process.env.NODE_ENV === 'development' 
-      ? 5 / 60  // 5 minutes converted to hours
-      : parseFloat(process.env.AUTO_SOLVE_COOLDOWN_HOURS || '12');
+    // 5 minutes (0.083 hours) in dev, default 6 hours in production.
+    const cooldownHours = process.env.NODE_ENV === 'development'
+      ? 5 / 60
+      : parseFloat(process.env.AUTO_SOLVE_COOLDOWN_HOURS || '6');
     
     const hoursElapsed = timeDifference / (1000 * 60 * 60); // Convert to hours
 
@@ -487,11 +659,19 @@ router.post('/auto-solve', authenticateToken, rateLimiters.puzzleGeneration, asy
       }
     }
 
+    // Every clue is correct when auto-solving — mark them all in validatedClues
+    // so a reload paints every word green via the new cellWordStatus pipeline.
+    const autoSolveValidatedClues: Record<string, boolean> = {};
+    for (const clue of cluesData) {
+      autoSolveValidatedClues[clue.number.toString()] = true;
+    }
+
     // Update progress with auto-solved state (no achievements/points)
     const updateData = {
       answersData: JSON.stringify(validationResult.solvedClues),
-      gridData: JSON.stringify(completeSolutionGrid), // Save complete solution grid
+      gridData: JSON.stringify(sanitizeGridForPersistence(completeSolutionGrid)),
       completedClues: JSON.stringify(validationResult.newCompletedClues),
+      validatedClues: JSON.stringify(autoSolveValidatedClues),
       isCompleted: true,
       completedAt: new Date(),
       solveTime: null, // No solve time for auto-solved puzzles
@@ -507,9 +687,10 @@ router.post('/auto-solve', authenticateToken, rateLimiters.puzzleGeneration, asy
     res.json({
       answers: validationResult.solvedClues, // Clue answers for UI compatibility
       completedClues: validationResult.newCompletedClues,
+      validatedClues: autoSolveValidatedClues,
       isCompleted: true,
       autoSolved: true, // Flag to indicate this was auto-solved
-      cellValidation, // Cell-level validation results
+      cellValidation, // Cell-level validation results (legacy; UI now uses word status)
       validatedGrid: completeSolutionGrid, // The complete solution grid
       results: validationResult.clueResults // Per-clue validation results
     });
@@ -579,7 +760,12 @@ router.post('/generate-multi-category-stream', (req, res, next) => {
       clientDisconnected = true;
     });
 
-    const sendUpdate = (stage: string, progress: number, attempt?: number) => {
+    const sendUpdate = (
+      stage: string,
+      progress: number,
+      attempt?: number,
+      tier?: number,
+    ) => {
       if (clientDisconnected || res.writableEnded) return;
       const messages: Record<string, string> = {
         'initialization': `🚀 Combining ${categoryNames.length} categories into one cosmic puzzle...`,
@@ -592,13 +778,14 @@ router.post('/generate-multi-category-stream', (req, res, next) => {
         'attempt_200': '🙄 The categories are being stubborn about mingling...',
         'word_reduction': `📉 Adjusting word targets (attempt ${attempt || 0})...`,
         'fallback_start': '🔄 Switching to smaller grid for better fit...',
+        'retry_tier': `🔧 Retrying with a sparser grid (tier ${tier || '?'})...`,
         'building_grid': '🏗️ Constructing the multi-category grid...',
         'finalizing': '✨ Adding finishing touches...',
         'saving': '💾 Saving your multi-category masterpiece...',
       };
 
       const message = messages[stage] || `Processing ${stage}...`;
-      res.write(`data: ${JSON.stringify({ stage, progress, message, attempt })}\n\n`);
+      res.write(`data: ${JSON.stringify({ stage, progress, message, attempt, tier })}\n\n`);
     };
 
     console.log(`🎯 Generating multi-category puzzle for: ${categoryNames.join(', ')}`);
@@ -620,45 +807,60 @@ router.post('/generate-multi-category-stream', (req, res, next) => {
       
       console.log(`📡 SSE: Starting multi-category generation`);
 
-      // Progress tracking
+      // Progress tracking. Now also handles 'retry_tier' events emitted by the
+      // tier ladder in strictCrosswordGenerator.
       let lastProgress = 30;
-      const progressCallback = async (stage: string, attempt: number, targetWords: number, phase: 'normal' | 'fallback') => {
+      let highestTier = 1;
+      const progressCallback = async (
+        stage: string,
+        attempt: number,
+        _targetWords: number,
+        phase: 'normal' | 'fallback',
+        tier?: number,
+      ) => {
         if (clientDisconnected) {
-          // Bail out by throwing; the catch below cleans up. Without this the
-          // generator runs to completion (potentially seconds of CPU) for a
-          // client that's already gone.
           throw new Error('client disconnected');
         }
+        if (tier && tier > highestTier) highestTier = tier;
+
+        if (stage === 'retry_tier') {
+          // Bump progress a bit so the user sees motion when the ladder advances.
+          lastProgress = Math.min(90, lastProgress + 5);
+          sendUpdate('retry_tier', lastProgress, attempt, tier);
+          return;
+        }
+
         let progress = lastProgress;
 
         if (phase === 'normal') {
           if (attempt <= 50) {
             progress = 30 + (attempt / 50) * 20;
-            if (attempt >= 10) sendUpdate('attempt_10', progress, attempt);
+            if (attempt >= 10) sendUpdate('attempt_10', progress, attempt, tier);
           } else if (attempt <= 100) {
             progress = 50 + ((attempt - 50) / 50) * 15;
-            if (attempt === 51) sendUpdate('attempt_50', progress, attempt);
+            if (attempt === 51) sendUpdate('attempt_50', progress, attempt, tier);
           } else if (attempt <= 200) {
             progress = 65 + ((attempt - 100) / 100) * 10;
-            if (attempt === 101) sendUpdate('attempt_100', progress, attempt);
+            if (attempt === 101) sendUpdate('attempt_100', progress, attempt, tier);
           } else {
             progress = 75 + Math.min(15, (attempt - 200) / 20);
-            if (attempt === 201) sendUpdate('attempt_200', progress, attempt);
+            if (attempt === 201) sendUpdate('attempt_200', progress, attempt, tier);
           }
         } else {
           progress = 80 + Math.min(15, attempt / 10);
-          if (attempt === 1) sendUpdate('fallback_start', progress, attempt);
+          if (attempt === 1) sendUpdate('fallback_start', progress, attempt, tier);
         }
-        
+
         if (stage === 'word_reduction') {
-          sendUpdate('word_reduction', progress, attempt);
+          sendUpdate('word_reduction', progress, attempt, tier);
         }
-        
+
         lastProgress = Math.min(95, progress);
       };
 
       // Generate the puzzle with progress tracking
       const generatedPuzzle = await generator.generateWithCallbackAsync(progressCallback);
+      const generatedAtTier = highestTier;
 
       if (clientDisconnected) {
         // Client left while the generator was still running. Don't persist
@@ -698,16 +900,18 @@ router.post('/generate-multi-category-stream', (req, res, next) => {
       });
 
       sendUpdate('complete', 100);
-      
-      res.write(`data: ${JSON.stringify({ 
-        success: true, 
+
+      res.write(`data: ${JSON.stringify({
+        success: true,
         message: `Multi-category puzzle generated with ${categoryNames.length} categories!`,
         puzzleDate,
         wordCount: generatedPuzzle.clues.length,
-        categories: categoryNames
+        categories: categoryNames,
+        tier: generatedAtTier,
+        relaxedConstraints: generatedAtTier > 1,
       })}\n\n`);
 
-      console.log(`✅ Multi-category puzzle generated successfully`);
+      console.log(`✅ Multi-category puzzle generated successfully (tier ${generatedAtTier})`);
 
     } catch (generateError) {
       console.error('Error generating multi-category puzzle:', generateError);
@@ -793,16 +997,24 @@ router.get('/generate-category-stream/:categoryName', async (req, res) => {
       { stage: 'complete', message: '✨ Mission accomplished! Launching your cosmic crossword...' }
     ];
 
-    const sendUpdate = (stage: string, progress: number, attempt?: number) => {
+    const sendUpdate = (
+      stage: string,
+      progress: number,
+      attempt?: number,
+      tier?: number,
+    ) => {
       if (clientDisconnected || res.writableEnded) return;
       const messageObj = progressMessages.find(m => m.stage === stage);
       let message = messageObj?.message || `Working on ${stage}...`;
+      if (stage === 'retry_tier') {
+        message = `🔧 Retrying with a sparser grid (tier ${tier || '?'})...`;
+      }
 
       if (attempt) {
         message = message.replace(/\.\.\.$/, ` (attempt ${attempt})...`);
       }
 
-      const data = { stage, progress, message, attempt };
+      const data = { stage, progress, message, attempt, tier };
       res.write(`data: ${JSON.stringify(data)}\n\n`);
     };
 
@@ -825,52 +1037,68 @@ router.get('/generate-category-stream/:categoryName', async (req, res) => {
 
       // Set up progress tracking
       let lastProgress = 30;
-      const progressCallback = async (stage: string, attempt: number, targetWords: number, phase: 'normal' | 'fallback') => {
+      let highestTier = 1;
+      const progressCallback = async (
+        stage: string,
+        attempt: number,
+        _targetWords: number,
+        phase: 'normal' | 'fallback',
+        tier?: number,
+      ) => {
         if (clientDisconnected) {
           throw new Error('client disconnected');
         }
+        if (tier && tier > highestTier) highestTier = tier;
+
+        if (stage === 'retry_tier') {
+          lastProgress = Math.min(90, lastProgress + 5);
+          sendUpdate('retry_tier', lastProgress, attempt, tier);
+          return;
+        }
+
         let progress = lastProgress;
 
         if (phase === 'normal') {
           if (attempt <= 50) {
-            progress = 30 + (attempt / 50) * 20; // 30-50%
-            if (attempt >= 10) sendUpdate('attempt_10', progress, attempt);
+            progress = 30 + (attempt / 50) * 20;
+            if (attempt >= 10) sendUpdate('attempt_10', progress, attempt, tier);
           } else if (attempt <= 100) {
-            progress = 50 + ((attempt - 50) / 50) * 10; // 50-60%
-            if (attempt >= 50) sendUpdate('attempt_50', progress, attempt);
+            progress = 50 + ((attempt - 50) / 50) * 10;
+            if (attempt >= 50) sendUpdate('attempt_50', progress, attempt, tier);
           } else if (attempt <= 200) {
-            progress = 60 + ((attempt - 100) / 100) * 10; // 60-70%
-            if (attempt >= 100) sendUpdate('attempt_100', progress, attempt);
+            progress = 60 + ((attempt - 100) / 100) * 10;
+            if (attempt >= 100) sendUpdate('attempt_100', progress, attempt, tier);
           } else {
-            progress = 70 + ((attempt - 200) / 300) * 10; // 70-80%
-            if (attempt >= 200) sendUpdate('attempt_200', progress, attempt);
-            if (attempt >= 300) sendUpdate('attempt_300', progress, attempt);
-            if (attempt >= 400) sendUpdate('attempt_400', progress, attempt);
+            progress = 70 + ((attempt - 200) / 300) * 10;
+            if (attempt >= 200) sendUpdate('attempt_200', progress, attempt, tier);
+            if (attempt >= 300) sendUpdate('attempt_300', progress, attempt, tier);
+            if (attempt >= 400) sendUpdate('attempt_400', progress, attempt, tier);
           }
-          
+
           if (stage === 'word_reduction') {
-            sendUpdate('word_reduction', progress);
+            sendUpdate('word_reduction', progress, attempt, tier);
           }
-        } else { // fallback phase
+        } else {
           if (stage === 'fallback_start') {
             progress = 80;
-            sendUpdate('fallback_phase', progress);
-            sendUpdate('smaller_grid', progress + 2);
+            sendUpdate('fallback_phase', progress, attempt, tier);
+            sendUpdate('smaller_grid', progress + 2, attempt, tier);
           } else if (stage === 'fallback_generation') {
-            progress = 82 + (attempt / 500) * 10; // 82-92%
-            if (attempt >= 100) sendUpdate('fallback_attempt_100', progress, attempt);
-            if (attempt >= 200) sendUpdate('fallback_attempt_200', progress, attempt);
-            if (attempt >= 400) sendUpdate('last_resort', progress, attempt);
+            progress = 82 + (attempt / 500) * 10;
+            if (attempt >= 100) sendUpdate('fallback_attempt_100', progress, attempt, tier);
+            if (attempt >= 200) sendUpdate('fallback_attempt_200', progress, attempt, tier);
+            if (attempt >= 400) sendUpdate('last_resort', progress, attempt, tier);
           } else if (stage === 'fallback_word_reduction') {
-            sendUpdate('fallback_word_reduction', progress);
+            sendUpdate('fallback_word_reduction', progress, attempt, tier);
           }
         }
-        
+
         lastProgress = Math.min(progress, 92);
       };
 
       // Generate the puzzle with async progress callback
       const generatedPuzzle = await generator.generateWithCallbackAsync(progressCallback);
+      const generatedAtTier = highestTier;
 
       if (clientDisconnected) {
         // Client disconnected during generation — skip persistence.
@@ -928,14 +1156,16 @@ router.get('/generate-category-stream/:categoryName', async (req, res) => {
       sendUpdate('complete', 100);
 
       // Send final success message
-      res.write(`data: ${JSON.stringify({ 
-        success: true, 
+      res.write(`data: ${JSON.stringify({
+        success: true,
         message: `Category puzzle for "${categoryName}" generated successfully!`,
         puzzleDate,
-        wordCount: generatedPuzzle.clues.length
+        wordCount: generatedPuzzle.clues.length,
+        tier: generatedAtTier,
+        relaxedConstraints: generatedAtTier > 1,
       })}\n\n`);
 
-      console.log(`✅ Category puzzle generated successfully for ${categoryName}`);
+      console.log(`✅ Category puzzle generated successfully for ${categoryName} (tier ${generatedAtTier})`);
 
     } catch (generateError) {
       console.error('Error generating category puzzle:', generateError);
@@ -1089,6 +1319,9 @@ router.get('/specific/:date', authenticateToken, async (req: AuthenticatedReques
         answers: safeJsonParse<Record<string, string>>(progress.answersData, {}, 'progress.answersData'),
         gridData: progress.gridData ? safeJsonParse<UserAnswerGrid | null>(progress.gridData, null, 'progress.gridData') : null,
         completedClues: safeJsonParse<number[]>(progress.completedClues, [], 'progress.completedClues'),
+        validatedClues: safeJsonParse<Record<number, boolean>>(progress.validatedClues, {}, 'progress.validatedClues'),
+        revealedCells: safeJsonParse<Record<string, number>>(progress.revealedCells, {}, 'progress.revealedCells'),
+        usedHints: progress.usedHints,
         isCompleted: progress.isCompleted,
         completedAt: progress.completedAt,
         solveTime: progress.solveTime,

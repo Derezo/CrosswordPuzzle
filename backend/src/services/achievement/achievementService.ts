@@ -145,6 +145,14 @@ export class AchievementService {
 
   // Check for new achievements after puzzle progress
   public async checkAchievements(context: AchievementCheckContext): Promise<UserAchievement[]> {
+    // Puzzles where the user revealed any letter via the per-clue hint are
+    // ineligible for achievements (mirrors auto-solve behavior). Without this
+    // gate, a player could pop every letter via the hint button and still
+    // earn the speed / perfect-puzzle awards.
+    if ((context.progress as { usedHints?: boolean }).usedHints) {
+      return [];
+    }
+
     const newAchievements: UserAchievement[] = [];
     const achievements = await prisma.achievement.findMany({ where: { isActive: true } });
 

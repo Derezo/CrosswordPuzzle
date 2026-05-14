@@ -97,7 +97,7 @@ GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 SESSION_SECRET=your-session-secret
 PUZZLE_SECRET=your-puzzle-generation-secret
-AUTO_SOLVE_COOLDOWN_HOURS=12
+AUTO_SOLVE_COOLDOWN_HOURS=6
 ```
 
 Note: The .env.example file shows MONGODB_URI, but the actual Prisma schema uses SQLite. Ensure DATABASE_URL points to SQLite when using the current schema.

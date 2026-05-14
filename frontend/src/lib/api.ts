@@ -8,6 +8,7 @@ import type {
   LeaderboardEntry,
   PuzzleCategory,
   CategoryStats,
+  RevealLetterResponse,
 } from '@/types';
 import type {
   LoginResponse,
@@ -219,6 +220,14 @@ export const puzzleAPI = {
     progress: UserProgress;
   }> => {
     const response = await api.get<SpecificPuzzleResponse>(`/puzzle/specific/${date}`);
+    return response.data;
+  },
+
+  revealLetter: async (data: {
+    puzzleDate: string;
+    clueNumber: number;
+  }): Promise<RevealLetterResponse> => {
+    const response = await api.post<RevealLetterResponse>('/puzzle/reveal-letter', data);
     return response.data;
   },
 };

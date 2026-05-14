@@ -35,10 +35,31 @@ export interface UserProgress {
   answers: { [clueNumber: string]: string };
   gridData?: unknown[][]; // Saved grid state
   completedClues: number[];
+  // Per-clue boolean from the most recent Check & Save (or auto-solve). True =
+  // word was validated correct; false = word was fully filled but wrong.
+  // Missing entries mean the word hasn't been checked yet.
+  validatedClues?: { [clueNumber: number]: boolean };
+  // Cells that were exposed via the per-clue reveal-letter hint. Locked from
+  // editing. Map of "row,col" -> the clueNumber the hint came from.
+  revealedCells?: { [cellKey: string]: number };
+  // True once any reveal happens. Suppresses achievement awards on this
+  // puzzle (mirrors auto-solve).
+  usedHints?: boolean;
   isCompleted: boolean;
   completedAt?: string;
   solveTime?: number;
   firstViewedAt?: string;
+}
+
+export interface RevealLetterResponse {
+  row: number;
+  col: number;
+  letter: string;
+  clueNumber: number;
+  revealedCells: { [cellKey: string]: number };
+  usedHints: true;
+  dailyRevealCount: number;
+  dailyCap: number;
 }
 
 export interface Achievement {
@@ -77,8 +98,11 @@ export interface AuthResponse {
 
 export interface ValidationResult {
   results: { [clueNumber: number]: boolean };
-  cellValidation: { [cellKey: string]: boolean }; // "row,col": boolean
+  // Persisted union of every clue ever checked (correct or incorrect). Survives
+  // reload so red X / green ✓ pills stay accurate.
+  validatedClues: { [clueNumber: number]: boolean };
   newCompletedClues: number[];
+  completedClues: number[];
   isCompleted: boolean;
   solveTime?: number;
   newAchievements?: UserAchievement[];

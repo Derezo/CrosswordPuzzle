@@ -57,6 +57,11 @@ model UserProgress {
   answersData   String    @default("{}") // JSON string of answers
   gridData      String?   // JSON string of current grid state
   completedClues String   @default("[]") // JSON string of completed clue numbers
+  validatedClues String  @default("{}") // JSON map { clueNumber: boolean } from the most recent Check & Save
+  revealedCells String   @default("{}") // JSON map { "r,c": clueNumber } of cells revealed via the per-clue letter hint
+  usedHints     Boolean  @default(false) // True after the user reveals any letter; suppresses achievement awards on this puzzle
+  lastRevealAt  DateTime?                // Server-side cooldown timestamp for the reveal-letter endpoint
+  dailyRevealCount Int   @default(0)    // Number of letters revealed on this puzzle (per-puzzle daily cap)
   isCompleted   Boolean   @default(false)
   completedAt   DateTime?
   solveTime     Int?      // in seconds

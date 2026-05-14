@@ -91,9 +91,9 @@ export type GetProgressResponse = UserProgress;
 export interface AutoSolveResponse {
   answers: { [clueNumber: string]: string };
   completedClues: number[];
+  validatedClues?: { [clueNumber: number]: boolean };
   isCompleted: boolean;
   autoSolved: boolean;
-  cellValidation?: { [cellKey: string]: boolean };
   validatedGrid?: unknown[][];
   results?: { [clueNumber: number]: boolean };
 }

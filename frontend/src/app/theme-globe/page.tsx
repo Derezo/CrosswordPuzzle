@@ -187,7 +187,11 @@ export default function ThemeGlobePage() {
                 if (data.success) {
                   // Final success - redirect to puzzle
                   console.log("🎉 Success received:", data);
-                  setGenerationStage("Launching your cosmic crossword...");
+                  setGenerationStage(
+                    data.relaxedConstraints
+                      ? `Launching your cosmic crossword... (generated with relaxed constraints, tier ${data.tier})`
+                      : "Launching your cosmic crossword...",
+                  );
                   setGenerationProgress(100);
 
                   setTimeout(() => {
