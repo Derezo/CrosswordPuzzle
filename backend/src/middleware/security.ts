@@ -1,6 +1,22 @@
 import { Request, Response, NextFunction } from 'express';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
+import type { User } from '@prisma/client';
+
+// Fail-closed dev bypass: rate limits stay ON unless the operator explicitly
+// opts out via RATE_LIMIT_BYPASS=true *and* NODE_ENV=development. A missing or
+// mistyped NODE_ENV can no longer silently disable rate limiting in production.
+const skipRateLimit = (_req: Request): boolean =>
+  process.env.RATE_LIMIT_BYPASS === 'true' && process.env.NODE_ENV === 'development';
+
+// Key requests by authenticated user when available, falling back to IP. This
+// keeps shared-NAT users from clobbering each other's quota and makes per-user
+// abuse measurable. Anonymous requests still get IP-keyed protection.
+const userOrIpKey = (req: Request): string => {
+  const user = (req as Request & { user?: User }).user;
+  if (user?.id) return `user:${user.id}`;
+  return req.ip ?? 'anonymous';
+};
 
 // Enhanced rate limiting configurations
 export const rateLimiters = {
@@ -15,13 +31,14 @@ export const rateLimiters = {
     },
     standardHeaders: true,
     legacyHeaders: false,
-    // Skip rate limiting in development environment entirely
-    skip: (req) => {
-      return process.env.NODE_ENV === 'development';
-    }
+    keyGenerator: userOrIpKey,
+    skip: skipRateLimit
   }),
 
-  // Strict rate limiting for authentication endpoints
+  // Strict rate limiting for authentication endpoints.
+  // Note: this limiter runs BEFORE authenticateToken on login/register/etc., so
+  // req.user is undefined here and userOrIpKey falls through to req.ip — that's
+  // intentional and preserves the existing IP-based brute-force protection.
   auth: rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: process.env.NODE_ENV === 'development' ? 1000 : 5, // Much higher limit in dev
@@ -33,10 +50,8 @@ export const rateLimiters = {
     standardHeaders: true,
     legacyHeaders: false,
     skipSuccessfulRequests: true, // Don't count successful requests
-    // Skip rate limiting in development environment entirely
-    skip: (req) => {
-      return process.env.NODE_ENV === 'development';
-    }
+    keyGenerator: userOrIpKey,
+    skip: skipRateLimit
   }),
 
   // Puzzle generation rate limiting
@@ -50,10 +65,8 @@ export const rateLimiters = {
     },
     standardHeaders: true,
     legacyHeaders: false,
-    // Skip rate limiting in development environment entirely
-    skip: (req) => {
-      return process.env.NODE_ENV === 'development';
-    }
+    keyGenerator: userOrIpKey,
+    skip: skipRateLimit
   }),
 
   // Suggestion submission rate limiting
@@ -67,10 +80,8 @@ export const rateLimiters = {
     },
     standardHeaders: true,
     legacyHeaders: false,
-    // Skip rate limiting in development environment entirely
-    skip: (req) => {
-      return process.env.NODE_ENV === 'development';
-    }
+    keyGenerator: userOrIpKey,
+    skip: skipRateLimit
   })
 };
 
@@ -103,6 +114,7 @@ export const helmetConfig = helmet({
 });
 
 // Request sanitization middleware
+// Defense-in-depth only; helmet CSP + escaped templating are the primary XSS controls.
 export const sanitizeInput = (req: Request, res: Response, next: NextFunction) => {
   // Recursively sanitize all string inputs
   const sanitizeObject = (obj: any): any => {

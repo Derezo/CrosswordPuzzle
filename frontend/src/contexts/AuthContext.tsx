@@ -85,13 +85,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
 
     if (!bootstrappedFromOAuth) {
-      const token =
-        typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      if (token) {
-        getCurrentUser();
-      } else {
-        setLoading(false);
-      }
+      // Auth lives in an HttpOnly cookie now — we can't see it from JS. Always
+      // ask the backend who we are; an unauthenticated visitor gets a 401 from
+      // /api/auth/me, which the catch in getCurrentUser handles cleanly.
+      getCurrentUser();
     }
   }, []);
 
@@ -101,9 +98,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setUser(data.user);
     } catch (error) {
       console.error('Failed to get current user:', error);
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('token');
-      }
     } finally {
       setLoading(false);
     }
@@ -112,9 +106,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const login = async (email: string, password: string) => {
     try {
       const data = await authAPI.login({ email, password });
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('token', data.token);
-      }
       setUser(data.user);
     } catch (error: unknown) {
       throw new Error(extractErrorMessage(error, 'Login failed'));
@@ -129,9 +120,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }) => {
     try {
       const data = await authAPI.register(registerData);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('token', data.token);
-      }
       setUser(data.user);
     } catch (error: unknown) {
       throw new Error(extractErrorMessage(error, 'Registration failed'));

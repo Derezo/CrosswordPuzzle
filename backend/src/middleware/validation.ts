@@ -208,6 +208,16 @@ export const puzzleValidationSchemas = {
       .withMessage('Clue number must be a positive integer'),
     handleValidationErrors,
   ],
+
+  categoryNameParam: [
+    param('categoryName')
+      .trim()
+      .isLength({ min: 1, max: 100 })
+      .withMessage('Category name must be between 1 and 100 characters')
+      .matches(/^[a-zA-Z0-9\s_-]+$/)
+      .withMessage('Category name must contain only letters, numbers, spaces, hyphens, and underscores'),
+    handleValidationErrors,
+  ],
 };
 
 // Suggestion validation schemas
@@ -291,11 +301,6 @@ export const joiSchemas = {
         'array.max': 'Maximum 5 categories allowed',
         'string.min': 'Category name cannot be empty',
         'string.max': 'Category name must not exceed 100 characters'
-      }),
-    token: Joi.string()
-      .required()
-      .messages({
-        'any.required': 'Authentication token is required'
       })
   }),
   

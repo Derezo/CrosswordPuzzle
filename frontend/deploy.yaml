@@ -37,6 +37,12 @@ build:
     # eslint, tailwindcss, @types/*) are present for `next build`. The runtime
     # NODE_ENV is supplied via lsd-vault secrets (rendered .env).
     - npm ci
+    # Pre-build supply-chain gate: fail the deploy on any high/critical
+    # advisory against the locked dependency tree. This is the cheapest
+    # check that would have caught the Next.js 15.5.2 RCE (GHSA-9qr9-h5gf-34mp)
+    # before it shipped to prod. Moderate and below are not gated — those
+    # are tracked separately and don't justify blocking a deploy.
+    - npm audit --audit-level=high
     - npm run build
   # Ship source verbatim ("."): Next.js needs the .next/ build output AND
   # node_modules/ AND public/ AND package.json all co-located at runtime.

@@ -18,6 +18,11 @@ remote:
 build:
   commands:
     - npm ci
+    # Pre-build supply-chain gate: fail the deploy on any high/critical
+    # advisory against the locked dependency tree. Cheap, deterministic,
+    # and would have caught the Next.js 15.5.2 RCE that hit the frontend
+    # deploy. Moderate and below are not gated.
+    - npm audit --audit-level=high
     # Prisma client must be regenerated against the production schema before
     # `npm run build` because the compiled JS references the generated types.
     - npx prisma generate

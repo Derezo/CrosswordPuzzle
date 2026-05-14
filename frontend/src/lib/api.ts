@@ -64,16 +64,9 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// Request interceptor to add auth token
-api.interceptors.request.use((config) => {
-  if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('token');
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-  }
-  return config;
-});
+// Auth is carried by the HttpOnly `auth_token` cookie (set by the backend on
+// login/register/OAuth) and ridden along by axios `withCredentials: true`. No
+// client-side token handling required.
 
 // Response interceptor for error handling
 api.interceptors.response.use(
@@ -81,7 +74,6 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('token');
         window.location.href = '/login';
       }
     }
@@ -116,9 +108,6 @@ export const authAPI = {
 
   logout: async (): Promise<LogoutResponse> => {
     const response = await api.post<LogoutResponse>('/auth/logout');
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('token');
-    }
     return response.data;
   },
 
@@ -147,9 +136,6 @@ export const authAPI = {
 
   deleteAccount: async (): Promise<DeleteAccountResponse> => {
     const response = await api.delete<DeleteAccountResponse>('/auth/delete-account');
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('token');
-    }
     return response.data;
   },
 

@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
-import { puzzleValidationSchemas, commonValidations, handleValidationErrors, joiSchemas } from '../middleware/validation';
+import { puzzleValidationSchemas, commonValidations, handleValidationErrors, joiSchemas, validateWithJoi } from '../middleware/validation';
 import { rateLimiters } from '../middleware/security';
 import { prisma } from '../lib/prisma';
 import puzzleCronService from '../services/puzzle/cronService';
@@ -8,8 +8,8 @@ import achievementService from '../services/achievement/achievementService';
 import { validateGrid, createSolutionGrid } from '../services/puzzle/gridValidator';
 import { generateStrictPuzzle } from '../services/puzzle/strictCrosswordGenerator';
 import { safeJsonParse } from '../utils/json';
+import logger from '../utils/logger';
 import { User } from '@prisma/client';
-import { verifyToken } from '../utils/jwt';
 import { CrosswordClue as PuzzleClue } from '../types';
 
 interface PuzzleGridCell {
@@ -260,13 +260,14 @@ router.post('/validate-grid', authenticateToken, puzzleValidationSchemas.validat
     const { gridData, puzzleDate } = req.body;
     const user = req.user as User;
 
-    console.log('validate-grid called');
-    console.log('gridData type:', typeof gridData);
-    console.log('gridData length:', Array.isArray(gridData) ? gridData.length : 'not array');
-    console.log('gridData sample:', gridData?.[0]?.[0]);
+    logger.info('validate-grid called', {
+      gridDataType: typeof gridData,
+      gridDataLength: Array.isArray(gridData) ? gridData.length : null,
+      hasGridData: !!gridData,
+      hasPuzzleDate: !!puzzleDate,
+    });
 
     if (!gridData || !puzzleDate) {
-      console.log('Missing data - gridData:', !!gridData, 'puzzleDate:', !!puzzleDate);
       return res.status(400).json({ error: 'Grid data and puzzle date are required' });
     }
 
@@ -702,42 +703,15 @@ router.post('/auto-solve', authenticateToken, rateLimiters.puzzleGeneration, asy
 });
 
 // Generate multi-category puzzle with streaming progress
-router.post('/generate-multi-category-stream', (req, res, next) => {
-  // Manual validation using Joi for this special SSE endpoint
-  const { error } = joiSchemas.multiCategoryGeneration.validate(req.body);
-  if (error) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: error.details.map((detail) => ({
-        field: detail.path.join('.'),
-        message: detail.message
-      }))
-    });
-  }
-  next();
-}, async (req, res) => {
-  console.log(`🚀 MULTI-CATEGORY STREAMING ENDPOINT CALLED!`);
+router.post(
+  '/generate-multi-category-stream',
+  authenticateToken,
+  rateLimiters.puzzleGeneration,
+  validateWithJoi(joiSchemas.multiCategoryGeneration),
+  async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { categoryNames, token } = req.body;
-    console.log(`🔐 Token received: ${token ? 'YES' : 'NO'}`);
-    console.log(`📚 Categories: ${categoryNames?.join(', ')}`);
-
-    // Manual token authentication for SSE
-    if (!token || typeof token !== 'string') {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
-
-    let user: User | null = null;
-    try {
-      const decoded = verifyToken(token);
-      user = await prisma.user.findUnique({ where: { id: decoded.userId } });
-      if (!user) {
-        return res.status(401).json({ error: 'User not found' });
-      }
-    } catch {
-      return res.status(401).json({ error: 'Invalid or expired token' });
-    }
+    const { categoryNames } = req.body;
+    const user = req.user as User;
 
     if (!categoryNames || !Array.isArray(categoryNames) || categoryNames.length === 0) {
       return res.status(400).json({ error: 'Category names array is required' });
@@ -748,7 +722,6 @@ router.post('/generate-multi-category-stream', (req, res, next) => {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
       'Connection': 'keep-alive',
-      'Access-Control-Allow-Origin': '*',
     });
 
     // Track client disconnect so the long-running generator can bail instead
@@ -788,7 +761,6 @@ router.post('/generate-multi-category-stream', (req, res, next) => {
       res.write(`data: ${JSON.stringify({ stage, progress, message, attempt, tier })}\n\n`);
     };
 
-    console.log(`🎯 Generating multi-category puzzle for: ${categoryNames.join(', ')}`);
     sendUpdate('initialization', 5);
 
     // Generate a unique identifier for this multi-category puzzle
@@ -805,7 +777,9 @@ router.post('/generate-multi-category-stream', (req, res, next) => {
       const StrictCrosswordModule = await import('../services/puzzle/strictCrosswordGenerator');
       const generator = new StrictCrosswordModule.StrictCrosswordGenerator(categoryDate, categoryNames);
       
-      console.log(`📡 SSE: Starting multi-category generation`);
+      logger.info('SSE: starting multi-category generation', {
+        categoryNames: categoryNames.map((c: string) => c.slice(0, 100)),
+      });
 
       // Progress tracking. Now also handles 'retry_tier' events emitted by the
       // tier ladder in strictCrosswordGenerator.
@@ -911,7 +885,10 @@ router.post('/generate-multi-category-stream', (req, res, next) => {
         relaxedConstraints: generatedAtTier > 1,
       })}\n\n`);
 
-      console.log(`✅ Multi-category puzzle generated successfully (tier ${generatedAtTier})`);
+      logger.info('multi-category puzzle generated', {
+        categoryNames: categoryNames.map((c: string) => c.slice(0, 100)),
+        tier: generatedAtTier,
+      });
 
     } catch (generateError) {
       console.error('Error generating multi-category puzzle:', generateError);
@@ -927,34 +904,19 @@ router.post('/generate-multi-category-stream', (req, res, next) => {
     console.error('Error in multi-category stream endpoint:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
-});
+  },
+);
 
 // Generate category-specific puzzle with streaming progress
-router.get('/generate-category-stream/:categoryName', async (req, res) => {
-  console.log(`🚀 STREAMING ENDPOINT CALLED! Category: ${req.params.categoryName}`);
+router.get(
+  '/generate-category-stream/:categoryName',
+  authenticateToken,
+  rateLimiters.puzzleGeneration,
+  puzzleValidationSchemas.categoryNameParam,
+  async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { categoryName } = req.params;
-    const { token } = req.query;
-    console.log(`🔐 Token received: ${token ? 'YES' : 'NO'}`);
-
-    // Manual token authentication for SSE (can't use middleware due to EventSource limitations)
-    if (!token || typeof token !== 'string') {
-      console.log('❌ No token provided');
-      return res.status(401).json({ error: 'Authentication token required' });
-    }
-
-    // Verify the token manually
-    let user: User;
-    try {
-      const decoded = verifyToken(token);
-      const found = await prisma.user.findUnique({ where: { id: decoded.userId } });
-      if (!found) {
-        return res.status(401).json({ error: 'Invalid token' });
-      }
-      user = found;
-    } catch {
-      return res.status(401).json({ error: 'Invalid token' });
-    }
+    const user = req.user as User;
 
     if (!categoryName) {
       return res.status(400).json({ error: 'Category name is required' });
@@ -965,8 +927,6 @@ router.get('/generate-category-stream/:categoryName', async (req, res) => {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
       'Connection': 'keep-alive',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'Cache-Control'
     });
 
     let clientDisconnected = false;
@@ -1018,7 +978,6 @@ router.get('/generate-category-stream/:categoryName', async (req, res) => {
       res.write(`data: ${JSON.stringify(data)}\n\n`);
     };
 
-    console.log(`🎯 Generating category puzzle for: ${categoryName}`);
     sendUpdate('initialization', 5);
 
     // Generate a unique date string for this category puzzle
@@ -1033,7 +992,9 @@ router.get('/generate-category-stream/:categoryName', async (req, res) => {
       const StrictCrosswordModule = await import('../services/puzzle/strictCrosswordGenerator');
       const generator = new StrictCrosswordModule.StrictCrosswordGenerator(categoryDate, categoryName);
       
-      console.log(`📡 SSE: Starting generation for ${categoryName}`);
+      logger.info('SSE: starting category generation', {
+        categoryName: categoryName.slice(0, 100),
+      });
 
       // Set up progress tracking
       let lastProgress = 30;
@@ -1165,7 +1126,10 @@ router.get('/generate-category-stream/:categoryName', async (req, res) => {
         relaxedConstraints: generatedAtTier > 1,
       })}\n\n`);
 
-      console.log(`✅ Category puzzle generated successfully for ${categoryName} (tier ${generatedAtTier})`);
+      logger.info('category puzzle generated (streaming)', {
+        categoryName: categoryName.slice(0, 100),
+        tier: generatedAtTier,
+      });
 
     } catch (generateError) {
       console.error('Error generating category puzzle:', generateError);
@@ -1181,7 +1145,8 @@ router.get('/generate-category-stream/:categoryName', async (req, res) => {
     console.error('Error in generate-category-stream endpoint:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
-});
+  },
+);
 
 // Generate category-specific puzzle (non-streaming fallback)
 router.post('/generate-category', authenticateToken, rateLimiters.puzzleGeneration, puzzleValidationSchemas.generateCategoryPuzzle, async (req: AuthenticatedRequest, res: Response) => {
@@ -1193,7 +1158,9 @@ router.post('/generate-category', authenticateToken, rateLimiters.puzzleGenerati
       return res.status(400).json({ error: 'Category name is required' });
     }
 
-    console.log(`🎯 Generating category puzzle for: ${categoryName}`);
+    logger.info('generating category puzzle', {
+      categoryName: categoryName.slice(0, 100),
+    });
 
     // Generate a unique date string for this category puzzle
     const categoryDate = `category-${categoryName}-${Date.now()}`;
@@ -1248,7 +1215,9 @@ router.post('/generate-category', authenticateToken, rateLimiters.puzzleGenerati
         }
       });
 
-      console.log(`✅ Category puzzle generated successfully for ${categoryName}`);
+      logger.info('category puzzle generated', {
+        categoryName: categoryName.slice(0, 100),
+      });
 
       res.json({
         success: true,
@@ -1380,44 +1349,6 @@ router.get('/recent-category', authenticateToken, async (req: AuthenticatedReque
     console.error('Error fetching recent category puzzles:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
-});
-
-// Simple SSE test endpoint
-router.get('/test-sse', (req, res) => {
-  console.log('🧪 Test SSE endpoint called');
-  
-  res.writeHead(200, {
-    'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache',
-    'Connection': 'keep-alive',
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Cache-Control'
-  });
-
-  let counter = 0;
-  const interval = setInterval(() => {
-    counter++;
-    const data = {
-      message: `Test message ${counter}`,
-      progress: counter * 10,
-      timestamp: new Date().toISOString()
-    };
-    
-    console.log(`🧪 Sending test data:`, data);
-    res.write(`data: ${JSON.stringify(data)}\n\n`);
-    
-    if (counter >= 10) {
-      console.log('🧪 Test SSE complete');
-      res.write(`data: ${JSON.stringify({ complete: true })}\n\n`);
-      clearInterval(interval);
-      res.end();
-    }
-  }, 1000);
-
-  req.on('close', () => {
-    console.log('🧪 Test SSE connection closed');
-    clearInterval(interval);
-  });
 });
 
 export default router;

@@ -110,20 +110,10 @@ export default function ThemeGlobePage() {
       setGenerationError(null);
       setGenerationStage("Initializing cosmic engines...");
 
-      // Get token for authenticated request (same key as AuthContext and API client)
-      const token = localStorage.getItem("token");
-      console.log("🔐 Auth token found:", !!token);
-      console.log("🔐 Token length:", token?.length || 0);
-
-      if (!token) {
-        throw new Error(
-          "Authentication required - no token found in localStorage",
-        );
-      }
-
-      // Use multi-category endpoint with POST request
+      // Use multi-category endpoint with POST request. Auth rides on the
+      // HttpOnly `auth_token` cookie (credentials: "include") — the backend
+      // no longer accepts a token in the body.
       const categoryNames = selectedCategories.map((c) => c.name);
-      console.log("🔗 Selected categories:", categoryNames);
 
       // Since EventSource doesn't support POST, we'll use fetch with streaming
       const response = await fetch(
@@ -135,8 +125,8 @@ export default function ThemeGlobePage() {
           },
           body: JSON.stringify({
             categoryNames,
-            token,
           }),
+          credentials: "include",
         },
       );
 

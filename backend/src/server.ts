@@ -55,7 +55,11 @@ const getCorsOrigins = (): string | string[] | boolean => {
     return process.env.FRONTEND_URL;
   }
 
-  if (process.env.ENABLE_CORS_ALL === 'true') {
+  // ENABLE_CORS_ALL is a developer escape hatch. Refuse to honor it in
+  // production so a misconfigured vault entry can't silently open CORS to
+  // every origin — that would re-enable token-theft-via-foreign-page even
+  // after the cookie hardening.
+  if (process.env.ENABLE_CORS_ALL === 'true' && process.env.NODE_ENV !== 'production') {
     return true;
   }
 
@@ -135,10 +139,16 @@ app.get('/api/ping', (req: express.Request, res: express.Response) => {
 
 // Metrics endpoint (protected in production)
 app.get('/api/metrics', (req: express.Request, res: express.Response) => {
-  if (process.env.NODE_ENV === 'production' && req.headers.authorization !== `Bearer ${process.env.METRICS_TOKEN}`) {
-    return res.status(401).json({ error: 'Unauthorized' });
+  if (process.env.NODE_ENV === 'production') {
+    const metricsToken = process.env.METRICS_TOKEN;
+    // If METRICS_TOKEN isn't set, the previous comparison resolved to
+    // `Bearer undefined`, which a literal `Authorization: Bearer undefined`
+    // request would satisfy. Fail closed instead.
+    if (!metricsToken || req.headers.authorization !== `Bearer ${metricsToken}`) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
   }
-  
+
   const metrics = getMetrics();
   res.json({
     message: 'Application metrics',
@@ -146,19 +156,6 @@ app.get('/api/metrics', (req: express.Request, res: express.Response) => {
     ...metrics
   });
 });
-
-// Development Easter Egg endpoint (for testing network requests)
-if (process.env.NODE_ENV === 'development') {
-  app.post('/api/dev/easter-egg-achievement', (req: express.Request, res: express.Response) => {
-    console.log('🎉 DEV EASTER EGG: Backend received easter egg request!', req.body);
-    res.json({ 
-      success: true, 
-      message: 'Easter egg achievement triggered!',
-      timestamp: new Date().toISOString(),
-      achievementId: req.body?.achievementId
-    });
-  });
-}
 
 // Error handling middleware (must be last)
 app.use(notFoundHandler);

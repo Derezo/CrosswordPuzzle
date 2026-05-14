@@ -40,6 +40,14 @@ router.post('/register', authValidationSchemas.register, asyncHandler(async (req
   // Generate token
   const token = generateToken(user);
 
+  res.cookie(AUTH_COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: AUTH_COOKIE_MAX_AGE_MS,
+    path: '/',
+  });
+
   res.status(201).json({
     message: 'User created successfully',
     token,
@@ -74,6 +82,14 @@ router.post('/login', authValidationSchemas.login, async (req: Request, res: Res
     }
 
     const token = generateToken(user);
+
+    res.cookie(AUTH_COOKIE_NAME, token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: AUTH_COOKIE_MAX_AGE_MS,
+      path: '/',
+    });
 
     res.json({
       message: 'Login successful',

@@ -73,6 +73,13 @@ describe('POST /api/auth/register', () => {
     expect(res.status).toBe(201);
     expect(res.body.token).toBeDefined();
     expect(res.body.user.email).toBe('new@example.com');
+
+    const setCookie = res.headers['set-cookie'];
+    const cookies = Array.isArray(setCookie) ? setCookie : setCookie ? [setCookie] : [];
+    const authCookie = cookies.find((c: string) => c.startsWith('auth_token='));
+    expect(authCookie).toBeDefined();
+    expect(authCookie).toMatch(/HttpOnly/);
+    expect(authCookie).toMatch(/SameSite=Lax/i);
   });
 
   it('rejects a duplicate email with 409', async () => {
@@ -131,6 +138,13 @@ describe('POST /api/auth/login', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.token).toBeDefined();
+
+    const setCookie = res.headers['set-cookie'];
+    const cookies = Array.isArray(setCookie) ? setCookie : setCookie ? [setCookie] : [];
+    const authCookie = cookies.find((c: string) => c.startsWith('auth_token='));
+    expect(authCookie).toBeDefined();
+    expect(authCookie).toMatch(/HttpOnly/);
+    expect(authCookie).toMatch(/SameSite=Lax/i);
   });
 
   it('returns 401 for wrong password', async () => {

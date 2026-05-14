@@ -48,25 +48,52 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
         return done(null, user);
       }
 
-      // Check if user exists with same email
-      const existingEmailUser = await prisma.user.findUnique({ 
-        where: { email: profile.emails?.[0]?.value }
-      });
+      // Google's profile.emails entries each carry a `verified` flag — a Google
+      // account whose primary email is unverified must never auto-link to a
+      // local account by that email alone (account-takeover vector).
+      const primaryEmail = profile.emails?.[0];
+      const verifiedEmail =
+        primaryEmail?.verified === true || (primaryEmail as { verified?: string } | undefined)?.verified === 'true'
+          ? primaryEmail?.value
+          : undefined;
 
-      if (existingEmailUser) {
-        // Link Google account to existing user
-        const updatedUser = await prisma.user.update({
-          where: { id: existingEmailUser.id },
-          data: { googleId: profile.id }
+      if (verifiedEmail) {
+        const existingEmailUser = await prisma.user.findUnique({
+          where: { email: verifiedEmail },
         });
-        return done(null, updatedUser);
+
+        if (existingEmailUser) {
+          // Refuse to link if the local account is already paired with a
+          // different Google identity — first-linker wins, and re-linking
+          // must go through an authenticated profile-update flow, not
+          // through a fresh OAuth round-trip.
+          if (existingEmailUser.googleId && existingEmailUser.googleId !== profile.id) {
+            return done(null, false, {
+              message: 'This email is already linked to a different Google account.',
+            });
+          }
+
+          const updatedUser = await prisma.user.update({
+            where: { id: existingEmailUser.id },
+            data: { googleId: profile.id },
+          });
+          return done(null, updatedUser);
+        }
       }
 
-      // Create new user
+      // No safe link target — create a new user. Refuse if Google didn't
+      // give us a verified email (we'd be creating an account we can never
+      // route a password-reset to).
+      if (!verifiedEmail) {
+        return done(null, false, {
+          message: 'Google did not return a verified primary email for this account.',
+        });
+      }
+
       user = await prisma.user.create({
         data: {
           googleId: profile.id,
-          email: profile.emails?.[0]?.value || '',
+          email: verifiedEmail,
           firstName: profile.name?.givenName || '',
           lastName: profile.name?.familyName || '',
         }

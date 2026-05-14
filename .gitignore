@@ -13,8 +13,8 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# Lock files (keep pnpm-lock.yaml for reproducible builds)
-package-lock.json
+# Lock files — we use npm exclusively; pnpm-lock.yaml would diverge from package-lock.json
+pnpm-lock.yaml
 yarn.lock
 
 # Database files
